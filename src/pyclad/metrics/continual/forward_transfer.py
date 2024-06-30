@@ -10,10 +10,10 @@ class ForwardTransfer(ConceptLevelMatrixMetric):
 
         values = []
         for i in range(concepts_no):
-            for j in range(i+1, concepts_no):
+            for j in range(i + 1, concepts_no):
                 values.append(metric_matrix[i][j])
 
         return np.mean(values)
 
     def name(self) -> str:
-        return 'ForwardTransfer'
+        return "ForwardTransfer"

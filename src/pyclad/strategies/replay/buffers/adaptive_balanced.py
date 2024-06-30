@@ -21,5 +21,3 @@ class AdaptiveBalancedReplayBuffer(ReplayBuffer):
 
     def data(self) -> np.ndarray:
         return np.concatenate(self._buffers)
-
-

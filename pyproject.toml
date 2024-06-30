@@ -41,3 +41,8 @@ classifiers = [
 #Issues = "https://github.com/me/spam/issues"
 #Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
+[project.optional-dependencies]
+dev = ["black>=24.4"]
+
+[tool.black]
+line-length = 120

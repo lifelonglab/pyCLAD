@@ -20,7 +20,4 @@ class ConceptsDataset(Dataset):
         return self._name
 
     def additional_info(self):
-        return {
-            'train_concepts_no': len(self._train_concepts),
-            'test_concepts_no': len(self._test_concepts)
-        }
+        return {"train_concepts_no": len(self._train_concepts), "test_concepts_no": len(self._test_concepts)}

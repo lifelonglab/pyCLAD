@@ -8,4 +8,4 @@ class RocAuc(BaseMetric):
         return roc_auc_score(y_true=y_true, y_score=anomaly_scores)
 
     def name(self) -> str:
-        return 'ROC-AUC'
+        return "ROC-AUC"

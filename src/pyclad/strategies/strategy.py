@@ -8,44 +8,35 @@ from pyclad.output.output_writer import InfoProvider
 
 class Strategy(InfoProvider):
     @abc.abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     def additional_info(self) -> Dict:
         return {}
 
     def info(self) -> Dict[str, Any]:
-        return {
-            'strategy': {'name': self.name(), **self.additional_info()}
-        }
+        return {"strategy": {"name": self.name(), **self.additional_info()}}
 
 
 class ConceptAwareStrategy(Strategy):
 
     @abc.abstractmethod
-    def learn(self, data: np.ndarray, concept_id: str) -> None:
-        ...
+    def learn(self, data: np.ndarray, concept_id: str) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray, concept_id: str) -> (np.ndarray, np.ndarray):
-        ...
+    def predict(self, data: np.ndarray, concept_id: str) -> (np.ndarray, np.ndarray): ...
 
 
 class ConceptIncrementalStrategy(Strategy):
     @abc.abstractmethod
-    def learn(self, data: np.ndarray) -> None:
-        ...
+    def learn(self, data: np.ndarray) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-        ...
+    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray): ...
 
 
 class ConceptAgnosticStrategy(Strategy):
     @abc.abstractmethod
-    def learn(self, data: np.ndarray) -> None:
-        ...
+    def learn(self, data: np.ndarray) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-        ...
+    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray): ...

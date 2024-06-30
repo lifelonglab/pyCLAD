@@ -16,4 +16,4 @@ class NaiveStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         return self._model.predict(data)
 
     def name(self) -> str:
-        return 'Naive'
+        return "Naive"

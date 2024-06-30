@@ -9,7 +9,7 @@ from pyclad.strategies.strategy import ConceptAwareStrategy
 class MSTE(ConceptAwareStrategy):
     def __init__(self, model_creation_fn: Callable[[], Model]):
         self._model_creation_fn = model_creation_fn
-        self._models: Dict[str, Model] = {}  #concept_id: model
+        self._models: Dict[str, Model] = {}  # concept_id: model
 
     def learn(self, data: np.ndarray, concept_id: str) -> None:
         new_model = self._model_creation_fn()
@@ -23,4 +23,4 @@ class MSTE(ConceptAwareStrategy):
             return np.zeros(shape=data.shape[0])
 
     def name(self) -> str:
-        return 'MSTE'
+        return "MSTE"

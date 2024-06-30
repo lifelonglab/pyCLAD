@@ -17,4 +17,4 @@ class CumulativeStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, Conce
         return self._model.predict(data)
 
     def name(self) -> str:
-        return 'Cumulative'
+        return "Cumulative"

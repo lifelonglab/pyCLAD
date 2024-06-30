@@ -7,13 +7,10 @@ MetricMatrix = List[List[float]]
 
 class ConceptsMatrixMetric(abc.ABC):
     @abc.abstractmethod
-    def compute(self, metric_matrix: MetricMatrix) -> float:
-        ...
+    def compute(self, metric_matrix: MetricMatrix) -> float: ...
 
     @abc.abstractmethod
-    def name(self) -> str:
-        ...
-
+    def name(self) -> str: ...
 
 
 ConceptLevelMatrix = List[List[float]]
@@ -21,9 +18,7 @@ ConceptLevelMatrix = List[List[float]]
 
 class ConceptLevelMatrixMetric(abc.ABC):
     @abc.abstractmethod
-    def compute(self, metric_matrix: ConceptLevelMatrix) -> float:
-        ...
+    def compute(self, metric_matrix: ConceptLevelMatrix) -> float: ...
 
     @abc.abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...

@@ -21,5 +21,3 @@ class Callback(abc.ABC):
 
     def after_evaluation(self, *args, **kwargs):
         pass
-
-

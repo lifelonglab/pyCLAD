@@ -11,13 +11,17 @@ from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware_scenario import concept_aware_scenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     data_loader = read_dataset_from_npy(
-        pathlib.Path('resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy'), dataset_name='NSL-KDD-R')
+        pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"
+    )
     strategy = CumulativeStrategy(IsolationForestAdapter())
-    callbacks = [MatrixMetricEvaluationCallback(base_metric=RocAuc(),
-                                                metrics=[ContinualAverageAcrossLearnedConcepts(), BackwardTransfer(),
-                                                         ForwardTransfer()])]
+    callbacks = [
+        MatrixMetricEvaluationCallback(
+            base_metric=RocAuc(),
+            metrics=[ContinualAverageAcrossLearnedConcepts(), BackwardTransfer(), ForwardTransfer()],
+        )
+    ]
     concept_aware_scenario(data_loader, strategy=strategy, callbacks=callbacks)
 
     output_writer = JsonOutputWriter()

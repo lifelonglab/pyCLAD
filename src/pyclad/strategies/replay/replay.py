@@ -18,7 +18,7 @@ class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         return self._model.predict(data)
 
     def name(self) -> str:
-        return 'ReplayOnly'
+        return "ReplayOnly"
 
 
 class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
@@ -34,4 +34,4 @@ class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         self._model.predict(data)
 
     def name(self) -> str:
-        return 'ReplayEnhanced'
+        return "ReplayEnhanced"
