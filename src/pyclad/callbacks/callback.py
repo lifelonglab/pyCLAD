@@ -1,7 +1,5 @@
 import abc
 
-import numpy as np
-
 
 class Callback(abc.ABC):
     def before_scenario(self, *args, **kwargs):
