@@ -1,7 +1,6 @@
 import abc
 from typing import List
 
-
 MetricMatrix = List[List[float]]
 
 

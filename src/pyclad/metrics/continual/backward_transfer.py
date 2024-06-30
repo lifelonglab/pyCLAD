@@ -1,6 +1,9 @@
 import numpy as np
 
-from pyclad.metrics.continual.concepts_metric import ConceptLevelMatrixMetric, ConceptLevelMatrix
+from pyclad.metrics.continual.concepts_metric import (
+    ConceptLevelMatrix,
+    ConceptLevelMatrixMetric,
+)
 
 
 class BackwardTransfer(ConceptLevelMatrixMetric):

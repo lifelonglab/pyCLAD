@@ -3,7 +3,9 @@ import pathlib
 from pyclad.callbacks.evaluation.matrix_evaluation import MatrixMetricEvaluationCallback
 from pyclad.data.readers.concepts_readers import read_dataset_from_npy
 from pyclad.metrics.base.roc_auc import RocAuc
-from pyclad.metrics.continual.average_lifelong import ContinualAverageAcrossLearnedConcepts
+from pyclad.metrics.continual.average_lifelong import (
+    ContinualAverageAcrossLearnedConcepts,
+)
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.isolation_forest import IsolationForestAdapter

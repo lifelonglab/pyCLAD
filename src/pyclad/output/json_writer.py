@@ -1,7 +1,7 @@
+import itertools
 from typing import List
 
-from pyclad.output.output_writer import OutputWriter, InfoProvider
-import itertools
+from pyclad.output.output_writer import InfoProvider, OutputWriter
 
 
 class JsonOutputWriter(OutputWriter):

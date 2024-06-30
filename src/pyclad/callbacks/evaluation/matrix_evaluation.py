@@ -1,12 +1,15 @@
 from collections import defaultdict
-from typing import Dict, List, Iterable, Any
+from typing import Any, Dict, Iterable, List
 
 import numpy as np
 
 from pyclad.callbacks.callback import Callback
 from pyclad.data.concept import Concept
 from pyclad.metrics.base.base_metric import BaseMetric
-from pyclad.metrics.continual.concepts_metric import ConceptLevelMatrixMetric, ConceptLevelMatrix
+from pyclad.metrics.continual.concepts_metric import (
+    ConceptLevelMatrix,
+    ConceptLevelMatrixMetric,
+)
 from pyclad.output.output_writer import InfoProvider
 
 

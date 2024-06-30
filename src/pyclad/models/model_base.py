@@ -1,6 +1,7 @@
 import abc
-import numpy as np
 from abc import abstractmethod
+
+import numpy as np
 
 
 class Model(abc.ABC):

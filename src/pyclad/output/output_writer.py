@@ -1,5 +1,5 @@
 import abc
-from typing import List, Any, Dict
+from typing import Any, Dict, List
 
 
 class InfoProvider(abc.ABC):

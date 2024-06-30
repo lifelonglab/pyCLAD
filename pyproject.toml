@@ -42,7 +42,10 @@ classifiers = [
 #Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["black>=24.4", "flake8>=7.1.0"]
+dev = ["black>=24.4", "flake8>=7.1.0", "isort>=5.13.0"]
 
 [tool.black]
 line-length = 120
+
+[tool.isort]
+profile = "black"

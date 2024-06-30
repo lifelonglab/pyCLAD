@@ -1,7 +1,11 @@
 import numpy as np
 
 from pyclad.models.model_base import Model
-from pyclad.strategies.strategy import ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgnosticStrategy
+from pyclad.strategies.strategy import (
+    ConceptAgnosticStrategy,
+    ConceptAwareStrategy,
+    ConceptIncrementalStrategy,
+)
 
 
 class CumulativeStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgnosticStrategy):
