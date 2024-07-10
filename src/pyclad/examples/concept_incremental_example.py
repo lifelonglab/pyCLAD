@@ -26,5 +26,5 @@ if __name__ == "__main__":
     ]
     concept_incremental_scenario(data_loader, strategy=strategy, callbacks=callbacks)
 
-    output_writer = JsonOutputWriter()
+    output_writer = JsonOutputWriter(pathlib.Path("output.json"))
     output_writer.write([data_loader, strategy, *callbacks])
