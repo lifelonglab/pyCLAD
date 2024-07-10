@@ -7,6 +7,8 @@ from pyclad.output.output_writer import InfoProvider
 
 
 class Strategy(InfoProvider):
+    """Base class for all continual learning strategies."""
+
     @abc.abstractmethod
     def name(self) -> str: ...
 

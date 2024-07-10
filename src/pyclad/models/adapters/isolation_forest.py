@@ -16,3 +16,6 @@ class IsolationForestAdapter(Model):
 
     def predict(self, data: np.ndarray):
         return adjust_predictions(self.model.predict(data)), -self.model.score_samples(data)
+
+    def name(self) -> str:
+        return "IsolationForest"

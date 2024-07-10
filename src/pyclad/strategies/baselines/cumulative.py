@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 
 from pyclad.models.model_base import Model
@@ -22,3 +24,6 @@ class CumulativeStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, Conce
 
     def name(self) -> str:
         return "Cumulative"
+
+    def additional_info(self) -> Dict:
+        return {"model": self._model.name(), "replay_size": len(self._replay)}

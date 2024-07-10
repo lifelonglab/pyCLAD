@@ -1,10 +1,13 @@
 import abc
 from abc import abstractmethod
+from typing import Any, Dict
 
 import numpy as np
 
+from pyclad.output.output_writer import InfoProvider
 
-class Model(abc.ABC):
+
+class Model(InfoProvider):
     @abstractmethod
     def learn(self, data: np.ndarray): ...
 
@@ -16,3 +19,9 @@ class Model(abc.ABC):
         :return: (anomaly score, predicted labels)
         """
         ...
+
+    @abc.abstractmethod
+    def name(self) -> str: ...
+
+    def info(self) -> Dict[str, Any]:
+        return {"model": {"name": self.name()}}
