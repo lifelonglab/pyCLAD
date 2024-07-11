@@ -1,14 +1,14 @@
-from typing import Any, Dict
 import time
-
+from typing import Any, Dict
 from pyclad.data.concept import Concept
 from pyclad.callbacks.callback import Callback
 from pyclad.output.output_writer import InfoProvider
+from collections import defaultdict
 
 
 class TimeEvaluationCallback(Callback, InfoProvider):
     def __init__(self):
-        self._time_by_concept = dict()
+        self._time_by_concept = defaultdict(lambda: dict({"train_time": 0, "eval_time": 0}))
         self._train_start = 0
         self._eval_start = 0
         self._train_time_total = 0
@@ -19,7 +19,6 @@ class TimeEvaluationCallback(Callback, InfoProvider):
 
     def after_training(self, learned_concept: Concept):
         train_time = time.time() - self._train_start
-        self._time_by_concept[learned_concept.name] = dict()
         self._time_by_concept[learned_concept.name]["train_time"] = train_time
         self._train_time_total = self._train_time_total + train_time
 
@@ -29,11 +28,7 @@ class TimeEvaluationCallback(Callback, InfoProvider):
     def after_evaluation(self, evaluated_concept: Concept, *args, **kwargs):
         eval_time = time.time() - self._eval_start
         self._eval_time_total = self._eval_time_total + eval_time
-
-        if evaluated_concept.name in self._time_by_concept.keys():
-            self._time_by_concept[evaluated_concept.name]["eval_time"] = eval_time
-        else:
-            self._time_by_concept[evaluated_concept.name] = dict()
+        self._time_by_concept[evaluated_concept.name]["eval_time"] += eval_time
 
     def info(self) -> Dict[str, Any]:
 
