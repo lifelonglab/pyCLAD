@@ -1,0 +1,67 @@
+{
+    "dataset": {
+        "name": "NSL-KDD-R",
+        "train_concepts_no": 5,
+        "test_concepts_no": 5
+    },
+    "strategy": {
+        "name": "Cumulative",
+        "model": "IsolationForest",
+        "replay_size": 50
+    },
+    "matrixMetricEvaluationCallback_ROC-AUC": {
+        "ROC-AUC": {
+            "metrics": {
+                "ContinualAverageAcrossLearnedConcepts": 0.9075833333333333,
+                "BackwardTransfer": -0.018000000000000016,
+                "ForwardTransfer": 0.621
+            },
+            "concepts_order": [
+                "Cluster_0",
+                "Cluster_1",
+                "Cluster_2",
+                "Cluster_3",
+                "Cluster_4"
+            ],
+            "matrix": {
+                "Cluster_0": {
+                    "Cluster_0": 0.99875,
+                    "Cluster_1": 0.52125,
+                    "Cluster_2": 0.5,
+                    "Cluster_3": 0.4925,
+                    "Cluster_4": 0.495
+                },
+                "Cluster_1": {
+                    "Cluster_0": 0.94875,
+                    "Cluster_1": 0.95625,
+                    "Cluster_2": 0.6187499999999999,
+                    "Cluster_3": 0.92375,
+                    "Cluster_4": 0.46375
+                },
+                "Cluster_2": {
+                    "Cluster_0": 0.93875,
+                    "Cluster_1": 0.935,
+                    "Cluster_2": 0.9550000000000001,
+                    "Cluster_3": 0.9400000000000001,
+                    "Cluster_4": 0.45499999999999996
+                },
+                "Cluster_3": {
+                    "Cluster_0": 0.84875,
+                    "Cluster_1": 0.86,
+                    "Cluster_2": 0.88125,
+                    "Cluster_3": 0.83375,
+                    "Cluster_4": 0.7999999999999999
+                },
+                "Cluster_4": {
+                    "Cluster_0": 0.8875,
+                    "Cluster_1": 0.905,
+                    "Cluster_2": 0.90375,
+                    "Cluster_3": 0.8674999999999999,
+                    "Cluster_4": 0.89375
+                }
+            }
+        }
+    },
+    "train_time": 1.1455731391906738,
+    "eval_time": 0.04803609848022461
+}
