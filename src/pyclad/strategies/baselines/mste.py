@@ -24,3 +24,9 @@ class MSTE(ConceptAwareStrategy):
 
     def name(self) -> str:
         return "MSTE"
+
+    def additional_info(self) -> Dict:
+        return {
+            "model": self._model_creation_fn().name(),
+            "numberOfModels": len(self._models),
+        }

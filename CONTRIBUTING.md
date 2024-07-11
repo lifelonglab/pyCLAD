@@ -51,6 +51,15 @@ If you just want to check if the code is formatted correctly without `isort` doi
 See more info about isort [here](https://pycqa.github.io/isort/)
 
 
+## Unit tests
+Please make sure that you write unit tests for your new code.
+This project leverages `pytest` for running unit tests. You can install it by running the following command:
+```pip install pytest```
+
+You can run the unit tests by executing the following command in the root directory of the project:
+```pytest```
+
+
 # Documentation
 Please make sure that you update the documentation if you are adding new features or changing existing ones.
 We use MKDocs for documentation. 
