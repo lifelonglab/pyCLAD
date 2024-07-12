@@ -1,9 +1,10 @@
 import time
-from typing import Any, Dict
-from pyclad.data.concept import Concept
-from pyclad.callbacks.callback import Callback
-from pyclad.output.output_writer import InfoProvider
 from collections import defaultdict
+from typing import Any, Dict
+
+from pyclad.callbacks.callback import Callback
+from pyclad.data.concept import Concept
+from pyclad.output.output_writer import InfoProvider
 
 
 class TimeEvaluationCallback(Callback, InfoProvider):
