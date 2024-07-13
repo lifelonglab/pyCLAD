@@ -10,7 +10,8 @@ class ContinualAverageAcrossLearnedConcepts(ConceptLevelMatrixMetric):
 
     def compute(self, metric_matrix: ConceptLevelMatrix) -> float:
         concepts_no = len(metric_matrix)
-        if concepts_no == 0: return 0
+        if concepts_no == 0:
+            return 0
         values = []
 
         for learned_task in range(concepts_no):

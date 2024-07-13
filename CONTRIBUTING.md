@@ -49,3 +49,16 @@ If you just want to check if the code is formatted correctly without `isort` doi
 ```isort src --diff```
 
 See more info about isort [here](https://pycqa.github.io/isort/)
+
+
+# Documentation
+Please make sure that you update the documentation if you are adding new features or changing existing ones.
+We use MKDocs for documentation. 
+You have to install additional dependencies listed in `docs/requirements.txt` to build the documentation.
+
+All our documentation files are stored in the `docs` directory, while config file `mkdocs.yml` is in the root directory of the project.
+
+You can see the live preview of the documentation while working on it by running the following command:
+```mkdocs serve```
+
+You can find more info about MKDocs [here](https://www.mkdocs.org/) and MKDocs Material theme [here](https://squidfunk.github.io/mkdocs-material/)
