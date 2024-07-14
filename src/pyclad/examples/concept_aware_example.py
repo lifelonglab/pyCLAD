@@ -1,6 +1,7 @@
 import pathlib
 
 from pyclad.callbacks.evaluation.matrix_evaluation import MatrixMetricEvaluationCallback
+from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.readers.concepts_readers import read_dataset_from_npy
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import (
@@ -22,7 +23,8 @@ if __name__ == "__main__":
         MatrixMetricEvaluationCallback(
             base_metric=RocAuc(),
             metrics=[ContinualAverageAcrossLearnedConcepts(), BackwardTransfer(), ForwardTransfer()],
-        )
+        ),
+        TimeEvaluationCallback()
     ]
     concept_aware_scenario(data_loader, strategy=strategy, callbacks=callbacks)
 
