@@ -2,21 +2,33 @@
 
 ### Overview 
 
-To differentiate continual/lifelong anomaly detection scenarios, we define *concept* as a self-consistent behavior of the normal class, alongside the specific anomalies occurring with it.
+A continual learning **scenario** defines data assumptions that have implications on how *strategies* and *models* behave. 
+
+To differentiate continual anomaly detection scenarios, we define **concept** as a self-consistent behavior of the normal class, alongside the specific anomalies occurring with it.
 A concept can correspond to a new distribution, change of a performed activity, or a new state of the environment, depending on the specific analytical context [1].
+
+*Example*: In monitoring human conditions to detect harmful states, the entire normal class can be thought of as a set of concepts: *resting*, *jogging*, and *eating*, each with distinct characteristics.
+
+Scenarios differ based on the availability of:
+
+- **Concept identifier**: A consistent behavior of the normal class describing one specific activity
+- **Concept boundary**: Explicit information on whether the currently analyzed concept (a specific activity) has changed.
 
 Scenarios natively supported in pyCLAD are: 
 
-- *Concept-aware*: Known concept identifier and concept boundaries.
+- **Concept-aware**: Known concept identifier and concept boundaries.
+This scenario implies that the model is aware of the currently processed activity and its lifespan (at both training and inference time).
 
-- *Concept-incremental*: Unknown concept identifier but known concept boundaries.
+- **Concept-incremental**: Unknown concept identifier but known concept boundaries.
+This scenario only provides an indication that a change of activity has occurred without any identifying information about the specific activities.
 
-- *Concept-agnostic*: Unknown concept identifier and concept boundaries.
+- **Concept-agnostic**: Unknown concept identifier and concept boundaries.
+This scenario is more challenging for models/strategies than the previous ones, as it does not provide any supporting information about the current activity being performed and its lifespan.
 
-New scenarios can be devised to account for the limitations of previously existing ones. One example is the explicit consideration of the temporal dimension in online learning scenarios.
+New scenarios can be designed to account for the limitations of previously existing ones. One example is the explicit consideration of the temporal dimension in online learning scenarios.
+
 
 ### Code example
-    
     def concept_aware_scenario(data_loader: ConceptsDataset, strategy: ConceptAwareStrategy, callbacks: List[Callback]):
         callback_composite = CallbackComposite(callbacks)
     
