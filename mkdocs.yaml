@@ -4,6 +4,12 @@ theme:
   highlightjs: true
 nav:
   - Home: index.md
+  - Callbacks: 'callbacks.md'
+  - Data: 'data.md'
+  - Metrics: 'metrics.md'
+  - Models: 'models.md'
+  - Scenarios: 'scenarios.md'
+  - Strategies: 'strategies.md'
   - API Reference:
       - Callbacks: 'api/callbacks.md'
       - Data: 'api/data.md'
