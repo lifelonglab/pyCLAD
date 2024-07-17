@@ -52,13 +52,16 @@ See more info about isort [here](https://pycqa.github.io/isort/)
 
 
 ## Unit tests
-Please make sure that you write unit tests for your new code.
+Unit tests are essential tool to ensure the reliability of the software. 
 This project leverages `pytest` for running unit tests. You can install it by running the following command:
 ```pip install pytest```
 
 You can run the unit tests by executing the following command in the root directory of the project:
-```pytest```
+```pytest tests```
 
+Please make sure that:
+* You write unit tests for your new functions and classes.
+* You execute all the existing unit tests to ensure that your changes did not break anything.
 
 # Documentation
 Please make sure that you update the documentation if you are adding new features or changing existing ones.
