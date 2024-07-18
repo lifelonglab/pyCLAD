@@ -24,7 +24,7 @@ if __name__ == "__main__":
             base_metric=RocAuc(),
             metrics=[ContinualAverageAcrossLearnedConcepts(), BackwardTransfer(), ForwardTransfer()],
         ),
-        TimeEvaluationCallback()
+        TimeEvaluationCallback(),
     ]
     concept_aware_scenario(data_loader, strategy=strategy, callbacks=callbacks)
 

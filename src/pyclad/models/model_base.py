@@ -24,4 +24,7 @@ class Model(InfoProvider):
     def name(self) -> str: ...
 
     def info(self) -> Dict[str, Any]:
-        return {"model": {"name": self.name()}}
+        return {"model": {"name": self.name(), **self.additional_info()}}
+
+    def additional_info(self):
+        return {}
