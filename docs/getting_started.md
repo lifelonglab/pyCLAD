@@ -9,7 +9,7 @@ A typical execution requires:
 
 - Loading a continual anomaly detection *dataset*. 
 
-Here, we use the numpy pyCLAD data loader (see ) on the pre-processed NSL-KDD dataset:
+Here, we use the numpy pyCLAD data loader (see [Data](data.md)) on the pre-processed NSL-KDD dataset:
  
         data_loader = read_dataset_from_npy(
             pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), 

@@ -38,15 +38,7 @@ conda install -c conda-forge pyclad
 #### Pip
 python -m pip install pyclad
 
-#### Requirements
-pyCLAD has the following  requirements:
-    
-| Package       | Version       |
-|---------------|---------------|
-| Cell 1, Row 1 | Cell 2, Row 1 |
-| Cell 1, Row 2 | Cell 1, Row 2 |
-
-All of these will be installed using any of the above install methods.
+All requirements will be installed using any of the above install methods.
 
 
 ### Citing pyCLAD
