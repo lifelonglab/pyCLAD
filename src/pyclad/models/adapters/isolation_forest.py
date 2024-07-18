@@ -19,3 +19,6 @@ class IsolationForestAdapter(Model):
 
     def name(self) -> str:
         return "IsolationForest"
+
+    def additional_info(self):
+        return {"n_estimators": self.n_estimators, "contamination": self.contamination}
