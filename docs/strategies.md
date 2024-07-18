@@ -2,14 +2,12 @@
 
 ### Overview 
 
-Continual anomaly detection strategies focus on specific objectives which can be compared to other types of approach. One possible categorization of anomaly detection approaches is the following:
+Continual learning strategies are designed to decide *when*, *how*, and using *what* data models should be updated throughout their lifespan. Strategies are inspired by the most diverse disciplines, including neuroscience and biology, which reveal the natural way human beings learn and retain knowledge [1].
 
-- **Offline**: Models are trained once on background data and do not require updates (examples: post-incident analysis, breast cancer detection)  and  on updating the model as new data is observed, assuming only the most recent information is relevant. This approach is static in nature and does not provide adaptation. 
+The general goal for the model is to be able to pick up new skills, adjust to newly presented tasks, and draw on previously learned information to tackle both new obstacles and the recurrence of previously seen tasks.
+Particular interest is devoted to simultaneous adaptation and knowledge retention and a model's ability to simultaneously handle many tasks/concepts, avoiding forgetting. 
 
-- **Online**: Models are updated as new data is observed, assuming that the most recent information is the most relevant. This approach is popular in real-world dynamic applications where adaptation is necessary, but makes models prone to forgetting past knowledge. 
-
-- **Continual**: Models are updated to simultaneously consider *adaptation* to new conditions and *knowledge retention* of previously observed (and potentially recurring) conditions [1].
-This behavior attempts to overcome limitations of both offline and online anomaly detection in complex scenarios.
+The assumption is that simply 
 
 ### Available strategies
 The following strategies are implemented in pyCLAD:
