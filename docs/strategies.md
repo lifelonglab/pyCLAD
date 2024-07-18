@@ -5,9 +5,7 @@
 Continual learning strategies are designed to decide *when*, *how*, and using *what* data models should be updated throughout their lifespan. Strategies are inspired by the most diverse disciplines, including neuroscience and biology, which reveal the natural way human beings learn and retain knowledge [1].
 
 The general goal for the model is to be able to pick up new skills, adjust to newly presented tasks, and draw on previously learned information to tackle both new obstacles and the recurrence of previously seen tasks.
-Particular interest is devoted to simultaneous adaptation and knowledge retention and a model's ability to simultaneously handle many tasks/concepts, avoiding forgetting. 
-
-The assumption is that simply 
+Particular interest is devoted to simultaneous adaptation and knowledge retention and a model's ability to simultaneously handle many tasks/concepts, avoiding forgetting.
 
 ### Available strategies
 The following strategies are implemented in pyCLAD:
@@ -25,6 +23,17 @@ The following strategies are implemented in pyCLAD:
 
 Strategies are of different types based on the scenario type (e.g. concept-incremental, concept-aware, concept-agnostic) since scenario types determine available information on concept identifiers and boundaries. For more details see Scenarios.
 
+### Strategy types
+Strategies can be implemented referring to the three base classes pre-implemented in pyCLAD: **ConceptAwareStrategy**, **ConceptIncrementalStrategy**, and **ConceptAgnosticStrategy**.
+
+Different strategy types can exploit different data assumptions and availability to maximize their effectiveness in different scenarios (see [Scenarios](scenarios.md)).  
+One of the key differences is that a **ConceptAwareStrategy** strategy can leverage information about the concept identifier during the prediction stage, which is not available in the other two strategy types.
+
+From this viewpoint, different strategy types can be suited to different scenarios. For example, considering the strategies pre-implemented in pyCLAD:  
+
+- **MSTE** is inherently a **ConceptAwareStrategy**
+
+- **Naive**, **Replay**, and **CumulativeStrategy** support all three strategy types
 
 ### References
 
