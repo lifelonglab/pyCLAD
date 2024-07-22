@@ -4,9 +4,10 @@ theme:
   highlightjs: true
 nav:
   - Home: index.md
-  - Callbacks: 'callbacks.md'
-  - Data: 'data.md'
   - Getting started: 'getting_started.md'
+  - Callbacks: 'callbacks.md'
+  - InfoProvider: 'infoprovider.md'
+  - Data: 'data.md'
   - Metrics: 'metrics.md'
   - Models: 'models.md'
   - Scenarios: 'scenarios.md'
