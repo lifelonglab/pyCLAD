@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 
 from pyclad.models.model_base import Model
@@ -20,6 +22,10 @@ class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
     def name(self) -> str:
         return "ReplayOnly"
 
+    def additional_info(self) -> Dict:
+        return {"replay_size": len(self._buffer.data())}
+
+
 
 class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
     def __init__(self, model: Model, buffer: ReplayBuffer):
@@ -35,3 +41,6 @@ class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
 
     def name(self) -> str:
         return "ReplayEnhanced"
+
+    def additional_info(self) -> Dict:
+        return {"replay_size": len(self._buffer.data())}
