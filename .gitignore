@@ -164,3 +164,4 @@ cython_debug/
 
 ## Example output file
 output.json
+heatmap.pdf
