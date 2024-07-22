@@ -4,6 +4,14 @@ theme:
   highlightjs: true
 nav:
   - Home: index.md
+  - Getting started: 'getting_started.md'
+  - Callbacks: 'callbacks.md'
+  - InfoProvider: 'infoprovider.md'
+  - Data: 'data.md'
+  - Metrics: 'metrics.md'
+  - Models: 'models.md'
+  - Scenarios: 'scenarios.md'
+  - Strategies: 'strategies.md'
   - API Reference:
       - Callbacks: 'api/callbacks.md'
       - Data: 'api/data.md'
@@ -21,6 +29,12 @@ plugins:
             docstring_style: sphinx
             show_submodules: true
 markdown_extensions:
+  - footnotes
+  - pymdownx.arithmatex:
+      generic: true
   - markdown_include.include:
       base_path: .
   - admonition: {}
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
