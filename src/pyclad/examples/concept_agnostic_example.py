@@ -5,7 +5,7 @@ from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.readers.concepts_readers import read_dataset_from_npy
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import (
-    ContinualAverageAcrossLearnedConcepts,
+    ContinualAverage,
 )
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     callbacks = [
         MatrixMetricEvaluationCallback(
             base_metric=RocAuc(),
-            metrics=[ContinualAverageAcrossLearnedConcepts(), BackwardTransfer(), ForwardTransfer()],
+            metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
         TimeEvaluationCallback(),
     ]

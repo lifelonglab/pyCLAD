@@ -1,12 +1,12 @@
 import abc
 from typing import List
 
-MetricMatrix = List[List[float]]
+ResultsMatrix = List[List[float]]
 
 
-class ConceptsMatrixMetric(abc.ABC):
+class ConceptsResultsMatrix(abc.ABC):
     @abc.abstractmethod
-    def compute(self, metric_matrix: MetricMatrix) -> float: ...
+    def compute(self, metric_matrix: ResultsMatrix) -> float: ...
 
     @abc.abstractmethod
     def name(self) -> str: ...
@@ -15,7 +15,7 @@ class ConceptsMatrixMetric(abc.ABC):
 ConceptLevelMatrix = List[List[float]]
 
 
-class ConceptLevelMatrixMetric(abc.ABC):
+class ConceptLevelMetric(abc.ABC):
     @abc.abstractmethod
     def compute(self, metric_matrix: ConceptLevelMatrix) -> float: ...
 
