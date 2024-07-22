@@ -8,13 +8,13 @@ from pyclad.data.concept import Concept
 from pyclad.metrics.base.base_metric import BaseMetric
 from pyclad.metrics.continual.concepts_metric import (
     ConceptLevelMatrix,
-    ConceptLevelMatrixMetric,
+    ConceptLevelMetric,
 )
 from pyclad.output.output_writer import InfoProvider
 
 
 class MatrixMetricEvaluationCallback(Callback, InfoProvider):
-    def __init__(self, base_metric: BaseMetric, metrics: Iterable[ConceptLevelMatrixMetric]):
+    def __init__(self, base_metric: BaseMetric, metrics: Iterable[ConceptLevelMetric]):
         self._base_metric: BaseMetric = base_metric
         self._metric_matrix: Dict[str, Dict[str, float]] = defaultdict(dict)
         self._learned_concepts: List[str] = []

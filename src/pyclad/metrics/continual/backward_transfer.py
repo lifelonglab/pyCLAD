@@ -2,11 +2,11 @@ import numpy as np
 
 from pyclad.metrics.continual.concepts_metric import (
     ConceptLevelMatrix,
-    ConceptLevelMatrixMetric,
+    ConceptLevelMetric,
 )
 
 
-class BackwardTransfer(ConceptLevelMatrixMetric):
+class BackwardTransfer(ConceptLevelMetric):
     def compute(self, metric_matrix: ConceptLevelMatrix) -> float:
         concepts_no = len(metric_matrix)
 
