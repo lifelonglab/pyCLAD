@@ -31,7 +31,7 @@ class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         self._buffer.update(data)
 
     def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-        self._model.predict(data)
+        return self._model.predict(data)
 
     def name(self) -> str:
         return "ReplayEnhanced"

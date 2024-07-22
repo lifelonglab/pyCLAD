@@ -15,7 +15,7 @@ class BackwardTransfer(ConceptLevelMetric):
             for j in range(i + 1, concepts_no):
                 values.append(metric_matrix[j][i] - metric_matrix[j - 1][i])
 
-        return np.mean(values)
+        return np.mean(values) if len(values) > 0 else 0
 
     def name(self) -> str:
         return "BackwardTransfer"
