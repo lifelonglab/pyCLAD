@@ -7,7 +7,7 @@ from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
-from pyclad.models.adapters.isolation_forest import IsolationForestAdapter
+from pyclad.models.classical.isolation_forest import IsolationForestAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware_scenario import concept_aware_scenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy

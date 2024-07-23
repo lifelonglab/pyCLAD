@@ -1,11 +1,11 @@
 import numpy as np
 from sklearn.svm import OneClassSVM
 
-from pyclad.models.adapters.utils import adjust_predictions
+from pyclad.models.classical.utils import adjust_scikit_predictions
 from pyclad.models.model_base import Model
 
 
-class OCSVMAdapter(Model):
+class OneClassSVMAdapter(Model):
     def __init__(self, nu=0.1, gamma=0.1, kernel="rbf"):
         self.nu = nu
         self.gamma = gamma
@@ -16,7 +16,7 @@ class OCSVMAdapter(Model):
         self.model.fit(data)
 
     def predict(self, data: np.ndarray):
-        return adjust_predictions(self.model.predict(data)), -self.model.score_samples(data)
+        return adjust_scikit_predictions(self.model.predict(data)), -self.model.score_samples(data)
 
     def name(self) -> str:
         return "OneClassSVM"

@@ -16,7 +16,7 @@ class Model(InfoProvider):
         """
 
         :param data:
-        :return: (anomaly score, predicted labels)
+        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
         """
         ...
 

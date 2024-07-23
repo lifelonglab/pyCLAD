@@ -58,7 +58,8 @@ class MatrixMetricEvaluationCallback(Callback, InfoProvider):
     def _transform_to_ordered_matrix(
         metric_matrix: Dict[str, Dict[str, float]], concepts_order: List[str]
     ) -> ConceptLevelMatrix:
-        if len(concepts_order) == 0: return [[]]
+        if len(concepts_order) == 0:
+            return [[]]
         values = []
 
         for learned_concept in concepts_order:

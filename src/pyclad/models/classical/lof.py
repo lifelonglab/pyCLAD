@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 
-from pyclad.models.adapters.utils import adjust_predictions
+from pyclad.models.classical.utils import adjust_scikit_predictions
 from pyclad.models.model_base import Model
 
 
@@ -14,7 +14,7 @@ class LocalOutlierFactorAdapter(Model):
         self.model.fit(data)
 
     def predict(self, data: np.ndarray):
-        return adjust_predictions(self.model.predict(data)), -self.model.score_samples(data)
+        return adjust_scikit_predictions(self.model.predict(data)), -self.model.score_samples(data)
 
     def name(self) -> str:
         return "LocalOutlierFactor"
