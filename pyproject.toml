@@ -14,9 +14,11 @@ dependencies = [
 requires-python = ">= 3.8"
 authors = [
     { name = "Kamil Faber", email = "kfaber@agh.edu.pl" },
+    { name = "Roberto Corizzo", email = "rcorizzo@american.edu" }
 ]
 maintainers = [
-    { name = "Kamil Faber", email = "kfaber@agh.edu.pl" }
+    { name = "Kamil Faber", email = "kfaber@agh.edu.pl" },
+    { name = "Roberto Corizzo", email = "rcorizzo@american.edu" }
 ]
 readme = "README.md"
 license = { text = "MIT License" }

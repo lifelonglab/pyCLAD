@@ -14,7 +14,6 @@ class ReplayBuffer(InfoProvider, abc.ABC):
     @abc.abstractmethod
     def data(self) -> np.ndarray: ...
 
-
     @abc.abstractmethod
     def name(self) -> str: ...
 

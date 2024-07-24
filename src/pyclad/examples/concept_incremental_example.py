@@ -13,7 +13,7 @@ from pyclad.scenarios.concept_incremental_scenario import concept_incremental_sc
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
 if __name__ == "__main__":
-    data_loader = read_dataset_from_npy(
+    dataset = read_dataset_from_npy(
         pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"
     )
     strategy = CumulativeStrategy(IsolationForestAdapter())
@@ -24,7 +24,7 @@ if __name__ == "__main__":
         ),
         TimeEvaluationCallback(),
     ]
-    concept_incremental_scenario(data_loader, strategy=strategy, callbacks=callbacks)
+    concept_incremental_scenario(dataset, strategy=strategy, callbacks=callbacks)
 
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([data_loader, strategy, *callbacks])
+    output_writer.write([dataset, strategy, *callbacks])

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 
@@ -7,4 +8,4 @@ import numpy as np
 class Concept:
     name: str
     data: np.array
-    labels: np.array
+    labels: Optional[np.array] = None

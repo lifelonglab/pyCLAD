@@ -1,8 +1,11 @@
 import pathlib
 
+import numpy as np
+
 from pyclad.callbacks.evaluation.matrix_evaluation import MatrixMetricEvaluationCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
-from pyclad.data.readers.concepts_readers import read_dataset_from_npy
+from pyclad.data.concept import Concept
+from pyclad.data.datasets.concepts_dataset import ConceptsDataset
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
@@ -13,9 +16,23 @@ from pyclad.scenarios.concept_agnostic_scenario import concept_agnostic_scenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
 if __name__ == "__main__":
-    data_loader = read_dataset_from_npy(
-        pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"
-    )
+    """
+    This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with 
+    CumulativeStrategy and IsolationForestAdapter model.
+    """
+
+    concept1_train = Concept("concept1", data=np.random.rand(100, 10))
+    concept1_test = Concept("concept1", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
+
+    concept2_train = Concept("concept2", data=np.random.rand(100, 10))
+    concept2_test = Concept("concept2", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
+
+    concept3_train = Concept("concept3", data=np.random.rand(100, 10))
+    concept3_test = Concept("concept3", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
+
+    dataset = ConceptsDataset(name="GeneratedDataset", train_concepts=[concept1_train, concept2_train, concept3_train],
+                              test_concepts=[concept1_test, concept2_test, concept3_test])
+
     strategy = CumulativeStrategy(IsolationForestAdapter())
     callbacks = [
         MatrixMetricEvaluationCallback(
@@ -24,7 +41,7 @@ if __name__ == "__main__":
         ),
         TimeEvaluationCallback(),
     ]
-    concept_agnostic_scenario(data_loader, strategy=strategy, callbacks=callbacks, batch_size=64)
+    concept_agnostic_scenario(dataset, strategy=strategy, callbacks=callbacks, batch_size=64)
 
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([data_loader, strategy, *callbacks])
+    output_writer.write([dataset, strategy, *callbacks])
