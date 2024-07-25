@@ -23,3 +23,4 @@ class ReplayBuffer(InfoProvider, abc.ABC):
 
     def additional_info(self) -> Dict:
         return {}
+
