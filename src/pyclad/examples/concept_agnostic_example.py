@@ -15,6 +15,7 @@ from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_agnostic_scenario import concept_agnostic_scenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
+
 if __name__ == "__main__":
     """
     This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with 
