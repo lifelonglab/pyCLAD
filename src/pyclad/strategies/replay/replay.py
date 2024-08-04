@@ -26,7 +26,6 @@ class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         return {"replay_size": len(self._buffer.data())}
 
 
-
 class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
     def __init__(self, model: Model, buffer: ReplayBuffer):
         self._model = model

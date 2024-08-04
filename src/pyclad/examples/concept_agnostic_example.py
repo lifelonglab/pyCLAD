@@ -10,15 +10,14 @@ from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
-from pyclad.models.classical.isolation_forest import IsolationForestAdapter
+from pyclad.models.adapters.pyod_adapters import OneClassSVMAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_agnostic_scenario import concept_agnostic_scenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
-
 if __name__ == "__main__":
     """
-    This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with 
+    This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with
     CumulativeStrategy and IsolationForestAdapter model.
     """
 
@@ -31,10 +30,13 @@ if __name__ == "__main__":
     concept3_train = Concept("concept3", data=np.random.rand(100, 10))
     concept3_test = Concept("concept3", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
 
-    dataset = ConceptsDataset(name="GeneratedDataset", train_concepts=[concept1_train, concept2_train, concept3_train],
-                              test_concepts=[concept1_test, concept2_test, concept3_test])
-
-    strategy = CumulativeStrategy(IsolationForestAdapter())
+    dataset = ConceptsDataset(
+        name="GeneratedDataset",
+        train_concepts=[concept1_train, concept2_train, concept3_train],
+        test_concepts=[concept1_test, concept2_test, concept3_test],
+    )
+    model = OneClassSVMAdapter()
+    strategy = CumulativeStrategy(model)
     callbacks = [
         MatrixMetricEvaluationCallback(
             base_metric=RocAuc(),
@@ -44,5 +46,5 @@ if __name__ == "__main__":
     ]
     concept_agnostic_scenario(dataset, strategy=strategy, callbacks=callbacks, batch_size=64)
 
-    output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([dataset, strategy, *callbacks])
+    output_writer = JsonOutputWriter(pathlib.Path("output_if.json"))
+    output_writer.write([model, dataset, strategy, *callbacks])
