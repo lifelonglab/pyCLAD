@@ -6,7 +6,7 @@ from pyod.models.iforest import IForest
 from pyod.models.lof import LOF
 from pyod.models.ocsvm import OCSVM
 
-from pyclad.models.model_base import Model
+from pyclad.models.model import Model
 
 
 class PyODAdapter(Model):
