@@ -35,7 +35,7 @@ see [pyOD docs](https://pyod.readthedocs.io/en/latest/).
 
 There are a few valuable resources supporting getting started with pyCLAD:
 
-- [Getting started guide](https://pyclad.readthedocs.io/en/latest/)
+- [Getting started guide](https://pyclad.readthedocs.io/en/latest/getting_started/)
 - [Documentation](https://pyclad.readthedocs.io/en/latest/)
 - [Examples available in github repository](https://github.com/lifelonglab/pyCLAD/tree/main/examples)
 
@@ -103,4 +103,4 @@ please come back before your final submission to check if we already have a DOI 
 ## How to contribute?
 
 We welcome all contributions! If you want to contribute to pyCLAD, please follow the guidelines in
-the [https://github.com/lifelonglab/pyCLAD/tree/main/CONTRIBUTING.md](CONTRIBUTING.md) file.
+the [CONTRIBUTING.md](https://github.com/lifelonglab/pyCLAD/tree/main/CONTRIBUTING.md) file.
