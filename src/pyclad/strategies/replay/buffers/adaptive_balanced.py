@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any
+from typing import Any, Dict
 
 import numpy as np
 
@@ -13,7 +13,6 @@ class AdaptiveBalancedReplayBuffer(ReplayBuffer):
         self._buffer_size = buffer_size
         self._buffers = []
 
-
     def update(self, data: np.ndarray) -> None:
         self._buffers.append(data)
 
@@ -24,9 +23,12 @@ class AdaptiveBalancedReplayBuffer(ReplayBuffer):
     def data(self) -> np.ndarray:
         return np.concatenate(self._buffers)
 
-
     def name(self) -> str:
         return "AdaptiveBalancedReplayBuffer"
 
     def additional_info(self) -> Dict[str, Any]:
-        return {"buffer_size": self._buffer_size, "selection_method": self._selection_method.name(), "current_size": len(self.data)}
+        return {
+            "buffer_size": self._buffer_size,
+            "selection_method": self._selection_method.name(),
+            "current_size": len(self.data),
+        }

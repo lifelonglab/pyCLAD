@@ -2,7 +2,7 @@ from typing import Callable, Dict
 
 import numpy as np
 
-from pyclad.models.model_base import Model
+from pyclad.models.model import Model
 from pyclad.strategies.strategy import ConceptAwareStrategy
 
 

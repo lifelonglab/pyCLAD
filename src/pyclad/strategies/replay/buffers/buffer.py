@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, Any
+from typing import Any, Dict
 
 import numpy as np
 
@@ -22,4 +22,3 @@ class ReplayBuffer(InfoProvider, abc.ABC):
 
     def additional_info(self) -> Dict:
         return {}
-

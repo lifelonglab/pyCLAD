@@ -2,7 +2,7 @@ from typing import Dict
 
 import numpy as np
 
-from pyclad.models.model_base import Model
+from pyclad.models.model import Model
 from pyclad.strategies.replay.buffers.buffer import ReplayBuffer
 from pyclad.strategies.strategy import ConceptAwareStrategy, ConceptIncrementalStrategy
 
@@ -24,7 +24,6 @@ class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
 
     def additional_info(self) -> Dict:
         return {"replay_size": len(self._buffer.data())}
-
 
 
 class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
