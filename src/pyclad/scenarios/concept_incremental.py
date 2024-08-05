@@ -6,8 +6,8 @@ from pyclad.callbacks.composite_callback import CallbackComposite
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
 from pyclad.strategies.strategy import ConceptIncrementalStrategy
 
-
 logger = logging.getLogger(__name__)
+
 
 class ConceptIncrementalScenario:
     def __init__(self, dataset: ConceptsDataset, strategy: ConceptIncrementalStrategy, callbacks: List[Callback]):
@@ -36,4 +36,3 @@ class ConceptIncrementalScenario:
                 )
 
         callback_composite.after_scenario()
-

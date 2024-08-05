@@ -4,7 +4,11 @@ import numpy as np
 
 from pyclad.models.model import Model
 from pyclad.strategies.replay.buffers.buffer import ReplayBuffer
-from pyclad.strategies.strategy import ConceptAwareStrategy, ConceptIncrementalStrategy, ConceptAgnosticStrategy
+from pyclad.strategies.strategy import (
+    ConceptAgnosticStrategy,
+    ConceptAwareStrategy,
+    ConceptIncrementalStrategy,
+)
 
 
 class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):

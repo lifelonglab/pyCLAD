@@ -8,6 +8,7 @@ from pyclad.strategies.strategy import ConceptAwareStrategy
 
 logger = logging.getLogger(__name__)
 
+
 class ConceptAwareScenario:
     def __init__(self, dataset: ConceptsDataset, strategy: ConceptAwareStrategy, callbacks: List[Callback]):
         self._dataset = dataset
@@ -26,7 +27,9 @@ class ConceptAwareScenario:
             for test_concept in self._dataset.test_concepts():
                 logger.info(f"Starting evaluation of concept {train_concept.name}")
                 callback_composite.before_evaluation()
-                anomaly_scores, y_predicted = self._strategy.predict(data=test_concept.data, concept_id=test_concept.name)
+                anomaly_scores, y_predicted = self._strategy.predict(
+                    data=test_concept.data, concept_id=test_concept.name
+                )
                 callback_composite.after_evaluation(
                     evaluated_concept=test_concept,
                     y_true=test_concept.labels,

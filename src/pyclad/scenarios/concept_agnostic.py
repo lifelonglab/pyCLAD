@@ -22,9 +22,10 @@ class ConceptAgnosticScenario:
             batch_id = 0
             callback_composite.before_training()
             while batch_size * batch_id < len(train_concept.data):
-                batch = train_concept.data[batch_id * batch_size: (batch_id + 1) * batch_size]
+                batch = train_concept.data[batch_id * batch_size : (batch_id + 1) * batch_size]
                 logger.info(
-                    f"Starting training on concept {train_concept.name}, batch: {batch_id} with size {len(batch)}")
+                    f"Starting training on concept {train_concept.name}, batch: {batch_id} with size {len(batch)}"
+                )
                 self._strategy.learn(data=batch)
                 batch_id += 1
             callback_composite.after_training(learned_concept=train_concept)
