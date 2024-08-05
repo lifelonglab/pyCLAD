@@ -4,7 +4,7 @@ import numpy as np
 
 from pyclad.models.model import Model
 from pyclad.strategies.replay.buffers.buffer import ReplayBuffer
-from pyclad.strategies.strategy import ConceptAwareStrategy, ConceptIncrementalStrategy
+from pyclad.strategies.strategy import ConceptAwareStrategy, ConceptIncrementalStrategy, ConceptAgnosticStrategy
 
 
 class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
@@ -12,34 +12,34 @@ class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         self._model = model
         self._buffer = buffer
 
-    def learn(self, data: np.ndarray) -> None:
+    def learn(self, data: np.ndarray, **kwargs) -> None:
         self._buffer.update(data)
         self._model.learn(self._buffer.data())
 
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, **kwargs) -> (np.ndarray, np.ndarray):
         return self._model.predict(data)
 
     def name(self) -> str:
         return "ReplayOnly"
 
     def additional_info(self) -> Dict:
-        return {"replay_size": len(self._buffer.data())}
+        return {"replayBuffer": self._buffer.info()}
 
 
-class ReplayEnhancedStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
+class ReplayEnhancedStrategy(ConceptAgnosticStrategy, ConceptIncrementalStrategy, ConceptAwareStrategy):
     def __init__(self, model: Model, buffer: ReplayBuffer):
         self._model = model
         self._buffer = buffer
 
-    def learn(self, data: np.ndarray) -> None:
-        self._model.learn(np.concatenate([self._buffer.data(), data]))
+    def learn(self, data: np.ndarray, **kwargs) -> None:
+        self._model.learn(np.concatenate([self._buffer.data(), data]) if len(self._buffer.data()) > 0 else data)
         self._buffer.update(data)
 
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, **kwargs) -> (np.ndarray, np.ndarray):
         return self._model.predict(data)
 
     def name(self) -> str:
         return "ReplayEnhanced"
 
     def additional_info(self) -> Dict:
-        return {"replay_size": len(self._buffer.data())}
+        return {"replayBuffer": self._buffer.info()}

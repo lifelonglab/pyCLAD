@@ -21,4 +21,4 @@ class ContinualAverage(ConceptLevelMetric):
         return np.mean(values)
 
     def name(self) -> str:
-        return "ContinualAverageAcrossLearnedConcepts"
+        return "ContinualAverage"

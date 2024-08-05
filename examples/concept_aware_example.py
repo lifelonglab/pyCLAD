@@ -1,7 +1,7 @@
 import logging
 import pathlib
 
-from pyclad.callbacks.evaluation.matrix_evaluation import ConceptMetricCallback
+from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.readers.concepts_readers import read_dataset_from_npy
 from pyclad.metrics.base.roc_auc import RocAuc
@@ -12,6 +12,9 @@ from pyclad.models.adapters.pyod_adapters import IsolationForestAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
+from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
+from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
+from pyclad.strategies.replay.selection.random import RandomSelection
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
@@ -21,7 +24,8 @@ if __name__ == "__main__":
         pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"
     )
     model = IsolationForestAdapter()
-    strategy = CumulativeStrategy(model)
+    replay_buffer = AdaptiveBalancedReplayBuffer(selection_method=RandomSelection(), max_size=1000)
+    strategy = ReplayEnhancedStrategy(model, replay_buffer)
     callbacks = [
         ConceptMetricCallback(
             base_metric=RocAuc(),

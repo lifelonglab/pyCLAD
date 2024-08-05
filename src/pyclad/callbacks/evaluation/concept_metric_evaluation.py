@@ -48,8 +48,8 @@ class ConceptMetricCallback(Callback, InfoProvider):
             f"conceptMetricCallback_{self._base_metric.name()}": {
                 self._base_metric.name(): {
                     "metrics": lifelong_learning_metrics,
-                    "concepts_order": self._learned_concepts,
-                    "matrix": self._metric_matrix,
+                    "conceptsOrder": self._learned_concepts,
+                    "metricMatrix": self._metric_matrix,
                 }
             }
         }
