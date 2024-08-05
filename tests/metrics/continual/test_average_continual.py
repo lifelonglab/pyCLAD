@@ -3,13 +3,12 @@ import pytest
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.concepts_metric import ConceptLevelMatrix
 
-
 parameters = [
     ([[0.5]], 0.5),
     ([[0.5, 0.1], [0.2, 0.8]], 0.5),
-    ([[1, 2, 3], [4, 5, 6], [7, 8, 9]], 34/6),
+    ([[1, 2, 3], [4, 5, 6], [7, 8, 9]], 34 / 6),
     ([[1, 1, 1], [1, 1, 1], [1, 1, 1]], 1.0),
-    ([[0.8, 0.3, 0.0], [0.5, 1, 0.5], [0.4, 0.8, 0.9]], 4.4/6),
+    ([[0.8, 0.3, 0.0], [0.5, 1, 0.5], [0.4, 0.8, 0.9]], 4.4 / 6),
 ]
 
 

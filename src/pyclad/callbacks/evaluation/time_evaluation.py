@@ -33,7 +33,9 @@ class TimeEvaluationCallback(Callback, InfoProvider):
 
     def info(self) -> Dict[str, Any]:
         return {
-            "timeByConcept": self._time_by_concept,
-            "trainTimeTotal": self._train_time_total,
-            "evalTimeTotal": self._eval_time_total,
+            "time_evaluation_callback": {
+                "time_by_concept": self._time_by_concept,
+                "train_time_total": self._train_time_total,
+                "eval_time_total": self._eval_time_total,
+            }
         }

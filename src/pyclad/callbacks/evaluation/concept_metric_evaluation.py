@@ -45,12 +45,11 @@ class ConceptMetricCallback(Callback, InfoProvider):
         lifelong_learning_metrics = {m.name(): m.compute(concept_level_matrix) for m in self._metrics}
 
         return {
-            f"conceptMetricCallback_{self._base_metric.name()}": {
-                self._base_metric.name(): {
-                    "metrics": lifelong_learning_metrics,
-                    "conceptsOrder": self._learned_concepts,
-                    "metricMatrix": self._metric_matrix,
-                }
+            f"concept_metric_callback_{self._base_metric.name()}": {
+                "base_metric_name": self._base_metric.name(),
+                "metrics": lifelong_learning_metrics,
+                "concepts_order": self._learned_concepts,
+                "metric_matrix": self._metric_matrix,
             }
         }
 

@@ -27,7 +27,7 @@ class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         return "ReplayOnly"
 
     def additional_info(self) -> Dict:
-        return {"replayBuffer": self._buffer.info()}
+        return {"replay_buffer": self._buffer.info()}
 
 
 class ReplayEnhancedStrategy(ConceptAgnosticStrategy, ConceptIncrementalStrategy, ConceptAwareStrategy):
@@ -46,4 +46,4 @@ class ReplayEnhancedStrategy(ConceptAgnosticStrategy, ConceptIncrementalStrategy
         return "ReplayEnhanced"
 
     def additional_info(self) -> Dict:
-        return {"replayBuffer": self._buffer.info()}
+        return {"replay_buffer": self._buffer.info()}

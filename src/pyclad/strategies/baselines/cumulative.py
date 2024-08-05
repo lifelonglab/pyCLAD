@@ -27,4 +27,4 @@ class CumulativeStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, Conce
         return "Cumulative"
 
     def additional_info(self) -> Dict:
-        return {"model": self._model.name(), "replaySize": len(self._replay)}
+        return {"model": self._model.name(), "buffer_size": len(self._replay)}

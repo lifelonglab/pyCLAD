@@ -103,4 +103,4 @@ please come back before your final submission to check if we already have a DOI 
 ## How to contribute?
 
 We welcome all contributions! If you want to contribute to pyCLAD, please follow the guidelines in
-the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+the [https://github.com/lifelonglab/pyCLAD/tree/main/CONTRIBUTING.md](CONTRIBUTING.md) file.

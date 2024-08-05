@@ -11,8 +11,9 @@ from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.pyod_adapters import IsolationForestAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
-from pyclad.strategies.baselines.cumulative import CumulativeStrategy
-from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
+from pyclad.strategies.replay.buffers.adaptive_balanced import (
+    AdaptiveBalancedReplayBuffer,
+)
 from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
 from pyclad.strategies.replay.selection.random import RandomSelection
 

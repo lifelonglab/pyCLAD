@@ -13,4 +13,3 @@ def test_selecting_expected_size(input_size, selection_size):
     selected_data = selection_method.select(input_data, selection_size)
 
     assert selected_data.shape[0] == min(selection_size, input_size)
-

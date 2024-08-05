@@ -6,7 +6,6 @@ from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.concepts_metric import ConceptLevelMatrix
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 
-
 parameters = [
     ([[0.5]], 0),
     ([[0.5, 0.1], [0.2, 0.8]], -0.3),
@@ -31,4 +30,3 @@ def test_raises_exception_when_matrix_not_square():
 def test_metric_calculation(matrix: ConceptLevelMatrix, expected_result: float):
     metric = BackwardTransfer()
     assert math.isclose(metric.compute(matrix), expected_result, rel_tol=1e-9)
-

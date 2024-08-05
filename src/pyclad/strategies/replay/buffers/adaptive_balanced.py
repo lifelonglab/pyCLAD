@@ -28,7 +28,7 @@ class AdaptiveBalancedReplayBuffer(ReplayBuffer):
 
     def additional_info(self) -> Dict[str, Any]:
         return {
-            "maxSize": self._max_size,
-            "selectionMethod": self._selection_method.name(),
-            "currentSize": len(self.data()),
+            "max_size": self._max_size,
+            "selection_method": self._selection_method.name(),
+            "current_size": len(self.data()),
         }
