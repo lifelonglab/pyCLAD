@@ -13,7 +13,7 @@ from pyclad.metrics.continual.concepts_metric import (
 from pyclad.output.output_writer import InfoProvider
 
 
-class MatrixMetricEvaluationCallback(Callback, InfoProvider):
+class ConceptMetricCallback(Callback, InfoProvider):
     def __init__(self, base_metric: BaseMetric, metrics: Iterable[ConceptLevelMetric]):
         self._base_metric: BaseMetric = base_metric
         self._metric_matrix: Dict[str, Dict[str, float]] = defaultdict(dict)
@@ -45,7 +45,7 @@ class MatrixMetricEvaluationCallback(Callback, InfoProvider):
         lifelong_learning_metrics = {m.name(): m.compute(concept_level_matrix) for m in self._metrics}
 
         return {
-            f"matrixMetricEvaluationCallback_{self._base_metric.name()}": {
+            f"conceptMetricCallback_{self._base_metric.name()}": {
                 self._base_metric.name(): {
                     "metrics": lifelong_learning_metrics,
                     "concepts_order": self._learned_concepts,
