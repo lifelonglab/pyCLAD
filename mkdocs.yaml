@@ -2,22 +2,21 @@ site_name: pyCLAD -- Continual Lifelong Anomaly Detection
 theme:
   name: material
   highlightjs: true
+  features:
+    - navigation.expand
+    - content.code.copy
 nav:
-  - Home: index.md
+  - Introduction: index.md
   - Getting started: 'getting_started.md'
-  - Callbacks: 'callbacks.md'
-  - InfoProvider: 'infoprovider.md'
-  - Data: 'data.md'
-  - Metrics: 'metrics.md'
-  - Models: 'models.md'
-  - Scenarios: 'scenarios.md'
-  - Strategies: 'strategies.md'
-  - API Reference:
-      - Callbacks: 'api/callbacks.md'
-      - Data: 'api/data.md'
-      - Metrics: 'api/metrics.md'
-      - Models: 'api/models.md'
-      - Strategies: 'api/strategies.md'
+  - Components:
+    - Callbacks: 'callbacks.md'
+    - InfoProvider: 'infoprovider.md'
+    - Datasets: 'datasets.md'
+    - Metrics: 'metrics.md'
+    - Models: 'models.md'
+    - Scenarios: 'scenarios.md'
+    - Strategies: 'strategies.md'
+  - How to contribute?: 'contribution.md'
 plugins:
   - search
   - mkdocstrings:
@@ -35,6 +34,13 @@ markdown_extensions:
   - markdown_include.include:
       base_path: .
   - admonition: {}
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
 extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

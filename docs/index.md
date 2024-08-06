@@ -24,35 +24,45 @@ The core coding infrastructure is influenced by PyTorch, a very popular framewor
 
 - **Online**: Models are updated as new data is observed, assuming that the most recent information is the most relevant. This approach is popular in real-world dynamic applications where adaptation is necessary, but makes models prone to forgetting past knowledge. 
 
-- **Continual**: Models are updated to simultaneously consider *adaptation* to new conditions and *knowledge retention* of previously observed (and potentially recurring) conditions [1].
+- **Continual**: Models are updated to simultaneously consider *adaptation* to new conditions and *knowledge retention* of previously observed (and potentially recurring) conditions.
 This behavior attempts to overcome limitations of both offline and online anomaly detection in complex scenarios.
 
+If you want to learn more about continual anomaly detection, we recommend [this open-access paper](https://ieeexplore.ieee.org/abstract/document/10473036/).
 
 ### How do I install pyCLAD?
 
-The recommended way of installing pyCLAD is with Conda:
-
+pyCLAD is available as a [Python package on PyPI](https://pypi.org/project/pyclad/). Therefore, it can be installed using tools such as pip and conda.
 #### Conda
+```
 conda install -c conda-forge pyclad
+```
 
 #### Pip
-python -m pip install pyclad
+```
+pip install pyclad
+```
 
-All requirements will be installed using any of the above install methods.
+#### Optional dependencies
+
+Depending on the anomaly detection models you want to use, you may need to install additional packages,
+such as `tensorflow` and `pytorch`.
+We do not include them in default installation to avoid putting heavy dependencies for the core installation.
+pyCLAD supports the use of any model from pyOD library, some of which may require installation of additional packages (
+see [pyOD docs](https://pyod.readthedocs.io/en/latest/).
 
 
 ### Citing pyCLAD
+A paper describing pyCLAD is currently under review in SoftwareX journal. Feel free to use pyCLAD in your research, but
+please come back before your final submission to check if we already have a DOI for pyCLAD. Thank you!
 
     @article{faber2024pyclad,
       title={pyCLAD: A Library for Continual Lifelong Anomaly Detection},
       author={Faber, Kamil and Corizzo, Roberto and Sniezynski, Bartlomiej and Japkowicz, Nathalie},
-      journal={SoftwareX},
+      journal={TBD},
       volume={TBD},
       pages={TBD},
       year={TBD},
-      publisher={Elsevier}
+      publisher={TBD}
     }
 
-### References
 
-[1] Faber, K., Corizzo, R., Sniezynski, B., & Japkowicz, N. (2024). Lifelong Continual Learning for Anomaly Detection: New Challenges, Perspectives, and Insights. *IEEE Access*, 12, 41364-41380.
