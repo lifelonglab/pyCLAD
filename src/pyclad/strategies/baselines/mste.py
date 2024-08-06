@@ -13,7 +13,7 @@ class MSTE(ConceptAwareStrategy):
 
     def learn(self, data: np.ndarray, concept_id: str) -> None:
         new_model = self._model_creation_fn()
-        new_model.learn(data)
+        new_model.fit(data)
         self._models[concept_id] = new_model
 
     def predict(self, data: np.ndarray, concept_id: str) -> (np.ndarray, np.ndarray):

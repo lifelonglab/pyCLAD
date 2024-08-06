@@ -14,7 +14,7 @@ class PyODAdapter(Model):
         self._model = model
         self._model_name = model_name
 
-    def learn(self, data: np.ndarray):
+    def fit(self, data: np.ndarray):
         self._model.fit(data)
 
     def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
