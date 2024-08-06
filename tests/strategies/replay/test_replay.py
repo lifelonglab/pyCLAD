@@ -36,12 +36,12 @@ class TestReplayOnlyStrategy:
         replay_buffer = ReplayBufferMock()
         replay_buffer.data = MagicMock(return_value=data)
         model = MockModel()
-        model.learn = MagicMock()
+        model.fit = MagicMock()
 
         strategy = ReplayOnlyStrategy(model, replay_buffer)
         strategy.learn(np.array([[1, 1], [1, 1], [1, 1]]))
 
-        model.learn.assert_called_with(data)
+        model.fit.assert_called_with(data)
 
     @pytest.mark.parametrize(
         "data",
@@ -94,12 +94,12 @@ class TestReplayEnhancedStrategy:
         replay_buffer = ReplayBufferMock()
         replay_buffer.data = MagicMock(return_value=np.array(replay_data))
         model = MockModel()
-        model.learn = MagicMock()
+        model.fit = MagicMock()
 
         strategy = ReplayEnhancedStrategy(model, replay_buffer)
         strategy.learn(np.array(new_data))
 
-        assert_array_equal(replay_data + new_data, model.learn.mock_calls[-1].args[0])
+        assert_array_equal(replay_data + new_data, model.fit.mock_calls[-1].args[0])
 
     @pytest.mark.parametrize("data", [(np.array([[1, 2, 3], [4, 5, 6]])), (np.array([[1, 5, 8], [6, 1, 6]]))])
     def test_returning_model_predictions(self, data):

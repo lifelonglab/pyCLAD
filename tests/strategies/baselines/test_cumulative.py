@@ -12,7 +12,7 @@ from tests.strategies.baselines.mock_model import MockModel
 def test_learning_with_all_data(data):
     model = MockModel()
     mocked_fn = MagicMock()
-    MockModel.learn = mocked_fn
+    MockModel.fit = mocked_fn
     strategy = CumulativeStrategy(model)
     for d in data:
         d = np.array(d)

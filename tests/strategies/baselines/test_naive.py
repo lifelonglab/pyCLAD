@@ -22,7 +22,7 @@ from tests.strategies.baselines.mock_model import MockModel
 def test_learning_only_with_current_data(data):
     model = MockModel()
     mocked_fn = MagicMock()
-    model.learn = mocked_fn
+    model.fit = mocked_fn
     strategy = NaiveStrategy(model)
     strategy.learn(data)
     mocked_fn.assert_called_with(data)
