@@ -18,11 +18,11 @@ from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
-
 if __name__ == "__main__":
     """
     This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with
-    CumulativeStrategy and IsolationForestAdapter model.
+    CumulativeStrategy and OneCLassSVM model. Please note that the anomaly detection results will be random (0.5), 
+    as we generate random date and random labels
     """
 
     # Prepare random data for 3 concepts
@@ -44,18 +44,15 @@ if __name__ == "__main__":
     # Define model, strategy, and callbacks
     model = OneClassSVMAdapter()
     strategy = CumulativeStrategy(model)
-    callbacks = [
-        ConceptMetricCallback(
-            base_metric=RocAuc(),
-            metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
-        ),
-        TimeEvaluationCallback(),
-    ]
+
+    time_callback = TimeEvaluationCallback()
+    metric_callback = ConceptMetricCallback(base_metric=RocAuc(),
+                                            metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()])
 
     # Execute the concept agnostic scenario
-    scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=callbacks)
+    scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback])
     scenario.run()
 
     # Save the results
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([model, dataset, strategy, metric_callback, time_callback])
