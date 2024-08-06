@@ -8,7 +8,17 @@ from pyclad.strategies.baselines.naive import NaiveStrategy
 from tests.strategies.baselines.mock_model import MockModel
 
 
-@pytest.mark.parametrize("data", [(np.array([[1, 2, 3], [4, 5, 6]], )), (np.array([[1, 5, 8], [6, 1, 6]]), )])
+@pytest.mark.parametrize(
+    "data",
+    [
+        (
+            np.array(
+                [[1, 2, 3], [4, 5, 6]],
+            )
+        ),
+        (np.array([[1, 5, 8], [6, 1, 6]]),),
+    ],
+)
 def test_learning_only_with_current_data(data):
     model = MockModel()
     mocked_fn = MagicMock()

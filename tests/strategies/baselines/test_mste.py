@@ -27,11 +27,13 @@ def test_creating_one_model_per_concept(data):
     for i, d in enumerate(data):
         strategy.learn(np.array(d), concept_id=i)
     assert model_fn.call_count == len(data)
-    assert strategy.info()["strategy"]["numberOfModels"] == len(data)
+    assert strategy.info()["strategy"]["number_of_models"] == len(data)
 
 
-@pytest.mark.parametrize("predictions", ([[[0, 0], [0.2, 0.4]], [[1, 1], [0.9, 0.8]]],
-                                         [[[1, 0], [0.5, 0.8]], [[0, 1], [0.2, 0.7]], [[0, 0], [0.1, 0.2]]]))
+@pytest.mark.parametrize(
+    "predictions",
+    ([[[0, 0], [0.2, 0.4]], [[1, 1], [0.9, 0.8]]], [[[1, 0], [0.5, 0.8]], [[0, 1], [0.2, 0.7]], [[0, 0], [0.1, 0.2]]]),
+)
 def test_returning_predictions_from_the_right_model(predictions):
     MockModelForMSTE.calls_count = 0
     strategy = MSTE(lambda: MockModelForMSTE(predictions))
@@ -50,4 +52,4 @@ def test_creating_correct_number_of_models(data):
     for i, d in enumerate(data):
         strategy.learn(np.array(d), concept_id=i)
 
-    assert strategy.info()["strategy"]["numberOfModels"] == len(data)
+    assert strategy.info()["strategy"]["number_of_models"] == len(data)

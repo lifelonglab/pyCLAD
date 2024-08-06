@@ -4,7 +4,9 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
+from pyclad.strategies.replay.buffers.adaptive_balanced import (
+    AdaptiveBalancedReplayBuffer,
+)
 from pyclad.strategies.replay.selection.selection import SelectionMethod
 
 
@@ -27,8 +29,9 @@ def test_putting_data_selected_by_selection_method_to_replay_buffer(data):
     assert_array_equal(buffer.data(), data)
 
 
-@pytest.mark.parametrize("buffer_size,input_sizes,expected_sizes", [(10, [20], [10]), (10, [20, 6], [5, 5]),
-                                                                    (15, [20, 5, 100], [5, 5, 5])])
+@pytest.mark.parametrize(
+    "buffer_size,input_sizes,expected_sizes", [(10, [20], [10]), (10, [20, 6], [5, 5]), (15, [20, 5, 100], [5, 5, 5])]
+)
 def test_balancing_available_size_between_all_buffers(buffer_size, input_sizes, expected_sizes):
     selection_method = SelectionMethodMock()
     selection_method.select = MagicMock(side_effect=lambda data, size: data[:size])

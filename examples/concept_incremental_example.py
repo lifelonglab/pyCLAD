@@ -1,10 +1,11 @@
+import logging
 import pathlib
 
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from pyclad.callbacks.evaluation.matrix_evaluation import MatrixMetricEvaluationCallback
+from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.concept import Concept
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
@@ -14,10 +15,12 @@ from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.pyod_adapters import ECODAdapter
 from pyclad.output.json_writer import JsonOutputWriter
-from pyclad.scenarios.concept_incremental_scenario import concept_incremental_scenario
+from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
 sns.set_theme(style="darkgrid")
+logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
+
 
 if __name__ == "__main__":
     concept1_train = Concept("concept1", data=np.random.chisquare(2, (100, 2)))
@@ -50,15 +53,17 @@ if __name__ == "__main__":
     model = ECODAdapter()
     strategy = CumulativeStrategy(model)
     callbacks = [
-        MatrixMetricEvaluationCallback(
+        ConceptMetricCallback(
             base_metric=RocAuc(),
             metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
         TimeEvaluationCallback(),
     ]
-    concept_incremental_scenario(dataset, strategy=strategy, callbacks=callbacks)
 
-    output_writer = JsonOutputWriter(pathlib.Path("output_if.json"))
+    scenario = ConceptIncrementalScenario(dataset, strategy=strategy, callbacks=callbacks)
+    scenario.run()
+
+    output_writer = JsonOutputWriter(pathlib.Path("output.json"))
     output_writer.write([model, dataset, strategy, *callbacks])
 
     # Plot all concepts for simple visualization of the scenario

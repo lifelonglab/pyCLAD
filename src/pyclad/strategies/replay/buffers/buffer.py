@@ -18,7 +18,7 @@ class ReplayBuffer(InfoProvider, abc.ABC):
     def name(self) -> str: ...
 
     def info(self) -> Dict[str, Any]:
-        return {"name": self.name(), **self.additional_info()}
+        return {"name": self.name(), **self.additional_info(), "buffer_size": len(self.data())}
 
     def additional_info(self) -> Dict:
         return {}
