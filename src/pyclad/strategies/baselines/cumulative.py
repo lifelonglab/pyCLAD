@@ -16,7 +16,6 @@ class CumulativeStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, Conce
         self._model = model
 
     def learn(self, data: np.ndarray, *args, **kwargs) -> None:
-        """Learn from the data and store it in the replay buffer."""
         self._replay.append(data)
         self._model.fit(np.concatenate(self._replay))
 

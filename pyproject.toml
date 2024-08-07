@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "pyclad"
 description = "Python Library for Continual Lifelong Anomaly Detection"
-version = "0.1.0a0"
+version = "0.1.0a1"
 dependencies = [
     "numpy>=2.0.0",
     "scikit-learn>=1.5.0",
@@ -38,11 +38,11 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
-#[project.urls]
-#Homepage = "https://example.com"
-#Documentation = "https://readthedocs.org"
-#Repository = "https://github.com/me/spam.git"
-#Issues = "https://github.com/me/spam/issues"
+[project.urls]
+Homepage = "https://github.com/lifelonglab/pyCLAD"
+Documentation = "https://pyclad.readthedocs.io/en/latest/"
+Repository = "https://github.com/lifelonglab/pyCLAD.git"
+Issues = "https://github.com/lifelonglab/pyCLAD/issues"
 #Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
