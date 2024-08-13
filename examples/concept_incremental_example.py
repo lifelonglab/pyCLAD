@@ -13,14 +13,14 @@ from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
-from pyclad.models.adapters.pyod_adapters import ECODAdapter, IsolationForestAdapter
+from pyclad.models.adapters.pyod_adapters import IsolationForestAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
-from pyclad.strategies.baselines.naive import NaiveStrategy
 
 sns.set_theme(style="darkgrid")
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
+
 
 def _generate_normal_dist(mean, cov):
     train_data = np.random.multivariate_normal(mean, cov, (100,))
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     concept3_train = Concept("concept3", data=concept3_train_data)
     concept3_test = Concept("concept3", data=concept3_test_data, labels=concept3_test_labels)
-    
+
     concept4_train = Concept("concept4", data=concept4_train_data)
     concept4_test = Concept("concept4", data=concept4_test_data, labels=concept4_test_labels)
 

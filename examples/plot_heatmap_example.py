@@ -12,5 +12,5 @@ if __name__ == "__main__":
         # names_mapping = {"Cluster1": "C0", "Concept1": "C1", "Cluster_2": "C2", "Cluster_3": "C3", "Cluster_4": "C4"}
         names_mapping = {"concept1": "C1", "concept2": "C2", "concept3": "C3", "concept4": "C4"}
         plot_metric_heatmap(
-            metric_matrix, concepts_order, names_mapping=names_mapping, output_path=pathlib.Path("heatmap.pdf", ignore_upper_diagonal=True)
+            metric_matrix, concepts_order, names_mapping=names_mapping, annotate=True, output_path=pathlib.Path("heatmap.pdf", ignore_upper_diagonal=True)
         )
