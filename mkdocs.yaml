@@ -8,6 +8,7 @@ theme:
 nav:
   - Introduction: index.md
   - Getting started: 'getting_started.md'
+  - Examples: 'examples.md'
   - Components:
     - Callbacks: 'callbacks.md'
     - InfoProvider: 'infoprovider.md'

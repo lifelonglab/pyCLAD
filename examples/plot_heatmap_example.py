@@ -4,6 +4,7 @@ import pathlib
 from pyclad.analysis.scenario_heatmap import plot_metric_heatmap
 
 if __name__ == "__main__":
+    """ This example showcase how to generate ROC-AUC heatmap for the results of concept aware scenario """
     results_path = pathlib.Path("output.json")  # you need to generate this file using concept_aware_examply.py
     with open(results_path) as fp:
         loaded_data = json.load(fp)
