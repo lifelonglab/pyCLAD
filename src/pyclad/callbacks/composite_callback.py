@@ -30,3 +30,11 @@ class CallbackComposite(Callback):
     def after_evaluation(self, *args, **kwargs):
         for callback in self._callbacks:
             callback.after_evaluation(*args, **kwargs)
+
+    def before_concept_processing(self, *args, **kwargs):
+        for callback in self._callbacks:
+            callback.before_concept_processing(*args, **kwargs)
+
+    def after_concept_processing(self, *args, **kwargs):
+        for callback in self._callbacks:
+            callback.after_concept_processing(*args, **kwargs)

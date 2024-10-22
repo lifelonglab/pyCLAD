@@ -19,3 +19,9 @@ class Callback(abc.ABC):
 
     def after_evaluation(self, *args, **kwargs):
         pass
+
+    def before_concept_processing(self, *args, **kwargs):
+        pass
+
+    def after_concept_processing(self, *args, **kwargs):
+        pass
