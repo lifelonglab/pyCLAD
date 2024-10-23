@@ -20,7 +20,7 @@ class MSTE(ConceptAwareStrategy):
         if concept_id in self._models:
             return self._models[concept_id].predict(data)
         else:
-            return np.zeros(shape=data.shape[0])
+            return np.zeros(shape=data.shape[0]), np.zeros(shape=data.shape[0])
 
     def name(self) -> str:
         return "MSTE"

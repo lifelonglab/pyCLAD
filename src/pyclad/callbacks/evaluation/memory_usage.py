@@ -1,5 +1,5 @@
 import tracemalloc
-from typing import Dict, Any
+from typing import Any, Dict
 
 from pyclad.callbacks.callback import Callback
 from pyclad.output.output_writer import InfoProvider

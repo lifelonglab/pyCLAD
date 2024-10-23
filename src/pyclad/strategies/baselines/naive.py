@@ -9,10 +9,10 @@ class NaiveStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
     def __init__(self, model: Model):
         self._model = model
 
-    def learn(self, data: np.ndarray) -> None:
+    def learn(self, data: np.ndarray, **kwargs) -> None:
         self._model.fit(data)
 
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, **kwargs) -> (np.ndarray, np.ndarray):
         return self._model.predict(data)
 
     def name(self) -> str:
