@@ -27,6 +27,15 @@ This scenario is more challenging for models/strategies than the previous ones, 
 
 New scenarios can be designed to account for the limitations of previously existing ones. One example is the explicit consideration of the temporal dimension in online learning scenarios.
 
+These scenarios stem from the popular  scenarios adopted in continual learning for image classification, and are adapted to the anomaly detection context.
+
+For example, a concept-aware scenario may fit the case of monitoring network traffic from multiple cloud virtual machines, 
+where the anomaly detection method is aware of the source machine from which the currently processed data is coming from (known concept identifier and boundaries). 
+
+A concept-incremental scenario can fit the case of an industrial monitoring environment, where changes in production profiles are known (concept boundary), but there is no information about the specific production profiles (no concept identifier).
+
+A concept-agnostic scenario can be adopted for fully unsupervised monitoring of human conditions over multiple heterogeneous activities, where information about the specific activity being performed as well as and the start and end time of each are completely unknown.   
+
 
 ### Code example
     def concept_aware_scenario(data_loader: ConceptsDataset, strategy: ConceptAwareStrategy, callbacks: List[Callback]):
