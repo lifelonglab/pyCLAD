@@ -35,6 +35,9 @@ represents a specific distribution/activity/task.
 See more in [Datasets](datasets.md).
 Every dataset is represented as a sequence of concepts, where each concept is represented by a *name*, *data*, and (
 optionally) *labels*.
+In this example, we use randomly generated data to demonstrate the workflow and manual concept creation. However, we
+also provide examples with real-world datasets (see more
+info [here](getting_started.md#leveraging-real-world-datasets)).
 
 Let's start our example with creating a few concepts with randomly generated data:
 
@@ -216,3 +219,14 @@ scenario.run()
 output_writer = JsonOutputWriter(pathlib.Path("output.json"))
 output_writer.write([model, dataset, strategy, metric_callback, time_callback])
 ```
+
+## Leveraging real-world datasets
+
+In the example above, we used randomly generated data to demonstrate the workflow. However, in [Examples](examples.md),
+we also showcase examples with real-world
+datasets ([UNSW](https://github.com/lifelonglab/pyCLAD/blob/main/examples/unsw_dataset_example.py)
+and [Energy](https://github.com/lifelonglab/pyCLAD/blob/main/examples/energy_dataset_example.py)).
+Moreover, pyCLAD provides out-of-the-box loader (`read_dataset_from_npy`) for continual learning scenarios extracted
+leveraging the algorithm described [in this paper](https://ieeexplore.ieee.org/abstract/document/10473036) (
+see [code](https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios)). A few existing continual learning
+scenarios can be found [here](https://www.kaggle.com/datasets/nyderx/lifelong-continual-learning-for-anomaly-detection).
