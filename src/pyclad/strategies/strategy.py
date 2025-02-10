@@ -25,7 +25,13 @@ class ConceptAwareStrategy(Strategy):
     def learn(self, data: np.ndarray, concept_id: str) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray, concept_id: str) -> (np.ndarray, np.ndarray): ...
+    def predict(self, data: np.ndarray, concept_id: str) -> (np.ndarray, np.ndarray):
+        """
+        :param concept_id:
+        :param data:
+        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
+        """
+        ...
 
 
 class ConceptIncrementalStrategy(Strategy):
@@ -33,7 +39,12 @@ class ConceptIncrementalStrategy(Strategy):
     def learn(self, data: np.ndarray) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray): ...
+    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+        """
+        :param data:
+        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
+        """
+        ...
 
 
 class ConceptAgnosticStrategy(Strategy):
@@ -41,4 +52,9 @@ class ConceptAgnosticStrategy(Strategy):
     def learn(self, data: np.ndarray) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray): ...
+    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+        """
+        :param data:
+        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
+        """
+        ...
