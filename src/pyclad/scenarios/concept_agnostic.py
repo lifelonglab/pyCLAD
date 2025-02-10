@@ -33,7 +33,7 @@ class ConceptAgnosticScenario:
             for test_concept in self._dataset.test_concepts():
                 logger.info(f"Starting evaluation of concept {train_concept.name}")
                 callback_composite.before_evaluation()
-                anomaly_scores, y_predicted = self._strategy.predict(data=test_concept.data)
+                y_predicted, anomaly_scores = self._strategy.predict(data=test_concept.data)
                 callback_composite.after_evaluation(
                     evaluated_concept=test_concept,
                     y_true=test_concept.labels,

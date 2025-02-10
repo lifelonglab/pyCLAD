@@ -14,7 +14,6 @@ class Model(InfoProvider):
     @abstractmethod
     def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
         """
-
         :param data:
         :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
         """
