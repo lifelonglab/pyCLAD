@@ -17,5 +17,6 @@ if __name__ == "__main__":
             concepts_order,
             names_mapping=names_mapping,
             annotate=True,
-            output_path=pathlib.Path("heatmap.pdf", ignore_upper_diagonal=True),
+            output_path=pathlib.Path("heatmap.pdf"),
+            ignore_upper_diagonal=True
         )

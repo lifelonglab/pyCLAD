@@ -38,7 +38,7 @@ def read_concepts_from_df(df: pd.DataFrame) -> list[Concept]:
     min_concept_id = df["concept_id"].min()
     max_concept_id = df["concept_id"].max()
 
-    if not np.array_equal(df["concept_id"].unique(), np.arange(min_concept_id, max_concept_id + 1)):
+    if not np.array_equal(np.sort(df["concept_id"].unique()), np.arange(min_concept_id, max_concept_id + 1)):
         raise ValueError(f"Concept ids should start from 0 and be continuous, but got {df['concept_id'].unique()}")
 
     for i in range(min_concept_id, max_concept_id + 1):
