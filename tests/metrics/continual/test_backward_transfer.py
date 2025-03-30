@@ -4,7 +4,6 @@ import pytest
 
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.concepts_metric import ConceptLevelMatrix
-from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 
 parameters = [
     ([[0.5]], 0),

@@ -20,7 +20,7 @@ from pyclad.strategies.replay.selection.random import RandomSelection
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
-    """ 
+    """
     This example showcase how to run a concept aware scenario using the NSL-KDD dataset stored in `resources` directory.
     """
     dataset = read_dataset_from_npy(

@@ -17,8 +17,8 @@ from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
-    """ 
-    This example showcase how to run a concept aware scenario using the Energy dataset adopted to continual anomaly 
+    """
+    This example showcase how to run a concept aware scenario using the Energy dataset adopted to continual anomaly
     detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
 
     You can download the UNSW dataset adjusted to continual anomaly detection scenarios from the following link:

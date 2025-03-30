@@ -16,7 +16,7 @@ def test_isolation_forest_smoke_run():
 
 
 def test_local_outlier_factor_smoke_run():
-    model = LocalOutlierFactorAdapter(contamination=0.001)
+    model = LocalOutlierFactorAdapter(contamination=0.001, n_neighbors=2)
     model.fit(np.array([[1, 2], [3, 4], [5, 6]]))
     model.predict(np.array([[1, 2], [3, 4], [5, 6]]))
 

@@ -23,10 +23,10 @@ from pyclad.strategies.replay.selection.random import RandomSelection
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
-    """ 
-    This example showcase how to run a concept aware scenario using the UNSW dataset adopted to continual anomaly 
+    """
+    This example showcase how to run a concept aware scenario using the UNSW dataset adopted to continual anomaly
     detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
-    
+
     You can download the UNSW dataset adjusted to continual anomaly detection scenarios from the following link:
         <https://www.kaggle.com/datasets/nyderx/lifelong-continual-learning-for-anomaly-detection/data>
     """
@@ -34,8 +34,15 @@ if __name__ == "__main__":
 
     dataset = read_dataset_from_npy(dataset_path, dataset_name="UNSW")
     model = PyODAdapter(
-        VAE(encoder_neuron_list=[32, 24, 16], decoder_neuron_list=[16, 24, 32], latent_dim=8, epoch_num=20,
-            preprocessing=False), model_name="VAE")
+        VAE(
+            encoder_neuron_list=[32, 24, 16],
+            decoder_neuron_list=[16, 24, 32],
+            latent_dim=8,
+            epoch_num=20,
+            preprocessing=False,
+        ),
+        model_name="VAE",
+    )
     replay_buffer = AdaptiveBalancedReplayBuffer(selection_method=RandomSelection(), max_size=1000)
     strategy = ReplayEnhancedStrategy(model, replay_buffer)
     callbacks = [

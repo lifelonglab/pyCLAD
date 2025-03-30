@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.lo
 if __name__ == "__main__":
     """
     This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with
-    CumulativeStrategy and OneCLassSVM model. Please note that the anomaly detection results will be random (0.5), 
+    CumulativeStrategy and OneCLassSVM model. Please note that the anomaly detection results will be random (0.5),
     as we generate random date and random labels
     """
 
@@ -46,8 +46,9 @@ if __name__ == "__main__":
     strategy = CumulativeStrategy(model)
 
     time_callback = TimeEvaluationCallback()
-    metric_callback = ConceptMetricCallback(base_metric=RocAuc(),
-                                            metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()])
+    metric_callback = ConceptMetricCallback(
+        base_metric=RocAuc(), metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()]
+    )
 
     # Execute the concept agnostic scenario
     scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback])
