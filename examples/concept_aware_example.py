@@ -20,8 +20,9 @@ from pyclad.strategies.replay.selection.random import RandomSelection
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
-    """ 
+    """
     This example showcase how to run a concept aware scenario using the NSL-KDD dataset stored in `resources` directory.
+    This file is generated using the code from this repository <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
     """
     dataset = read_dataset_from_npy(
         pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"

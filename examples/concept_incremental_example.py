@@ -24,8 +24,12 @@ logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.lo
 
 def _generate_normal_dist(mean, cov):
     train_data = np.random.multivariate_normal(mean, cov, (100,))
-    test_data = np.concatenate([np.random.multivariate_normal(mean, cov, (50,)),
-                                np.random.multivariate_normal([3 * m for m in mean], cov, (50,))])
+    test_data = np.concatenate(
+        [
+            np.random.multivariate_normal(mean, cov, (50,)),
+            np.random.multivariate_normal([3 * m for m in mean], cov, (50,)),
+        ]
+    )
     test_labels = np.array([0] * 50 + [1] * 50)
     return train_data, test_data, test_labels
 

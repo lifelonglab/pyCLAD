@@ -7,10 +7,11 @@ name = "pyclad"
 description = "Python Library for Continual Lifelong Anomaly Detection"
 version = "0.1.0"
 dependencies = [
+    "datasets>=3.5.0",
     "numpy>=2.0.0",
     "scikit-learn>=1.5.0",
     "seaborn>=0.13.2",
-    "pyod>=2.0.1"
+    "pyod>=2.0.1",
 ]
 requires-python = ">= 3.8"
 authors = [
@@ -57,4 +58,7 @@ profile = "black"
 [tool.pytest.ini_options]
 pythonpath = [
   ".", "src",
+]
+markers = [
+    "longrun: marks tests that take long time to execute (for example downloading big files). These tests are disabled by default, you can run them adding flag `--longrun` to `pytest`)",
 ]

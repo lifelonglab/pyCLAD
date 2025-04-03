@@ -25,7 +25,7 @@ class ConceptAwareScenario:
             callback_composite.after_training(learned_concept=train_concept)
 
             for test_concept in self._dataset.test_concepts():
-                logger.info(f"Starting evaluation of concept {train_concept.name}")
+                logger.info(f"Starting evaluation of concept {test_concept.name}")
                 callback_composite.before_evaluation()
                 y_predicted, anomaly_scores = self._strategy.predict(
                     data=test_concept.data, concept_id=test_concept.name

@@ -4,7 +4,7 @@ import pathlib
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
-from pyclad.data.readers.concepts_readers import read_dataset_from_npy
+from pyclad.data.datasets.energy_plants_dataset import EnergyPlantsDataset
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
@@ -14,19 +14,15 @@ from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
-logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
+logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
-    """ 
-    This example showcase how to run a concept aware scenario using the Energy dataset adopted to continual anomaly 
-    detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
-
-    You can download the UNSW dataset adjusted to continual anomaly detection scenarios from the following link:
-        <https://www.kaggle.com/datasets/nyderx/lifelong-continual-learning-for-anomaly-detection/data>
     """
-    dataset_path = pathlib.Path("energy.npy")
+    This example showcase how to run a concept aware scenario using the Energy dataset adopted to continual anomaly
+    detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
+    """
+    dataset = EnergyPlantsDataset(dataset_type="random_anomalies")
 
-    dataset = read_dataset_from_npy(dataset_path, dataset_name="UNSW")
     model = LocalOutlierFactorAdapter()
     strategy = CumulativeStrategy(model)
     callbacks = [
