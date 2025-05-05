@@ -3,19 +3,19 @@ from typing import Callable
 import torch
 import torch.nn as nn
 
-from pyclad.models.autoencoder.builder import build_lstm_decoder, build_lstm_encoder
+from pyclad.models.autoencoder.builder import build_gru_decoder, build_gru_encoder
 from pyclad.models.autoencoder.config import AutoencoderConfig
 from pyclad.models.autoencoder.variational import VariationalDecoder, VariationalEncoder
 
 
-class LSTMVariationalEncoder(VariationalEncoder):
-    def __init__(self, config: AutoencoderConfig, builder: Callable = build_lstm_encoder) -> None:
-        super(LSTMVariationalEncoder, self).__init__()
+class GRUVariationalEncoder(VariationalEncoder):
+    def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_encoder) -> None:
+        super(GRUVariationalEncoder, self).__init__()
         self.seq_len = config.seq_len
         self.encoder: nn.ModuleList = builder(config.encoder)
 
         for layer in reversed(self.encoder):
-            if isinstance(layer, nn.modules.LSTM):
+            if isinstance(layer, nn.modules.GRU):
                 self.mean_layer = nn.Linear(layer.hidden_size, layer.hidden_size)
                 self.logvar_layer = nn.Linear(layer.hidden_size, layer.hidden_size)
                 break
@@ -26,8 +26,8 @@ class LSTMVariationalEncoder(VariationalEncoder):
         num_layers = None
 
         for layer in self.encoder:
-            if isinstance(layer, nn.LSTM):
-                output, (hidden_state, cell_state) = layer(x)
+            if isinstance(layer, nn.GRU):
+                output, hidden_state = layer(x)
                 hidden_size = layer.hidden_size
                 num_layers = layer.num_layers
                 x = output
@@ -45,9 +45,9 @@ class LSTMVariationalEncoder(VariationalEncoder):
         return mean, logvar
 
 
-class LSTMVariationalDecoder(VariationalDecoder):
-    def __init__(self, config: AutoencoderConfig, builder: Callable = build_lstm_decoder) -> None:
-        super(LSTMVariationalDecoder, self).__init__()
+class GRUVariationalDecoder(VariationalDecoder):
+    def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_decoder) -> None:
+        super(GRUVariationalDecoder, self).__init__()
         self.seq_len = config.seq_len
         self.decoder: nn.ModuleList = builder(config.decoder)
 
@@ -57,8 +57,8 @@ class LSTMVariationalDecoder(VariationalDecoder):
         x = x.repeat((1, self.seq_len, 1))
 
         for layer in self.decoder:
-            if isinstance(layer, nn.LSTM):
-                output, (hidden_state, cell_state) = layer(x)
+            if isinstance(layer, nn.GRU):
+                output, hidden_state = layer(x)
                 hidden_size = layer.hidden_size
                 x = output
             else:

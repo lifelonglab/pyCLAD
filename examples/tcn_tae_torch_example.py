@@ -9,13 +9,10 @@ from pyclad.models.autoencoder.autoencoder import TemporalAutoencoder
 from pyclad.models.autoencoder.config import (
     DecoderConfig,
     EncoderConfig,
-    LSTMLayerConfig,
     StandardAutoencoderConfig,
+    TCNLayerConfig,
 )
-from pyclad.models.autoencoder.variational.lstm import (
-    LSTMVariationalDecoder,
-    LSTMVariationalEncoder,
-)
+from pyclad.models.autoencoder.standard.tcn import TCNDecoder, TCNEncoder
 
 if __name__ == "__main__":
     batch_size, seq_len = 32, 10
@@ -26,39 +23,43 @@ if __name__ == "__main__":
         seq_len=seq_len,
         encoder=EncoderConfig(
             layers=[
-                LSTMLayerConfig(
-                    input_size=n_features,
-                    hidden_size=64,
-                    num_layers=1,
-                    activation="ReLU",
-                    dropout=0.2,
-                    bidirectional=False,
+                TCNLayerConfig(
+                    in_channels=n_features,
+                    out_channels=2 * 64,
+                    kernel_size=3,
+                    padding=1,
+                    activation="Tanh",
                 ),
-                LSTMLayerConfig(
-                    input_size=64, hidden_size=32, num_layers=1, activation="ReLU", dropout=0.1, bidirectional=False
+                TCNLayerConfig(
+                    in_channels=2 * 64,
+                    out_channels=64,
+                    kernel_size=3,
+                    padding=1,
+                    activation="Tanh",
                 ),
             ]
         ),
         decoder=DecoderConfig(
             layers=[
-                LSTMLayerConfig(
-                    input_size=32, hidden_size=64, num_layers=1, activation="ReLU", dropout=0.2, bidirectional=False
+                TCNLayerConfig(
+                    in_channels=64,
+                    out_channels=2 * 64,
+                    kernel_size=3,
+                    padding=1,
+                    activation="Tanh",
                 ),
-                LSTMLayerConfig(
-                    input_size=64,
-                    hidden_size=n_features,
-                    num_layers=1,
-                    activation="ReLU",
-                    dropout=0.1,
-                    bidirectional=False,
+                TCNLayerConfig(
+                    in_channels=2 * 64,
+                    out_channels=n_features,
+                    kernel_size=3,
+                    padding=1,
+                    activation="Tanh",
                 ),
             ]
         ),
     )
 
-    autoencoder = TemporalAutoencoder(
-        LSTMVariationalEncoder(config=config), LSTMVariationalDecoder(config=config), epochs=5
-    )
+    autoencoder = TemporalAutoencoder(TCNEncoder(config=config), TCNDecoder(config=config), epochs=5)
 
     autoencoder.fit(dataset)
 

@@ -9,13 +9,10 @@ from pyclad.models.autoencoder.autoencoder import TemporalAutoencoder
 from pyclad.models.autoencoder.config import (
     DecoderConfig,
     EncoderConfig,
-    LSTMLayerConfig,
+    GRULayerConfig,
     StandardAutoencoderConfig,
 )
-from pyclad.models.autoencoder.variational.lstm import (
-    LSTMVariationalDecoder,
-    LSTMVariationalEncoder,
-)
+from pyclad.models.autoencoder.standard.gru import GRUDecoder, GRUEncoder
 
 if __name__ == "__main__":
     batch_size, seq_len = 32, 10
@@ -26,7 +23,7 @@ if __name__ == "__main__":
         seq_len=seq_len,
         encoder=EncoderConfig(
             layers=[
-                LSTMLayerConfig(
+                GRULayerConfig(
                     input_size=n_features,
                     hidden_size=64,
                     num_layers=1,
@@ -34,17 +31,17 @@ if __name__ == "__main__":
                     dropout=0.2,
                     bidirectional=False,
                 ),
-                LSTMLayerConfig(
+                GRULayerConfig(
                     input_size=64, hidden_size=32, num_layers=1, activation="ReLU", dropout=0.1, bidirectional=False
                 ),
             ]
         ),
         decoder=DecoderConfig(
             layers=[
-                LSTMLayerConfig(
+                GRULayerConfig(
                     input_size=32, hidden_size=64, num_layers=1, activation="ReLU", dropout=0.2, bidirectional=False
                 ),
-                LSTMLayerConfig(
+                GRULayerConfig(
                     input_size=64,
                     hidden_size=n_features,
                     num_layers=1,
@@ -56,9 +53,7 @@ if __name__ == "__main__":
         ),
     )
 
-    autoencoder = TemporalAutoencoder(
-        LSTMVariationalEncoder(config=config), LSTMVariationalDecoder(config=config), epochs=5
-    )
+    autoencoder = TemporalAutoencoder(GRUEncoder(config=config), GRUDecoder(config=config), epochs=5)
 
     autoencoder.fit(dataset)
 

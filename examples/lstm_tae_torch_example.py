@@ -53,7 +53,7 @@ if __name__ == "__main__":
         ),
     )
 
-    autoencoder = TemporalAutoencoder(LSTMEncoder(config=config), LSTMDecoder(config=config))
+    autoencoder = TemporalAutoencoder(LSTMEncoder(config=config), LSTMDecoder(config=config), epochs=5)
 
     autoencoder.fit(dataset)
 

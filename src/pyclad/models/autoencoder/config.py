@@ -1,14 +1,7 @@
 from enum import Enum
-from typing import Type
+from typing import Optional
 
-import torch.nn as nn
 from pydantic import BaseModel
-
-
-def get_layer_class(layer_type: str) -> Type[nn.Module]:
-    if layer_type == "LSTM":
-        return nn.LSTM
-    raise ValueError(f"Unsupported layer type: {layer_type}")
 
 
 class AutoencoderType(str, Enum):
@@ -29,6 +22,28 @@ class LSTMLayerConfig(LayerConfig):
     num_layers: int = 1
     batch_first: bool = True
     bidirectional: bool = False
+
+
+class GRULayerConfig(LayerConfig):
+    type: str = "GRU"
+    input_size: int
+    hidden_size: int
+    activation: str
+    dropout: float
+    num_layers: int = 1
+    batch_first: bool = True
+    bidirectional: bool = False
+
+
+class TCNLayerConfig(LayerConfig):
+    type: str = "TCN"
+    in_channels: int
+    out_channels: int
+    activation: Optional[str] = None
+    dropout: Optional[float] = None
+    kernel_size: int = 3
+    dilation: int = 1
+    padding: int = 1
 
 
 class EncoderConfig(BaseModel):
