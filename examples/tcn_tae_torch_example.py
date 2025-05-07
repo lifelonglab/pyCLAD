@@ -9,7 +9,7 @@ from pyclad.models.autoencoder.autoencoder import TemporalAutoencoder
 from pyclad.models.autoencoder.config import (
     DecoderConfig,
     EncoderConfig,
-    StandardAutoencoderConfig,
+    AutoencoderConfig,
     TCNLayerConfig,
 )
 from pyclad.models.autoencoder.standard.tcn import TCNDecoder, TCNEncoder
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     time_steps, n_features = 5000, 5
     dataset = np.random.rand(time_steps, n_features)
 
-    config = StandardAutoencoderConfig(
+    config = AutoencoderConfig(
         seq_len=seq_len,
         encoder=EncoderConfig(
             layers=[

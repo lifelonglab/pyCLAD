@@ -5,10 +5,9 @@ import torch.nn as nn
 
 from pyclad.models.autoencoder.builder import build_tcn_decoder, build_tcn_encoder
 from pyclad.models.autoencoder.config import AutoencoderConfig
-from pyclad.models.autoencoder.standard import Decoder, Encoder
 
 
-class TCNVariationalEncoder(Encoder):
+class TCNVariationalEncoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_tcn_encoder) -> None:
         super(TCNVariationalEncoder, self).__init__()
         self.seq_len = config.seq_len
@@ -40,7 +39,7 @@ class TCNVariationalEncoder(Encoder):
         return mean, logvar
 
 
-class TCNVariationalDecoder(Decoder):
+class TCNVariationalDecoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_tcn_decoder) -> None:
         super(TCNVariationalDecoder, self).__init__()
         self.seq_len = config.seq_len
@@ -53,6 +52,9 @@ class TCNVariationalDecoder(Decoder):
                 break
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # (batch_size, 1, out_channels) -> (batch_size, out_channels, 1)
+        x = x.permute(0, 2, 1)
+
         # (batch_size, out_channels, 1) -> (batch_size, out_channels)
         x = x.squeeze(-1)
         batch_size, out_channels = x.shape

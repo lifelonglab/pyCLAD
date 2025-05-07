@@ -1,12 +1,6 @@
-from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel
-
-
-class AutoencoderType(str, Enum):
-    STANDARD = "standard"
-    VARIATIONAL = "variational"
 
 
 class LayerConfig(BaseModel):
@@ -58,11 +52,3 @@ class AutoencoderConfig(BaseModel):
     seq_len: int
     encoder: EncoderConfig
     decoder: DecoderConfig
-
-
-class StandardAutoencoderConfig(AutoencoderConfig):
-    type: AutoencoderType = AutoencoderType.STANDARD
-
-
-class VariationalAutoencoderConfig(AutoencoderConfig):
-    type: AutoencoderType = AutoencoderType.VARIATIONAL

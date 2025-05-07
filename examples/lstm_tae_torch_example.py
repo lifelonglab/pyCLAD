@@ -10,7 +10,7 @@ from pyclad.models.autoencoder.config import (
     DecoderConfig,
     EncoderConfig,
     LSTMLayerConfig,
-    StandardAutoencoderConfig,
+    AutoencoderConfig,
 )
 from pyclad.models.autoencoder.standard.lstm import LSTMDecoder, LSTMEncoder
 
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     time_steps, n_features = 5000, 5
     dataset = np.random.rand(time_steps, n_features)
 
-    config = StandardAutoencoderConfig(
+    config = AutoencoderConfig(
         seq_len=seq_len,
         encoder=EncoderConfig(
             layers=[

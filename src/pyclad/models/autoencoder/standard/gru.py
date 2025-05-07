@@ -5,10 +5,9 @@ import torch.nn as nn
 
 from pyclad.models.autoencoder.builder import build_gru_decoder, build_gru_encoder
 from pyclad.models.autoencoder.config import AutoencoderConfig
-from pyclad.models.autoencoder.standard import Decoder, Encoder
 
 
-class GRUEncoder(Encoder):
+class GRUEncoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_encoder) -> None:
         super(GRUEncoder, self).__init__()
         self.seq_len = config.seq_len
@@ -34,7 +33,7 @@ class GRUEncoder(Encoder):
         return hidden_state.reshape((batch_size, 1, hidden_size))
 
 
-class GRUDecoder(Decoder):
+class GRUDecoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_decoder) -> None:
         super(GRUDecoder, self).__init__()
         self.seq_len = config.seq_len

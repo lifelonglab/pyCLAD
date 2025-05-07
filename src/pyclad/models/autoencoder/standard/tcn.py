@@ -5,10 +5,9 @@ import torch.nn as nn
 
 from pyclad.models.autoencoder.builder import build_tcn_decoder, build_tcn_encoder
 from pyclad.models.autoencoder.config import AutoencoderConfig
-from pyclad.models.autoencoder.standard import Decoder, Encoder
 
 
-class TCNEncoder(Encoder):
+class TCNEncoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_tcn_encoder) -> None:
         super(TCNEncoder, self).__init__()
         self.seq_len = config.seq_len
@@ -29,7 +28,7 @@ class TCNEncoder(Encoder):
         return x
 
 
-class TCNDecoder(Decoder):
+class TCNDecoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_tcn_decoder) -> None:
         super(TCNDecoder, self).__init__()
         self.seq_len = config.seq_len

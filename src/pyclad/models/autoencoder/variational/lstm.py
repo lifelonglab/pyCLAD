@@ -5,10 +5,9 @@ import torch.nn as nn
 
 from pyclad.models.autoencoder.builder import build_lstm_decoder, build_lstm_encoder
 from pyclad.models.autoencoder.config import AutoencoderConfig
-from pyclad.models.autoencoder.variational import VariationalDecoder, VariationalEncoder
 
 
-class LSTMVariationalEncoder(VariationalEncoder):
+class LSTMVariationalEncoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_lstm_encoder) -> None:
         super(LSTMVariationalEncoder, self).__init__()
         self.seq_len = config.seq_len
@@ -45,7 +44,7 @@ class LSTMVariationalEncoder(VariationalEncoder):
         return mean, logvar
 
 
-class LSTMVariationalDecoder(VariationalDecoder):
+class LSTMVariationalDecoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_lstm_decoder) -> None:
         super(LSTMVariationalDecoder, self).__init__()
         self.seq_len = config.seq_len

@@ -5,10 +5,9 @@ import torch.nn as nn
 
 from pyclad.models.autoencoder.builder import build_lstm_decoder, build_lstm_encoder
 from pyclad.models.autoencoder.config import AutoencoderConfig
-from pyclad.models.autoencoder.standard import Decoder, Encoder
 
 
-class LSTMEncoder(Encoder):
+class LSTMEncoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_lstm_encoder) -> None:
         super(LSTMEncoder, self).__init__()
         self.seq_len = config.seq_len
@@ -34,7 +33,7 @@ class LSTMEncoder(Encoder):
         return hidden_state.reshape((batch_size, 1, hidden_size))
 
 
-class LSTMDecoder(Decoder):
+class LSTMDecoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_lstm_decoder) -> None:
         super(LSTMDecoder, self).__init__()
         self.seq_len = config.seq_len

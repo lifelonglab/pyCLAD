@@ -5,21 +5,21 @@ import torch
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
-from pyclad.models.autoencoder.autoencoder import TemporalAutoencoder
+from pyclad.models.autoencoder.autoencoder import VariationalTemporalAutoencoder
 from pyclad.models.autoencoder.config import (
     DecoderConfig,
     EncoderConfig,
     TCNLayerConfig,
-    VariationalAutoencoderConfig,
+    AutoencoderConfig,
 )
-from pyclad.models.autoencoder.standard.tcn import TCNDecoder, TCNEncoder
+from pyclad.models.autoencoder.variational.tcn import TCNVariationalDecoder, TCNVariationalEncoder
 
 if __name__ == "__main__":
     batch_size, seq_len = 32, 10
     time_steps, n_features = 5000, 5
     dataset = np.random.rand(time_steps, n_features)
 
-    config = VariationalAutoencoderConfig(
+    config = AutoencoderConfig(
         seq_len=seq_len,
         encoder=EncoderConfig(
             layers=[
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         ),
     )
 
-    autoencoder = TemporalAutoencoder(TCNEncoder(config=config), TCNDecoder(config=config), epochs=5)
+    autoencoder = VariationalTemporalAutoencoder(TCNVariationalEncoder(config=config), TCNVariationalDecoder(config=config), epochs=5)
 
     autoencoder.fit(dataset)
 

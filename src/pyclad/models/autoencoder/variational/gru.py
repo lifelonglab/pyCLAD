@@ -5,10 +5,9 @@ import torch.nn as nn
 
 from pyclad.models.autoencoder.builder import build_gru_decoder, build_gru_encoder
 from pyclad.models.autoencoder.config import AutoencoderConfig
-from pyclad.models.autoencoder.variational import VariationalDecoder, VariationalEncoder
 
 
-class GRUVariationalEncoder(VariationalEncoder):
+class GRUVariationalEncoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_encoder) -> None:
         super(GRUVariationalEncoder, self).__init__()
         self.seq_len = config.seq_len
@@ -45,7 +44,7 @@ class GRUVariationalEncoder(VariationalEncoder):
         return mean, logvar
 
 
-class GRUVariationalDecoder(VariationalDecoder):
+class GRUVariationalDecoder(nn.Module):
     def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_decoder) -> None:
         super(GRUVariationalDecoder, self).__init__()
         self.seq_len = config.seq_len
