@@ -1,17 +1,12 @@
-from typing import Callable
-
 import torch
 import torch.nn as nn
 
-from pyclad.models.autoencoder.builder import build_gru_decoder, build_gru_encoder
-from pyclad.models.autoencoder.config import AutoencoderConfig
-
 
 class GRUVariationalEncoder(nn.Module):
-    def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_encoder) -> None:
+    def __init__(self, encoder: nn.ModuleList, seq_len: int) -> None:
         super(GRUVariationalEncoder, self).__init__()
-        self.seq_len = config.seq_len
-        self.encoder: nn.ModuleList = builder(config.encoder)
+        self.encoder: nn.ModuleList = encoder
+        self.seq_len = seq_len
 
         for layer in reversed(self.encoder):
             if isinstance(layer, nn.modules.GRU):
@@ -20,7 +15,7 @@ class GRUVariationalEncoder(nn.Module):
                 break
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        batch_size, seq_len, input_size = x.shape
+        batch_size = x.shape[0]
         hidden_size, hidden_state = None, None
         num_layers = None
 
@@ -45,13 +40,13 @@ class GRUVariationalEncoder(nn.Module):
 
 
 class GRUVariationalDecoder(nn.Module):
-    def __init__(self, config: AutoencoderConfig, builder: Callable = build_gru_decoder) -> None:
+    def __init__(self, decoder: nn.ModuleList, seq_len: int) -> None:
         super(GRUVariationalDecoder, self).__init__()
-        self.seq_len = config.seq_len
-        self.decoder: nn.ModuleList = builder(config.decoder)
+        self.decoder: nn.ModuleList = decoder
+        self.seq_len = seq_len
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        batch_size, seq_len, input_size = x.shape
+        batch_size = x.shape[0]
         hidden_size, hidden_state = None, None
         x = x.repeat((1, self.seq_len, 1))
 

@@ -1,17 +1,12 @@
-from typing import Callable
-
 import torch
 import torch.nn as nn
 
-from pyclad.models.autoencoder.builder import build_tcn_decoder, build_tcn_encoder
-from pyclad.models.autoencoder.config import AutoencoderConfig
-
 
 class TCNEncoder(nn.Module):
-    def __init__(self, config: AutoencoderConfig, builder: Callable = build_tcn_encoder) -> None:
+    def __init__(self, encoder: nn.ModuleList, seq_len: int) -> None:
         super(TCNEncoder, self).__init__()
-        self.seq_len = config.seq_len
-        self.encoder: nn.ModuleList = builder(config.encoder)
+        self.encoder: nn.ModuleList = encoder
+        self.seq_len = seq_len
 
         self.pool = nn.AdaptiveAvgPool1d(1)
 
@@ -29,16 +24,16 @@ class TCNEncoder(nn.Module):
 
 
 class TCNDecoder(nn.Module):
-    def __init__(self, config: AutoencoderConfig, builder: Callable = build_tcn_decoder) -> None:
+    def __init__(self, decoder: nn.ModuleList, seq_len: int) -> None:
         super(TCNDecoder, self).__init__()
-        self.seq_len = config.seq_len
+        self.seq_len = seq_len
 
-        self.decoder: nn.ModuleList = builder(config.decoder)
-
-        for layer in self.decoder:
-            if isinstance(layer, nn.modules.Conv1d):
+        for layer in decoder:
+            if isinstance(layer, nn.modules.ConvTranspose1d):
                 self.linear = nn.Linear(layer.in_channels, layer.in_channels * self.seq_len)
                 break
+
+        self.decoder: nn.ModuleList = decoder
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # (batch_size, out_channels, 1) -> (batch_size, out_channels)

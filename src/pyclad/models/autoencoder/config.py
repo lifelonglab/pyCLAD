@@ -1,43 +1,40 @@
-from typing import Optional
+from typing import Any, Optional, Type
 
+import torch.nn as nn
 from pydantic import BaseModel
 
 
-class LayerConfig(BaseModel):
-    type: str
+class LayerConfig(BaseModel): ...
+
+
+class ActivationLayerConfig(LayerConfig):
+    cls: Type[nn.Module]
+    kwargs: Optional[dict[str, Any]] = {}
+
+
+class DropoutLayerConfig(LayerConfig):
+    cls: Type[nn.Module] = nn.Dropout
+    kwargs: dict[str, Any] = {}
 
 
 class LSTMLayerConfig(LayerConfig):
-    type: str = "LSTM"
-    input_size: int
-    hidden_size: int
-    activation: str
-    dropout: float
-    num_layers: int = 1
-    batch_first: bool = True
-    bidirectional: bool = False
+    cls: Type[nn.Module] = nn.LSTM
+    kwargs: dict[str, Any] = {}
 
 
 class GRULayerConfig(LayerConfig):
-    type: str = "GRU"
-    input_size: int
-    hidden_size: int
-    activation: str
-    dropout: float
-    num_layers: int = 1
-    batch_first: bool = True
-    bidirectional: bool = False
+    cls: Type[nn.Module] = nn.GRU
+    kwargs: dict[str, Any] = {}
 
 
-class TCNLayerConfig(LayerConfig):
-    type: str = "TCN"
-    in_channels: int
-    out_channels: int
-    activation: Optional[str] = None
-    dropout: Optional[float] = None
-    kernel_size: int = 3
-    dilation: int = 1
-    padding: int = 1
+class Conv1dLayerConfig(LayerConfig):
+    cls: Type[nn.Module] = nn.Conv1d
+    kwargs: dict[str, Any] = {}
+
+
+class ConvTranspose1dLayerConfig(LayerConfig):
+    cls: Type[nn.Module] = nn.ConvTranspose1d
+    kwargs: dict[str, Any] = {}
 
 
 class EncoderConfig(BaseModel):

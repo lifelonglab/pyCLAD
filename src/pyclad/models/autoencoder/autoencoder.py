@@ -5,6 +5,7 @@ from pytorch_lightning.utilities.types import OptimizerLRScheduler
 from torch import nn
 from torch.utils.data import TensorDataset
 
+from pyclad.models.autoencoder.loss import VariationalMSELoss
 from pyclad.models.model import Model
 
 
@@ -189,7 +190,8 @@ class VariationalTemporalAutoencoder(Model):
 
     def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
         batch_size, seq_len, input_size = data.shape
-        x_hat = self.module(torch.Tensor(data)).detach()
+        x_hat, mean, var = self.module(torch.Tensor(data))
+        x_hat = x_hat.detach()
         rec_error = ((data - x_hat.numpy()) ** 2).mean(axis=2)
         rec_error = rec_error.reshape((batch_size, seq_len, 1))
 
@@ -224,14 +226,14 @@ class VariationalTemporalAutoencoderModule(pl.LightningModule):
         self.lr = lr
 
         self.save_hyperparameters()
-        self.train_loss = nn.MSELoss()
-        self.val_loss = nn.MSELoss()
+        self.train_loss = VariationalMSELoss()
+        self.val_loss = VariationalMSELoss()
 
     def forward(self, x):
         mean, var = self.encoder(x)
         x = self.reparametrize(mean, var)
         x = self.decoder(x)
-        return x
+        return x, mean, var
 
     @staticmethod
     def reparametrize(mean, var):
@@ -241,15 +243,15 @@ class VariationalTemporalAutoencoderModule(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x = batch[0]
-        x_hat = self(x)
-        loss = self.train_loss(x_hat, x)
+        x_hat, mean, var = self(x)
+        loss = self.train_loss(x_hat, x, mean, var)
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x = batch[0]
-        x_hat = self(x)
-        loss = self.val_loss(x_hat, x)
+        x_hat, mean, var = self(x)
+        loss = self.val_loss(x_hat, x, mean, var)
         self.log("val_loss", loss)
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
