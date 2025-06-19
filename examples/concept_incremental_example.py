@@ -6,6 +6,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
+from pyclad.callbacks.evaluation.energy_evaluation import BaseEnergyCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.concept import Concept
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
@@ -72,6 +73,7 @@ if __name__ == "__main__":
             metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
         TimeEvaluationCallback(),
+        BaseEnergyCallback()
     ]
 
     # Execute the concept incremental scenario
