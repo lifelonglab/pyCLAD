@@ -17,6 +17,7 @@ class ConceptAgnosticScenario:
 
     def run(self, batch_size=256):
         callback_composite = CallbackComposite(self._callbacks)
+        callback_composite.before_scenario()
 
         for train_concept in self._dataset.train_concepts():
             batch_id = 0

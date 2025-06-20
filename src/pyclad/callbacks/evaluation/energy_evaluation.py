@@ -21,30 +21,22 @@ class InterceptorLogger(LoggerOutput):
         super().out(total, delta)
 
 
-class BaseEnergyCallback(Callback, InfoProvider):
+class EnergyCallbackBase(Callback, InfoProvider):
     def __init__(self, tracker: BaseEmissionsTracker, logger: InterceptorLogger):
         self._tracker = tracker
         self._logger = logger
-        self._train_co2 = 0
-        self._eval_co2 = 0
 
-    def before_training(self, *args, **kwargs):
+    def before_scenario(self, *args, **kwargs):
         self._tracker.start()
 
-    def after_training(self, *args, **kwargs):
-        self._tracker.stop()
-
-    def before_evaluation(self, *args, **kwargs):
-        self._tracker.start()
-
-    def after_evaluation(self, *args, **kwargs):
+    def after_scenario(self, *args, **kwargs):
         self._tracker.stop()
 
     def info(self) -> Dict[str, Any]:
         return {"energy_evaluation_callback": {"emissions": dataclasses.asdict(self._logger.emission_data)}}
 
 
-class EnergyEvaluationCallback(BaseEnergyCallback):
+class EnergyEvaluationCallback(EnergyCallbackBase):
     def __init__(self):
         logger = InterceptorLogger()
 
@@ -52,7 +44,7 @@ class EnergyEvaluationCallback(BaseEnergyCallback):
         super().__init__(tracker, logger)
 
 
-class OfflineEnergyEvaluationCallback(BaseEnergyCallback):
+class OfflineEnergyEvaluationCallback(EnergyCallbackBase):
     def __init__(self, country_iso_code, region: None, cloud_provider: None, cloud_region: None):
         logger = InterceptorLogger()
 
