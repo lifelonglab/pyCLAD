@@ -13,4 +13,4 @@ class JsonOutputWriter(OutputWriter):
     def write(self, providers: List[InfoProvider]):
         output_data = dict(itertools.chain(*(provider.info().items() for provider in providers)))
         with open(self._path, "w") as f:
-            json.dump(output_data, f, ensure_ascii=False, indent=4)
+            json.dump(output_data, f, ensure_ascii=False, indent=4, default=lambda o: "<not serializable>")
