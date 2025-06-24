@@ -45,7 +45,7 @@ class EnergyEvaluationCallback(EnergyCallbackBase):
 
 
 class OfflineEnergyEvaluationCallback(EnergyCallbackBase):
-    def __init__(self, country_iso_code, region: None, cloud_provider: None, cloud_region: None):
+    def __init__(self, country_iso_code, region: str | None = None, cloud_provider: str | None = None, cloud_region: str | None = None):
         logger = InterceptorLogger()
 
         tracker = OfflineEmissionsTracker(
