@@ -59,8 +59,6 @@ Based on these, custom architectures can be built:
 
 Additional examples can be found in [examples/models](https://github.com/lifelonglab/pyCLAD/tree/main/examples).
 
-As another example, here is an adapter implementation for Isolation Forest, a popular one-class tree-based ensemble for anomaly detection.
-The implementation is based on the general <code>PyODAdapter</code> class: 
 
 ### PyOD example
 Here is an example of how to use our <code>PyODAdapter</code> to implement existing PyOD models:
@@ -82,7 +80,9 @@ Here is an example of how to use our <code>PyODAdapter</code> to implement exist
         def additional_info(self):
             return self._model.get_params()
     
-    
+Here is an adapter implementation for Isolation Forest, a popular one-class tree-based ensemble for anomaly detection.
+The implementation is based on the general <code>PyODAdapter</code> class: 
+
     class IsolationForestAdapter(PyODAdapter):
         def __init__(self, **kwargs):
             super().__init__(model_name="IsolationForest", model=IForest(**kwargs))
