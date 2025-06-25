@@ -97,19 +97,22 @@ output_writer.write([model, dataset, strategy, *callbacks])
 
 ## Citing pyCLAD
 
-If you use pyCLAD in your research, please cite us :)
+A paper describing pyCLAD is published in SoftwareX Journal - [click here](https://www.sciencedirect.com/science/article/pii/S2352711024003649). If you use pyCLAD in your research, please cite:
 
+```bibtex
 @article{faber2025pyclad,
-  title={pyCLAD: The universal framework for continual lifelong anomaly detection},
-  author={Faber, Kamil and Sniezynski, Bartlomiej and Japkowicz, Nathalie and Corizzo, Roberto},
-  journal={SoftwareX},
-  volume={29},
-  pages={101994},
-  year={2025},
-  publisher={Elsevier}
+  title = {pyCLAD: The universal framework for continual lifelong anomaly detection},
+  journal = {SoftwareX},
+  volume = {29},
+  pages = {101994},
+  year = {2025},
+  issn = {2352-7110},
+  doi = {https://doi.org/10.1016/j.softx.2024.101994},
+  url = {https://www.sciencedirect.com/science/article/pii/S2352711024003649},
+  author = {Kamil Faber and Bartlomiej Sniezynski and Nathalie Japkowicz and Roberto Corizzo},
+  keywords = {Continual anomaly detection, Lifelong anomaly detection, Continual learning, Anomaly detection, Software},
 }
-
-[SoftwareX publication](https://www.sciencedirect.com/science/article/pii/S2352711024003649)
+```
 
 ## How to contribute?
 

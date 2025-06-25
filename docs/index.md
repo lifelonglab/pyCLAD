@@ -66,17 +66,20 @@ see [pyOD docs](https://pyod.readthedocs.io/en/latest/).
 
 ### Citing pyCLAD
 
-A paper describing pyCLAD is currently under review in SoftwareX journal. Feel free to use pyCLAD in your research, but
-please come back before your final submission to check if we already have a DOI for pyCLAD. Thank you!
+A paper describing pyCLAD is published in SoftwareX Journal - [click here](https://www.sciencedirect.com/science/article/pii/S2352711024003649). If you use pyCLAD in your research, please cite:
 
-    @article{faber2024pyclad,
-      title={pyCLAD: A Library for Continual Lifelong Anomaly Detection},
-      author={Faber, Kamil and Corizzo, Roberto and Sniezynski, Bartlomiej and Japkowicz, Nathalie},
-      journal={TBD},
-      volume={TBD},
-      pages={TBD},
-      year={TBD},
-      publisher={TBD}
-    }
+```bibtex
+@article{FABER2025101994,
+  title = {pyCLAD: The universal framework for continual lifelong anomaly detection},
+  journal = {SoftwareX},
+  volume = {29},
+  pages = {101994},
+  year = {2025},
+  issn = {2352-7110},
+  doi = {https://doi.org/10.1016/j.softx.2024.101994},
+  url = {https://www.sciencedirect.com/science/article/pii/S2352711024003649},
+  author = {Kamil Faber and Bartlomiej Sniezynski and Nathalie Japkowicz and Roberto Corizzo},
+  keywords = {Continual anomaly detection, Lifelong anomaly detection, Continual learning, Anomaly detection, Software},
+}
 
 
