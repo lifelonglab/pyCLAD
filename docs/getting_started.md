@@ -223,10 +223,13 @@ output_writer.write([model, dataset, strategy, metric_callback, time_callback])
 ## Leveraging real-world datasets
 
 In the example above, we used randomly generated data to demonstrate the workflow. However, in [Examples](examples.md),
-we also showcase examples with real-world
+we also showcase examples with real-world, such as
 datasets ([UNSW](https://github.com/lifelonglab/pyCLAD/blob/main/examples/unsw_dataset_example.py)
 and [Energy](https://github.com/lifelonglab/pyCLAD/blob/main/examples/energy_dataset_example.py)).
+pyCLAD provides a few datasets that can be used out-of-the-box, such as *UNSW-NB15*, *NSL-KDD*, *Wind Energy*, and
+*Energy Plants*. They are available as classes (for example `UnswDataset`) and automatically downloaded from hugging
+face. See more info in [Datasets](datasets.md).
+
 Moreover, pyCLAD provides out-of-the-box loader (`read_dataset_from_npy`) for continual learning scenarios extracted
 leveraging the algorithm described [in this paper](https://ieeexplore.ieee.org/abstract/document/10473036) (
-see [code](https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios)). A few existing continual learning
-scenarios can be found [here](https://www.kaggle.com/datasets/nyderx/lifelong-continual-learning-for-anomaly-detection).
+see [code](https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios)). 

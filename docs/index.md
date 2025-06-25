@@ -69,7 +69,7 @@ see [pyOD docs](https://pyod.readthedocs.io/en/latest/).
 A paper describing pyCLAD is published in SoftwareX Journal - [click here](https://www.sciencedirect.com/science/article/pii/S2352711024003649). If you use pyCLAD in your research, please cite:
 
 ```bibtex
-@article{FABER2025101994,
+@article{faber2025pyclad,
   title = {pyCLAD: The universal framework for continual lifelong anomaly detection},
   journal = {SoftwareX},
   volume = {29},
