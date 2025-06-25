@@ -23,7 +23,7 @@ The few most prominent examples are:
    example showcase how to run a concept aware scenario using the Energy dataset adopted to continual anomaly
    detection. The scenario includes LocalOutlierFactor model and Cumulative strategy.
 6. [Plot Heatmap Example](https://github.com/lifelonglab/pyCLAD/blob/main/examples/plot_heatmap_example.py) - This
-   example showcase how to generate ROC-AUC heatmap for the results of concept aware scenario
+   example showcases how to generate a ROC-AUC heatmap for the results of a concept aware scenario
 7. [Models examples](https://github.com/lifelonglab/pyCLAD/tree/main/examples/models) - This directory contains multiple
    examples of how to use the models available in pyCLAD. Each example is a standalone script that demonstrates how to
    use a specific model with a specific strategy and dataset.
