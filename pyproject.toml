@@ -22,7 +22,8 @@ authors = [
 ]
 maintainers = [
     { name = "Kamil Faber", email = "kfaber@agh.edu.pl" },
-    { name = "Roberto Corizzo", email = "rcorizzo@american.edu" }
+    { name = "Roberto Corizzo", email = "rcorizzo@american.edu" },
+    { name = "Mateusz Smendowski", email = "smendowski@agh.edu.pl"}
 ]
 readme = "README.md"
 license = { text = "MIT License" }
