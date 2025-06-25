@@ -40,6 +40,8 @@ A concept-agnostic scenario can be adopted for fully unsupervised monitoring of 
 ### Code example
     def concept_aware_scenario(data_loader: ConceptsDataset, strategy: ConceptAwareStrategy, callbacks: List[Callback]):
         callback_composite = CallbackComposite(callbacks)
+
+        callback_composite.before_scenario()
     
         for train_concept in data_loader.train_concepts():
             logger.info(f"Starting training on concept {train_concept.name}")
