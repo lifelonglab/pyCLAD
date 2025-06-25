@@ -17,6 +17,7 @@ class ConceptIncrementalScenario:
 
     def run(self):
         callback_composite = CallbackComposite(self._callbacks)
+        callback_composite.before_scenario()
 
         for train_concept in self._dataset.train_concepts():
             logger.info(f"Starting training on concept {train_concept.name}")
