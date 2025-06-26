@@ -63,14 +63,14 @@ class AutoencoderModule(pl.LightningModule):
         x = batch[0]
         x_hat = self(x)
         loss = self.train_loss(x_hat, x)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x = batch[0]
         x_hat = self(x)
         loss = self.val_loss(x_hat, x)
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         return torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -150,14 +150,14 @@ class TemporalAutoencoderModule(pl.LightningModule):
         x = batch[0]
         x_hat = self(x)
         loss = self.train_loss(x_hat, x)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x = batch[0]
         x_hat = self(x)
         loss = self.val_loss(x_hat, x)
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         return torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -245,14 +245,14 @@ class VariationalTemporalAutoencoderModule(pl.LightningModule):
         x = batch[0]
         x_hat, mean, var = self(x)
         loss = self.train_loss(x_hat, x, mean, var)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x = batch[0]
         x_hat, mean, var = self(x)
         loss = self.val_loss(x_hat, x, mean, var)
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         return torch.optim.Adam(self.parameters(), lr=self.lr)
