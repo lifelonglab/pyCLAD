@@ -21,8 +21,11 @@ class ConceptIncrementalScenario:
 
         for train_concept in self._dataset.train_concepts():
             logger.info(f"Starting training on concept {train_concept.name}")
+            callback_composite.before_concept_processing(concept=train_concept)
             callback_composite.before_training()
+
             self._strategy.learn(data=train_concept.data)
+
             callback_composite.after_training(learned_concept=train_concept)
 
             for test_concept in self._dataset.test_concepts():
@@ -35,5 +38,7 @@ class ConceptIncrementalScenario:
                     y_pred=y_predicted,
                     anomaly_scores=anomaly_scores,
                 )
+
+            callback_composite.after_concept_processing(concept=train_concept)
 
         callback_composite.after_scenario()

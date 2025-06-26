@@ -4,6 +4,7 @@ import pathlib
 import numpy as np
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
+from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.concept import Concept
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
@@ -49,11 +50,13 @@ if __name__ == "__main__":
     metric_callback = ConceptMetricCallback(
         base_metric=RocAuc(), metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()]
     )
+    memory_callback = MemoryUsageCallback()
 
     # Execute the concept agnostic scenario
-    scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback])
+    scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy,
+                                       callbacks=[metric_callback, time_callback, memory_callback])
     scenario.run()
 
     # Save the results
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, metric_callback, time_callback])
+    output_writer.write([model, dataset, strategy, metric_callback, time_callback, memory_callback])
