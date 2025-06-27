@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "pyclad"
 description = "Python Library for Continual Lifelong Anomaly Detection"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
     "datasets>=3.5.0",
     "numpy>=2.0.0",
