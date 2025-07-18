@@ -84,18 +84,13 @@ class TemporalAutoencoder(Model):
         lr: float = 1e-2,
         threshold: float = 0.5,
         epochs: int = 20,
-        seq_len: int = 10,
-        seq_step: int = 1,
     ):
         self.module = TemporalAutoencoderModule(encoder, decoder, lr)
         self.threshold = threshold
         self.epochs = epochs
-        self.seq_len = seq_len
-        self.seq_step = seq_step
 
     def fit(self, data: np.ndarray):
-        sequences = self.create_sequences(data, self.seq_len, self.seq_step)
-        dataset = TensorDataset(torch.Tensor(sequences))
+        dataset = TensorDataset(torch.Tensor(data))
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=False)
 
         trainer = pl.Trainer(max_epochs=self.epochs)
@@ -109,13 +104,6 @@ class TemporalAutoencoder(Model):
 
         binary_predictions = (rec_error > self.threshold).astype(int)
         return binary_predictions, rec_error
-
-    @staticmethod
-    def create_sequences(data: np.ndarray, seq_len: int, step: int = 1) -> np.ndarray:
-        sequences = []
-        for i in range(0, len(data) - seq_len + 1, step):
-            sequences.append(data[i : i + seq_len])
-        return np.stack(sequences)
 
     def name(self) -> str:
         return "TemporalAutoencoder"
@@ -171,18 +159,13 @@ class VariationalTemporalAutoencoder(Model):
         lr: float = 1e-2,
         threshold: float = 0.5,
         epochs: int = 20,
-        seq_len: int = 10,
-        seq_step: int = 1,
     ):
         self.module = VariationalTemporalAutoencoderModule(encoder, decoder, lr)
         self.threshold = threshold
         self.epochs = epochs
-        self.seq_len = seq_len
-        self.seq_step = seq_step
 
     def fit(self, data: np.ndarray):
-        sequences = self.create_sequences(data, self.seq_len, self.seq_step)
-        dataset = TensorDataset(torch.Tensor(sequences))
+        dataset = TensorDataset(torch.Tensor(data))
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=False)
 
         trainer = pl.Trainer(max_epochs=self.epochs)

@@ -18,5 +18,5 @@ if __name__ == "__main__":
             names_mapping=names_mapping,
             annotate=True,
             output_path=pathlib.Path("heatmap.pdf"),
-            ignore_upper_diagonal=True
+            ignore_upper_diagonal=True,
         )

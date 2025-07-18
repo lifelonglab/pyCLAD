@@ -3,7 +3,6 @@ import pathlib
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.energy_evaluation import EnergyEvaluationCallback
-from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.readers.concepts_readers import read_dataset_from_npy
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
@@ -36,7 +35,7 @@ if __name__ == "__main__":
             base_metric=RocAuc(),
             metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
-        EnergyEvaluationCallback()
+        EnergyEvaluationCallback(),
     ]
     scenario = ConceptAwareScenario(dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()

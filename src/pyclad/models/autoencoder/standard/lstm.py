@@ -3,10 +3,9 @@ import torch.nn as nn
 
 
 class LSTMEncoder(nn.Module):
-    def __init__(self, encoder: nn.ModuleList, seq_len: int) -> None:
+    def __init__(self, encoder: nn.ModuleList) -> None:
         super(LSTMEncoder, self).__init__()
         self.encoder: nn.ModuleList = encoder
-        self.seq_len = seq_len
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         batch_size = x.shape[0]
