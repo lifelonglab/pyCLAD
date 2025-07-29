@@ -5,11 +5,13 @@ from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricC
 from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.datasets.energy_plants_dataset import EnergyPlantsDataset
+from pyclad.data.timeseries import convert_dataset_to_overlapping_windows
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.pyod_adapters import LocalOutlierFactorAdapter
+from pyclad.models.adapters.temporal_adapter import FlattenTimeSeriesAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
@@ -22,9 +24,10 @@ if __name__ == "__main__":
     detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
     """
     dataset = EnergyPlantsDataset(dataset_type="random_anomalies")
+    dataset = convert_dataset_to_overlapping_windows(window_size=10, dataset=dataset)
 
     model = LocalOutlierFactorAdapter()
-    strategy = CumulativeStrategy(model)
+    strategy = CumulativeStrategy(FlattenTimeSeriesAdapter(model))
     callbacks = [
         ConceptMetricCallback(
             base_metric=RocAuc(),

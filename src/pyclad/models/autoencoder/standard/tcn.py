@@ -3,10 +3,9 @@ import torch.nn as nn
 
 
 class TCNEncoder(nn.Module):
-    def __init__(self, encoder: nn.ModuleList, seq_len: int) -> None:
+    def __init__(self, encoder: nn.ModuleList) -> None:
         super(TCNEncoder, self).__init__()
         self.encoder: nn.ModuleList = encoder
-        self.seq_len = seq_len
 
         self.pool = nn.AdaptiveAvgPool1d(1)
 

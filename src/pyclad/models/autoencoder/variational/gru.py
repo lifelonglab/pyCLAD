@@ -3,10 +3,9 @@ import torch.nn as nn
 
 
 class GRUVariationalEncoder(nn.Module):
-    def __init__(self, encoder: nn.ModuleList, seq_len: int) -> None:
+    def __init__(self, encoder: nn.ModuleList) -> None:
         super(GRUVariationalEncoder, self).__init__()
         self.encoder: nn.ModuleList = encoder
-        self.seq_len = seq_len
 
         for layer in reversed(self.encoder):
             if isinstance(layer, nn.modules.GRU):

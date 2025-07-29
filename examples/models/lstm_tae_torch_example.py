@@ -4,7 +4,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pyclad.models.autoencoder.autoencoder import TemporalAutoencoder
+from pyclad.data.timeseries import convert_to_overlapping_windows
+from pyclad.models.autoencoder.autoencoder import (
+    TemporalAutoencoder,
+    VariationalTemporalAutoencoder,
+)
 from pyclad.models.autoencoder.builder import build
 from pyclad.models.autoencoder.config import (
     ActivationLayerConfig,
@@ -15,16 +19,21 @@ from pyclad.models.autoencoder.config import (
     LSTMLayerConfig,
 )
 from pyclad.models.autoencoder.standard.lstm import LSTMDecoder, LSTMEncoder
+from pyclad.models.autoencoder.variational.lstm import (
+    LSTMVariationalDecoder,
+    LSTMVariationalEncoder,
+)
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
+    use_variational_ae = False  # Set to True if you want to use Variational Autoencoder
+
     batch_size, seq_len = 32, 10
     time_steps, n_features = 5000, 5
-    dataset = np.random.rand(time_steps, n_features)
+    dataset, _ = convert_to_overlapping_windows(seq_len, np.random.rand(time_steps, n_features))
 
     config = AutoencoderConfig(
-        seq_len=seq_len,
         encoder=EncoderConfig(
             layers=[
                 LSTMLayerConfig(
@@ -50,14 +59,19 @@ if __name__ == "__main__":
     )
 
     _encoder_layers, _decoder_layers = build(config=config)
-    encoder = LSTMEncoder(_encoder_layers, seq_len=config.seq_len)
-    decoder = LSTMDecoder(_decoder_layers, seq_len=config.seq_len)
-    autoencoder = TemporalAutoencoder(encoder=encoder, decoder=decoder, epochs=5, seq_len=config.seq_len)
+    if use_variational_ae:
+        encoder = LSTMVariationalEncoder(_encoder_layers)
+        decoder = LSTMVariationalDecoder(_decoder_layers, seq_len=seq_len)
+        autoencoder = VariationalTemporalAutoencoder(encoder=encoder, decoder=decoder, epochs=5)
+    else:
+        encoder = LSTMEncoder(_encoder_layers)
+        decoder = LSTMDecoder(_decoder_layers, seq_len=seq_len)
+        autoencoder = TemporalAutoencoder(encoder=encoder, decoder=decoder, epochs=5)
 
     autoencoder.fit(dataset)
 
-    input_batch = torch.randn(batch_size, config.seq_len, n_features)
-    true_labels_batch = torch.randn(batch_size, config.seq_len, 1)
+    input_batch = torch.randn(batch_size, seq_len, n_features)
+    true_labels_batch = torch.randn(batch_size, seq_len, 1)
 
     binary_predictions, rec_error = autoencoder.predict(input_batch.numpy())
     assert binary_predictions.shape == true_labels_batch.shape

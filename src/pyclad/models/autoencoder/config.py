@@ -46,6 +46,5 @@ class DecoderConfig(BaseModel):
 
 
 class AutoencoderConfig(BaseModel):
-    seq_len: int
     encoder: EncoderConfig
     decoder: DecoderConfig

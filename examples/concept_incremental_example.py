@@ -73,7 +73,7 @@ if __name__ == "__main__":
             metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
         TimeEvaluationCallback(),
-        EnergyEvaluationCallback()
+        EnergyEvaluationCallback(),
     ]
 
     # Execute the concept incremental scenario

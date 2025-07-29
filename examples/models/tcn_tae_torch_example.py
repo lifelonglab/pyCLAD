@@ -4,7 +4,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pyclad.models.autoencoder.autoencoder import TemporalAutoencoder
+from pyclad.data.timeseries import convert_to_overlapping_windows
+from pyclad.models.autoencoder.autoencoder import (
+    TemporalAutoencoder,
+    VariationalTemporalAutoencoder,
+)
 from pyclad.models.autoencoder.builder import build
 from pyclad.models.autoencoder.config import (
     ActivationLayerConfig,
@@ -15,16 +19,21 @@ from pyclad.models.autoencoder.config import (
     EncoderConfig,
 )
 from pyclad.models.autoencoder.standard.tcn import TCNDecoder, TCNEncoder
+from pyclad.models.autoencoder.variational.tcn import (
+    TCNVariationalDecoder,
+    TCNVariationalEncoder,
+)
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
+    use_variational_ae = False  # Set to True if you want to use Variational Autoencoder
+
     batch_size, seq_len = 32, 10
     time_steps, n_features = 5000, 5
-    dataset = np.random.rand(time_steps, n_features)
+    dataset, _ = convert_to_overlapping_windows(seq_len, np.random.rand(time_steps, n_features))
 
     config = AutoencoderConfig(
-        seq_len=seq_len,
         encoder=EncoderConfig(
             layers=[
                 Conv1dLayerConfig(
@@ -52,9 +61,15 @@ if __name__ == "__main__":
     )
 
     _encoder_layers, _decoder_layers = build(config=config)
-    encoder = TCNEncoder(_encoder_layers, seq_len=config.seq_len)
-    decoder = TCNDecoder(_decoder_layers, seq_len=config.seq_len)
-    autoencoder = TemporalAutoencoder(encoder=encoder, decoder=decoder, epochs=5, seq_len=config.seq_len)
+
+    if use_variational_ae:
+        encoder = TCNVariationalEncoder(_encoder_layers)
+        decoder = TCNVariationalDecoder(_decoder_layers, seq_len=seq_len)
+        autoencoder = VariationalTemporalAutoencoder(encoder=encoder, decoder=decoder, epochs=5)
+    else:
+        encoder = TCNEncoder(_encoder_layers)
+        decoder = TCNDecoder(_decoder_layers, seq_len=seq_len)
+        autoencoder = TemporalAutoencoder(encoder=encoder, decoder=decoder, epochs=5)
 
     autoencoder.fit(dataset)
 
