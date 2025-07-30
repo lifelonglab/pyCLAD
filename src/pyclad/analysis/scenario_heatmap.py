@@ -48,6 +48,7 @@ def plot_metric_heatmap(
 
     df = pd.DataFrame(data, columns=["learned_concept", "evaluated_concept", "metric_value"])
     df = df.pivot(index="learned_concept", columns="evaluated_concept", values="metric_value")
+    df = df.reindex(index=concepts_order, columns=concepts_order)
     p: Axes = sns.heatmap(
         df,
         vmin=0,
