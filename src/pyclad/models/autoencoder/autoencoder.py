@@ -7,15 +7,24 @@ from torch.utils.data import TensorDataset
 
 from pyclad.models.autoencoder.loss import VariationalMSELoss
 from pyclad.models.model import Model
+from pyclad.models.torch_backed_model import TorchBackedModel, TrainingStepOutput
 
 
-class Autoencoder(Model):
+class Autoencoder(TorchBackedModel):
     def __init__(
         self, encoder: nn.Module, decoder: nn.Module, lr: float = 1e-2, threshold: float = 0.5, epochs: int = 20
     ):
         self.module = AutoencoderModule(encoder, decoder, lr)
         self.threshold = threshold
         self.epochs = epochs
+
+    @property
+    def trainable_module(self) -> "AutoencoderModule":
+        return self.module
+
+    @property
+    def loss_function(self) -> nn.Module:
+        return self.module.train_loss
 
     def fit(self, data: np.ndarray):
         dataset = TensorDataset(torch.Tensor(data))
@@ -59,12 +68,17 @@ class AutoencoderModule(pl.LightningModule):
         x = self.decoder(x)
         return x
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx) -> TrainingStepOutput:
         x = batch[0]
         x_hat = self(x)
         loss = self.train_loss(x_hat, x)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-        return loss
+        return TrainingStepOutput(
+            loss=loss,
+            input=x,
+            output=x_hat,
+            target=x,
+        )
 
     def validation_step(self, batch, batch_idx):
         x = batch[0]
