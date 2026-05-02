@@ -16,8 +16,9 @@ class MemoryUsageCallback(Callback, InfoProvider):
 
     def after_concept_processing(self, concept: Concept, **kwargs):
         current_size, peak_size = tracemalloc.get_traced_memory()
-        self._current_memory_usage[concept.name] = current_size
-        self._peak_memory_usage[concept.name] = peak_size
+        concept_name = concept.name if hasattr(concept, "name") else str(concept)
+        self._current_memory_usage[concept_name] = current_size
+        self._peak_memory_usage[concept_name] = peak_size
         tracemalloc.reset_peak()
 
     def after_scenario(self, *args, **kwargs):
