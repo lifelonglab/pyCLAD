@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.lo
 if __name__ == "__main__":
     """
     This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with
-    CumulativeStrategy and OneCLassSVM model in a timeseries-oriented manner. 
+    CumulativeStrategy and OneCLassSVM model in a timeseries-oriented manner.
     Please note that the anomaly detection results will be random (0.5), as we generate random data and random labels
     """
     window_size = 10  # Define the window size for overlapping windows
