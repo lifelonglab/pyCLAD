@@ -10,6 +10,7 @@ from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
+from pyclad.models.adapters.torch_adapter import TorchModelAdapter
 from pyclad.models.autoencoder.autoencoder import Autoencoder
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
@@ -44,7 +45,8 @@ if __name__ == "__main__":
         nn.Sigmoid(),
     )
 
-    model = Autoencoder(encoder, decoder)
+    backbone = Autoencoder(encoder, decoder)
+    model = TorchModelAdapter(backbone, epochs=20, batch_size=32)
 
     replay_buffer = AdaptiveBalancedReplayBuffer(selection_method=RandomSelection(), max_size=1000)
     strategy = ReplayEnhancedStrategy(model, replay_buffer)

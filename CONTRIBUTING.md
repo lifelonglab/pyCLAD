@@ -74,7 +74,7 @@ Please make sure that:
 
 Some tests may take a long time to execute. They should be annotated with `@pytest.mark.longrun` decorator. They are
 disabled by default. If you want to include them in tests execution, you should use the following command:
-```pytest tests --longrun```
+```pytest -m longrun --longrun```
 
 # Documentation
 

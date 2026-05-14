@@ -1,9 +1,11 @@
 from typing import List
 from unittest.mock import patch
 
+import numpy as np
 import pytest
 
 from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
+from pyclad.data.concept import Concept
 
 
 @pytest.mark.parametrize("expected", [[20, 40, 1124, 15124], [55, 22, 1124, 4111]])
@@ -12,7 +14,7 @@ def test_correct_current_size(expected: List[int]):
         callback = MemoryUsageCallback()
         for i, value in enumerate(expected):
             mock_tracemalloc.get_traced_memory.return_value = (value, 0)
-            callback.after_concept_processing(str(i))
+            callback.after_concept_processing(Concept(str(i), data=np.empty))
 
         results = callback.info()["memory_usage_callback"]["current_memory_usage"]
         for i, value in enumerate(expected):
@@ -25,7 +27,7 @@ def test_correct_peak_size(expected: List[int]):
         callback = MemoryUsageCallback()
         for i, value in enumerate(expected):
             mock_tracemalloc.get_traced_memory.return_value = (0, value)
-            callback.after_concept_processing(str(i))
+            callback.after_concept_processing(Concept(str(i), data=np.empty))
 
         results = callback.info()["memory_usage_callback"]["peak_memory_usage"]
         for i, value in enumerate(expected):

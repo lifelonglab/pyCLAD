@@ -166,3 +166,7 @@ cython_debug/
 output.json
 heatmap.pdf
 lightning_logs
+
+
+# custom
+memory
