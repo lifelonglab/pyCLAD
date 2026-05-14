@@ -53,7 +53,7 @@ if __name__ == "__main__":
         nn.Sigmoid(),
     )
 
-    model = Autoencoder(encoder=encoder, decoder=decoder, epochs=5)
+    model = Autoencoder(encoder=encoder, decoder=decoder)
     buffer = ReservoirBuffer(max_capacity=200, device="cpu")
     strategy = DerPlusPlus(
         model=model,
@@ -61,8 +61,6 @@ if __name__ == "__main__":
         alpha=0.5,
         beta=0.5,
         batch_size=32,
-        lr=1e-2,
-        epochs=5,
     )
 
     time_callback = TimeEvaluationCallback()

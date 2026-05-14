@@ -1,10 +1,14 @@
 import numpy as np
 
 from pyclad.models.model import Model
-from pyclad.strategies.strategy import ConceptAwareStrategy, ConceptIncrementalStrategy
+from pyclad.strategies.strategy import (
+    ConceptAgnosticStrategy,
+    ConceptAwareStrategy,
+    ConceptIncrementalStrategy,
+)
 
 
-class NaiveStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
+class NaiveStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgnosticStrategy):
 
     def __init__(self, model: Model):
         self._model = model
