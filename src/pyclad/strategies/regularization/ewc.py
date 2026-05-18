@@ -78,9 +78,9 @@ class EWCStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
             importance_sum = self._importance_sum[name].to(device=param.device, dtype=param.dtype)
             reference_sum = self._reference_sum[name].to(device=param.device, dtype=param.dtype)
             reference_square_sum = self._reference_square_sum[name].to(device=param.device, dtype=param.dtype)
-            penalty = penalty + (
-                importance_sum * param.pow(2) - 2.0 * reference_sum * param + reference_square_sum
-            ).sum()
+            penalty = (
+                penalty + (importance_sum * param.pow(2) - 2.0 * reference_sum * param + reference_square_sum).sum()
+            )
         return penalty
 
     def _update_fisher(self, data: np.ndarray) -> None:
