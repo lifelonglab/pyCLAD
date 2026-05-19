@@ -8,3 +8,9 @@ class TestEWCStrategy(BaseStrategyTest):
     @pytest.fixture(scope="class")
     def strategy(self, backbone):
         return EWCStrategy(backbone, lambda_ewc=100, epochs=2, batch_size=16)
+
+
+class TestEWCOnlineStrategy(BaseStrategyTest):
+    @pytest.fixture(scope="class")
+    def strategy(self, backbone):
+        return EWCStrategy(backbone, lambda_ewc=100, epochs=2, batch_size=16, online=True)

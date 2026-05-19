@@ -93,12 +93,12 @@ class EWCStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
             shuffle=False,
         )
 
-        new_fisher = {name: torch.zeros_like(param) for name, param in module.named_parameters()}
+        new_fisher = {name: torch.zeros_like(param) for name, param in module.named_parameters() if param.requires_grad}
         n_samples = 0
 
         for (x,) in loader:
-            loss = self._model.compute_loss(x)
             module.zero_grad()
+            loss = self._model.compute_loss(x)
             loss.backward()
             for name, param in module.named_parameters():
                 if param.grad is not None:
