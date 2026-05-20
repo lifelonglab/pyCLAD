@@ -3,29 +3,29 @@ import pathlib
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
-from pyclad.callbacks.evaluation.vision_pixel_concept_metric_callback import VisionPixelConceptMetricCallback
-from pyclad.data.readers.vision_reader import read_vision_dataset
+from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import VisionPixelConceptMetricCallback
+from pyclad.vision.data.readers.vision_reader import read_vision_dataset
 from pyclad.metrics.base.average_precision import AveragePrecision
 from pyclad.metrics.base.f1_score import F1Score
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
-from pyclad.metrics.vision.pixel_aupro import PixelAUPRO
-from pyclad.metrics.vision.pixel_average_precision import PixelAveragePrecision
-from pyclad.metrics.vision.pixel_dice_score import PixelDiceScore
-from pyclad.metrics.vision.pixel_f1_score import PixelF1Score
-from pyclad.metrics.vision.pixel_iou import PixelIoU
-from pyclad.metrics.vision.pixel_roc_auc import PixelRocAuc
-from pyclad.models.vision.paste.config import PaSTeConfig
-from pyclad.models.vision.paste.paste import PaSTe
+from pyclad.vision.metrics.pixel_aupro import PixelAUPRO
+from pyclad.vision.metrics.pixel_average_precision import PixelAveragePrecision
+from pyclad.vision.metrics.pixel_dice_score import PixelDiceScore
+from pyclad.vision.metrics.pixel_f1_score import PixelF1Score
+from pyclad.vision.metrics.pixel_iou import PixelIoU
+from pyclad.vision.metrics.pixel_roc_auc import PixelRocAuc
+from pyclad.vision.models.paste.config import PaSTeConfig
+from pyclad.vision.models.paste.paste import PaSTe
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
 from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
 from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
 from pyclad.strategies.replay.selection.random import RandomSelection
 
-logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
+logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
     """
@@ -36,8 +36,8 @@ if __name__ == "__main__":
         resize_to=(224, 224),
         data_mode="numpy",
         color_mode="rgb",
-        max_train_samples_per_category=150,
-        max_test_samples_per_category=150,
+        # max_train_samples_per_category=50,
+        # max_test_samples_per_category=50,
     )
 
     model_config = PaSTeConfig(
