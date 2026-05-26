@@ -7,6 +7,7 @@ from pyod.models.lof import LOF
 from pyod.models.ocsvm import OCSVM
 
 from pyclad.models.model import Model
+from pyclad.output.prediction_results import PredictionResults
 
 
 class PyODAdapter(Model):
@@ -17,8 +18,11 @@ class PyODAdapter(Model):
     def fit(self, data: np.ndarray):
         self._model.fit(data)
 
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-        return self._model.predict(data), self._model.decision_function(data)
+    def predict(self, data: np.ndarray) -> PredictionResults:
+        return PredictionResults(
+            y_pred=self._model.predict(data),
+            anomaly_scores=self._model.decision_function(data),
+        )
 
     def name(self) -> str:
         return self._model_name

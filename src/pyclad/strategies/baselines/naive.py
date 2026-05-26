@@ -16,7 +16,7 @@ class NaiveStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgn
     def learn(self, data: np.ndarray, **kwargs) -> None:
         self._model.fit(data)
 
-    def predict(self, data: np.ndarray, **kwargs) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, **kwargs):
         return self._model.predict(data)
 
     def name(self) -> str:

@@ -25,7 +25,7 @@ class ConceptAgnosticScenario:
 
             batch_id = 0
             while batch_size * batch_id < len(train_concept.data):
-                batch = train_concept.data[batch_id * batch_size : (batch_id + 1) * batch_size]
+                batch = train_concept.data[batch_id * batch_size: (batch_id + 1) * batch_size]
                 logger.info(
                     f"Starting training on concept {train_concept.name}, batch: {batch_id} with size {len(batch)}"
                 )
@@ -34,14 +34,14 @@ class ConceptAgnosticScenario:
             callback_composite.after_training(learned_concept=train_concept)
 
             for test_concept in self._dataset.test_concepts():
-                logger.info(f"Starting evaluation of concept {train_concept.name}")
+                logger.info(f"Starting evaluation of concept {test_concept.name}")
                 callback_composite.before_evaluation()
-                y_predicted, anomaly_scores = self._strategy.predict(data=test_concept.data)
+                result = self._strategy.predict(data=test_concept.data)
                 callback_composite.after_evaluation(
                     evaluated_concept=test_concept,
                     y_true=test_concept.labels,
-                    y_pred=y_predicted,
-                    anomaly_scores=anomaly_scores,
+                    y_pred=result.y_pred,
+                    anomaly_scores=result.anomaly_scores,
                 )
 
             callback_composite.after_concept_processing(concept=train_concept)

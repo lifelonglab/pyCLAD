@@ -3,16 +3,11 @@ from abc import abstractmethod
 import numpy as np
 
 from pyclad.models.model import Model
+from pyclad.vision.prediction_results import VisionPredictionResults
 
 
 class VisionModel(Model):
-    """Anomaly detection model producing pixel-level score maps."""
+    """Anomaly detection model whose predict() returns pixel-level score maps."""
 
     @abstractmethod
-    def score_maps(self, data: np.ndarray) -> np.ndarray:
-        """Compute per-pixel anomaly scores.
-
-        :param data: batch of images, shape ``(N, H, W, C)``.
-        :return: array of shape ``(N, H, W)`` — higher values are more anomalous.
-        """
-        ...
+    def predict(self, data: np.ndarray) -> VisionPredictionResults: ...

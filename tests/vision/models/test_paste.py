@@ -5,6 +5,7 @@ import pytest
 
 from pyclad.vision.models.paste.config import PaSTeConfig
 from pyclad.vision.models.paste.paste import PaSTe
+from pyclad.vision.prediction_results import VisionPredictionResults
 
 
 @pytest.mark.parametrize(
@@ -33,12 +34,12 @@ def test_paste_predict_shapes(backbone_name: str, student_bootstrap_layer: Optio
         )
     )
 
-    y_pred, scores = model.predict(data)
-    score_maps = model.score_maps(data)
+    result = model.predict(data)
 
-    assert y_pred.shape == (1,)
-    assert scores.shape == (1,)
-    assert score_maps.shape == (1, 64, 64)
+    assert isinstance(result, VisionPredictionResults)
+    assert result.y_pred.shape == (1,)
+    assert result.anomaly_scores.shape == (1,)
+    assert result.score_maps.shape == (1, 64, 64)
 
 
 def test_paste_rejects_invalid_bootstrap_layer():
@@ -63,7 +64,8 @@ def test_paste_fit_smoke_run():
     )
 
     model.fit(data)
-    y_pred, scores = model.predict(data)
+    result = model.predict(data)
 
-    assert y_pred.shape == (2,)
-    assert scores.shape == (2,)
+    assert result.y_pred.shape == (2,)
+    assert result.anomaly_scores.shape == (2,)
+    assert result.score_maps.shape == (2, 64, 64)

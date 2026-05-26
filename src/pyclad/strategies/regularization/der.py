@@ -79,7 +79,7 @@ class DerPlusPlus(ConceptAgnosticStrategy):
         self._buffer.update(x.detach(), buf_output, x.detach())
         return loss
 
-    def predict(self, data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, data: np.ndarray):
         return self._model.predict(data)
 
     def name(self) -> str:

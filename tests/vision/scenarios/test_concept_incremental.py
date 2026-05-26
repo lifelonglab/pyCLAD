@@ -1,14 +1,15 @@
 """Integration test for the vision scenario + pixel callback pipeline.
 
-Confirms the Opcja-2 contract: scenario fetches score_maps from the model
-via Strategy.model_for_concept (no callback-side reflection) and forwards
-them to callbacks through after_evaluation kwarg.
+The base ConceptIncrementalScenario now unpacks VisionPredictionResults and
+passes score_maps to callbacks automatically — no separate vision scenario needed.
 """
 
 import numpy as np
 
 from pyclad.data.concept import Concept
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
+from pyclad.output.prediction_results import PredictionResults
+from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
 from pyclad.strategies.strategy import ConceptIncrementalStrategy
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
     VisionPixelConceptMetricCallback,
@@ -16,7 +17,7 @@ from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
 from pyclad.vision.data.vision_concept import VisionConcept
 from pyclad.vision.metrics.pixel_roc_auc import PixelRocAuc
 from pyclad.vision.models.vision_model import VisionModel
-from pyclad.vision.scenarios.concept_incremental import VisionConceptIncrementalScenario
+from pyclad.vision.prediction_results import VisionPredictionResults
 
 
 class _PixelPerfectModel(VisionModel):
@@ -24,27 +25,39 @@ class _PixelPerfectModel(VisionModel):
 
     def fit(self, data: np.ndarray) -> None: ...
 
-    def predict(self, data: np.ndarray):
-        return np.zeros(len(data), dtype=np.int64), np.zeros(len(data), dtype=np.float32)
+    def predict(self, data: np.ndarray) -> VisionPredictionResults:
+        return VisionPredictionResults(
+            y_pred=np.zeros(len(data), dtype=np.int64),
+            anomaly_scores=np.zeros(len(data), dtype=np.float32),
+            score_maps=np.array(
+                [
+                    [[0.95, 0.05], [0.05, 0.05]],  # anomaly at (0,0)
+                    [[0.05, 0.05], [0.05, 0.05]],  # no anomaly
+                ],
+                dtype=np.float32,
+            ),
+        )
 
     def name(self) -> str:
         return "PixelPerfect"
 
-    def score_maps(self, data: np.ndarray) -> np.ndarray:
-        # encoded perfect predictions for the test fixture below
-        return np.array(
-            [
-                [[0.95, 0.05], [0.05, 0.05]],  # anomaly at (0,0)
-                [[0.05, 0.05], [0.05, 0.05]],  # no anomaly
-            ],
-            dtype=np.float32,
+
+class _PlainModel:
+    """Non-vision model — predict() returns plain PredictionResults."""
+
+    def fit(self, data): ...
+
+    def predict(self, data) -> PredictionResults:
+        return PredictionResults(
+            y_pred=np.zeros(len(data), dtype=np.int64),
+            anomaly_scores=np.zeros(len(data), dtype=np.float32),
         )
+
+    def name(self):
+        return "Plain"
 
 
 class _SingleModelStrategy(ConceptIncrementalStrategy):
-    """Minimal ConceptIncrementalStrategy storing a single shared model.
-    Default Strategy.model_for_concept(self._model fallback) covers it."""
-
     def __init__(self, model):
         self._model = model
 
@@ -76,16 +89,12 @@ def _build_dataset_with_one_vision_concept() -> ConceptsDataset:
 
 
 def test_scenario_pipes_score_maps_to_pixel_callback():
+    """VisionPredictionResults from the model flows through the base scenario to the callback."""
     dataset = _build_dataset_with_one_vision_concept()
     strategy = _SingleModelStrategy(_PixelPerfectModel())
     callback = VisionPixelConceptMetricCallback(base_metric=PixelRocAuc())
 
-    scenario = VisionConceptIncrementalScenario(
-        dataset=dataset,
-        strategy=strategy,
-        callbacks=[callback],
-    )
-    scenario.run()
+    ConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=[callback]).run()
 
     info = callback.info()["pixel_concept_metric_callback_Pixel-ROC-AUC"]
     assert info["concepts_order"] == ["widget"]
@@ -93,27 +102,11 @@ def test_scenario_pipes_score_maps_to_pixel_callback():
 
 
 def test_scenario_skips_pixel_callback_when_model_is_not_vision_model():
-    """If the user runs a non-vision model under the vision scenario, the
-    pixel callback should produce no output instead of erroring."""
-
-    class _PlainModel:
-        def fit(self, data): ...
-
-        def predict(self, data):
-            return np.zeros(len(data)), np.zeros(len(data))
-
-        def name(self):
-            return "Plain"
-
+    """Plain PredictionResults (no score_maps) → pixel callback silently skips."""
     dataset = _build_dataset_with_one_vision_concept()
     strategy = _SingleModelStrategy(_PlainModel())
     callback = VisionPixelConceptMetricCallback(base_metric=PixelRocAuc())
 
-    scenario = VisionConceptIncrementalScenario(
-        dataset=dataset,
-        strategy=strategy,
-        callbacks=[callback],
-    )
-    scenario.run()
+    ConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=[callback]).run()
 
     assert callback.info() == {}

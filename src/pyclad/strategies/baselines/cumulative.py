@@ -20,7 +20,7 @@ class CumulativeStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, Conce
         self._replay.append(data)
         self._model.fit(np.concatenate(self._replay))
 
-    def predict(self, data: np.ndarray, *args, **kwargs) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, *args, **kwargs):
         return self._model.predict(data)
 
     def name(self) -> str:

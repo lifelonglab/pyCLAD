@@ -10,6 +10,7 @@ from pyclad.data.datasets.concepts_dataset import ConceptsDataset
 from pyclad.strategies.strategy import ConceptIncrementalStrategy
 from pyclad.vision.data.vision_concept import VisionConcept
 from pyclad.vision.models.vision_model import VisionModel
+from pyclad.vision.prediction_results import VisionPredictionResults
 
 logger = logging.getLogger(__name__)
 
@@ -54,24 +55,16 @@ class VisionConceptIncrementalScenario:
             for test_concept in self._dataset.test_concepts():
                 logger.info(f"Starting evaluation of concept {test_concept.name}")
                 callback_composite.before_evaluation()
-                y_predicted, anomaly_scores = self._strategy.predict(data=test_concept.data)
-                score_maps = self._compute_score_maps(test_concept)
+                results: VisionPredictionResults = self._strategy.predict(data=test_concept.data)
                 callback_composite.after_evaluation(
                     evaluated_concept=test_concept,
                     y_true=test_concept.labels,
-                    y_pred=y_predicted,
-                    anomaly_scores=anomaly_scores,
-                    score_maps=score_maps,
+                    y_pred=results.y_pred,
+                    anomaly_scores=results.anomaly_scores,
+                    score_maps=results.score_maps,
                 )
 
             callback_composite.after_concept_processing(concept=train_concept)
 
         callback_composite.after_scenario()
 
-    def _compute_score_maps(self, evaluated_concept: Concept) -> Optional[np.ndarray]:
-        if not isinstance(evaluated_concept, VisionConcept):
-            return None
-        model = self._strategy.model_for_concept(evaluated_concept.name)
-        if not isinstance(model, VisionModel):
-            return None
-        return np.asarray(model.score_maps(evaluated_concept.data))

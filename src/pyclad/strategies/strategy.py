@@ -1,10 +1,10 @@
 import abc
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import numpy as np
 
-from pyclad.models.model import Model
 from pyclad.output.output_writer import InfoProvider
+from pyclad.output.prediction_results import PredictionResults
 
 
 class Strategy(InfoProvider):
@@ -19,20 +19,6 @@ class Strategy(InfoProvider):
     def info(self) -> Dict[str, Any]:
         return {"strategy": {"name": self.name(), **self.additional_info()}}
 
-    def model_for_concept(self, concept_id: str) -> Optional[Model]:
-        """Return the model handling ``concept_id`` so callbacks can inspect it.
-
-        Default returns ``self._model`` if present, else ``None`` — covering
-        every single-model strategy. Strategies that keep a per-concept model
-        dict (e.g. :class:`pyclad.strategies.baselines.mste.MSTE`) MUST override.
-
-        Callbacks needing typed access to model methods (e.g.
-        :class:`pyclad.vision.callbacks.vision_pixel_concept_metric_callback.VisionPixelConceptMetricCallback`
-        which needs ``score_maps``) call this instead of reflecting on
-        strategy-private fields.
-        """
-        return getattr(self, "_model", None)
-
 
 class ConceptAwareStrategy(Strategy):
 
@@ -40,13 +26,7 @@ class ConceptAwareStrategy(Strategy):
     def learn(self, data: np.ndarray, concept_id: str) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray, concept_id: str) -> (np.ndarray, np.ndarray):
-        """
-        :param concept_id:
-        :param data:
-        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
-        """
-        ...
+    def predict(self, data: np.ndarray, concept_id: str) -> PredictionResults: ...
 
 
 class ConceptIncrementalStrategy(Strategy):
@@ -54,12 +34,7 @@ class ConceptIncrementalStrategy(Strategy):
     def learn(self, data: np.ndarray) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-        """
-        :param data:
-        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
-        """
-        ...
+    def predict(self, data: np.ndarray) -> PredictionResults: ...
 
 
 class ConceptAgnosticStrategy(Strategy):
@@ -67,9 +42,4 @@ class ConceptAgnosticStrategy(Strategy):
     def learn(self, data: np.ndarray) -> None: ...
 
     @abc.abstractmethod
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-        """
-        :param data:
-        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
-        """
-        ...
+    def predict(self, data: np.ndarray) -> PredictionResults: ...

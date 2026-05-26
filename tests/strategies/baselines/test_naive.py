@@ -28,11 +28,12 @@ def test_learning_only_with_current_data(data):
     mocked_fn.assert_called_with(data)
 
 
-@pytest.mark.parametrize("data", [[[1, 2, 3], [4, 5, 6]], [[1, 5, 8], [6, 1, 6]]])
-def test_returning_model_predictions(data):
+def test_returning_model_predictions():
+    from pyclad.output.prediction_results import PredictionResults
+    expected = PredictionResults(y_pred=np.array([0, 1]), anomaly_scores=np.array([0.1, 0.9]))
     model = MockModel()
-    mocked_fn = MagicMock(return_value=data)
-    model.predict = mocked_fn
+    model.predict = MagicMock(return_value=expected)
     strategy = NaiveStrategy(model)
-    results = strategy.predict(np.array([[1, 1], [1, 1], [1, 1]]))
-    assert_array_equal(results, data)
+    result = strategy.predict(np.array([[1, 1], [1, 1]]))
+    assert_array_equal(result.y_pred, expected.y_pred)
+    assert_array_equal(result.anomaly_scores, expected.anomaly_scores)

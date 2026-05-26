@@ -20,6 +20,7 @@ from pyclad.vision.models.utilities.utils import (
     trainer_device_config,
 )
 from pyclad.vision.models.vision_model import VisionModel
+from pyclad.vision.prediction_results import VisionPredictionResults
 
 
 class PaSTe(VisionModel):
@@ -136,21 +137,8 @@ class PaSTe(VisionModel):
             score_maps, anomaly_scores = self.module.network.inference(x)
         return score_maps, anomaly_scores
 
-    def score_maps(self, data: np.ndarray) -> np.ndarray:
-        if len(data) == 0:
-            return np.asarray([], dtype=np.float32)
-
-        target_size = self._preprocessor.spatial_size(data)
-        all_maps: list[np.ndarray] = []
-
-        for (batch_x,) in self._prepare_batches(data, shuffle=False):
-            batch_maps, _ = self._forward_inference(batch_x.to(self._device, dtype=torch.float32))
-            batch_maps = self._resize_maps(batch_maps, output_size=target_size)
-            all_maps.append(batch_maps.detach().cpu().numpy().astype(np.float32, copy=False))
-
-        return np.concatenate(all_maps, axis=0) if all_maps else np.asarray([], dtype=np.float32)
-
     def _score_data(self, data: np.ndarray) -> np.ndarray:
+        """Compute image-level anomaly scores. Used internally during fit() for threshold calibration."""
         if len(data) == 0:
             return np.asarray([], dtype=np.float32)
 
@@ -165,16 +153,42 @@ class PaSTe(VisionModel):
 
         return np.concatenate(all_scores, axis=0) if all_scores else np.asarray([], dtype=np.float32)
 
-    def predict(self, data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        anomaly_scores = self._score_data(data)
+    def predict(self, data: np.ndarray) -> VisionPredictionResults:
+        if len(data) == 0:
+            empty = np.asarray([], dtype=np.float32)
+            return VisionPredictionResults(y_pred=np.asarray([], dtype=np.int64), anomaly_scores=empty, score_maps=empty)
+
+        target_size = self._preprocessor.spatial_size(data)
+        all_maps: list[np.ndarray] = []
+        all_scores: list[np.ndarray] = []
+
+        for (batch_x,) in self._prepare_batches(data, shuffle=False):
+            raw_maps, _ = self._forward_inference(batch_x.to(self._device, dtype=torch.float32))
+
+            if self.config.score_mode == "mean":
+                batch_scores = raw_maps.mean(dim=(1, 2))
+            else:
+                batch_scores = raw_maps.view(raw_maps.size(0), -1).max(dim=1).values
+            all_scores.append(batch_scores.detach().cpu().numpy().astype(np.float32, copy=False))
+
+            resized = self._resize_maps(raw_maps, output_size=target_size)
+            all_maps.append(resized.detach().cpu().numpy().astype(np.float32, copy=False))
+
+        score_maps = np.concatenate(all_maps, axis=0)
+        anomaly_scores = np.concatenate(all_scores, axis=0)
+
         if self.config.threshold is not None:
             threshold = float(self.config.threshold)
         elif self._threshold is not None:
             threshold = float(self._threshold)
         else:
             threshold = 0.0
-        y_pred = (anomaly_scores > threshold).astype(int)
-        return y_pred, anomaly_scores
+
+        return VisionPredictionResults(
+            y_pred=(anomaly_scores > threshold).astype(int),
+            anomaly_scores=anomaly_scores,
+            score_maps=score_maps,
+        )
 
     def name(self) -> str:
         return "PaSTe"
