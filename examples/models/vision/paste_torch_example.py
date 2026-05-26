@@ -20,10 +20,10 @@ from pyclad.vision.metrics.pixel_roc_auc import PixelRocAuc
 from pyclad.vision.models.paste.config import PaSTeConfig
 from pyclad.vision.models.paste.paste import PaSTe
 from pyclad.output.json_writer import JsonOutputWriter
-from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
 from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
 from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
 from pyclad.strategies.replay.selection.random import RandomSelection
+from pyclad.vision.scenarios.concept_incremental import VisionConceptIncrementalScenario
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,12 +32,13 @@ if __name__ == "__main__":
     This example showcases how to use the PaSTe model for continual vision anomaly detection.
     """
     dataset = read_vision_dataset(
+        root=pathlib.Path("../../resources/vision/BTech_Dataset_transformed"),
         benchmark="btech",
         resize_to=(224, 224),
         data_mode="numpy",
         color_mode="rgb",
-        # max_train_samples_per_category=50,
-        # max_test_samples_per_category=50,
+        max_train_samples_per_category=50,
+        max_test_samples_per_category=50,
     )
 
     model_config = PaSTeConfig(
@@ -47,7 +48,7 @@ if __name__ == "__main__":
         pretrained_teacher=True,
         pretrained_student=False,
         batch_size=16,
-        epochs=50,
+        epochs=2,
         score_mode="max",
         threshold_quantile=0.99,
         show_training_progress=True,
@@ -65,16 +66,16 @@ if __name__ == "__main__":
         ConceptMetricCallback(base_metric=F1Score(), summarized_metrics=summarized_metrics),
         ConceptMetricCallback(base_metric=AveragePrecision(), summarized_metrics=summarized_metrics),
         # Pixel-level
-        VisionPixelConceptMetricCallback(
-            strategy=strategy,
-            base_metrics=[PixelRocAuc(), PixelAveragePrecision(), PixelAUPRO(), PixelF1Score(), PixelDiceScore(),
-                          PixelIoU()],
-            summarized_metrics=summarized_metrics,
-        ),
+        VisionPixelConceptMetricCallback(base_metric=PixelRocAuc(), summarized_metrics=summarized_metrics),
+        VisionPixelConceptMetricCallback(base_metric=PixelAveragePrecision(), summarized_metrics=summarized_metrics),
+        VisionPixelConceptMetricCallback(base_metric=PixelAUPRO(), summarized_metrics=summarized_metrics),
+        VisionPixelConceptMetricCallback(base_metric=PixelF1Score(), summarized_metrics=summarized_metrics),
+        VisionPixelConceptMetricCallback(base_metric=PixelDiceScore(), summarized_metrics=summarized_metrics),
+        VisionPixelConceptMetricCallback(base_metric=PixelIoU(), summarized_metrics=summarized_metrics),
         TimeEvaluationCallback(),
     ]
 
-    scenario = ConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=callbacks)
+    scenario = VisionConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("paste_output.json"))
