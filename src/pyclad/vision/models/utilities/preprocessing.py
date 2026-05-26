@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Literal, Optional, Sequence
 
 import numpy as np
 import torch
@@ -10,14 +10,22 @@ class ImagePreprocessor:
         self,
         input_size: tuple[int, int],
         in_channels: int,
+        input_range: Literal["uint8", "float01"],
+        input_layout: Literal["NHWC", "NCHW"],
         normalize_mean: Optional[Sequence[float]] = None,
         normalize_std: Optional[Sequence[float]] = None,
     ):
         if in_channels <= 0:
             raise ValueError("in_channels must be positive")
+        if input_range not in ("uint8", "float01"):
+            raise ValueError(f"input_range must be 'uint8' or 'float01', got {input_range!r}")
+        if input_layout not in ("NHWC", "NCHW"):
+            raise ValueError(f"input_layout must be 'NHWC' or 'NCHW', got {input_layout!r}")
 
         self._input_size = input_size
         self._in_channels = in_channels
+        self._input_range = input_range
+        self._input_layout = input_layout
         self._normalize_mean = tuple(normalize_mean) if normalize_mean is not None else None
         self._normalize_std = tuple(normalize_std) if normalize_std is not None else None
 
@@ -30,21 +38,15 @@ class ImagePreprocessor:
                     f"{len(self._normalize_mean)} and {len(self._normalize_std)}"
                 )
 
-    @staticmethod
-    def _to_nchw(x: np.ndarray) -> np.ndarray:
+    def _to_nchw(self, x: np.ndarray) -> np.ndarray:
         if x.ndim != 4:
-            raise ValueError(f"Expected 4D tensor (NCHW or NHWC), got {x.shape}")
-
-        if x.shape[1] in (1, 3):
+            raise ValueError(f"Expected 4D tensor, got {x.shape}")
+        if self._input_layout == "NCHW":
             return x
-        if x.shape[-1] in (1, 3):
-            return np.transpose(x, (0, 3, 1, 2))
+        return np.transpose(x, (0, 3, 1, 2))
 
-        raise ValueError(f"Cannot infer channel dimension from input shape {x.shape}")
-
-    @classmethod
-    def spatial_size(cls, data: np.ndarray) -> tuple[int, int]:
-        x = cls._to_nchw(np.asarray(data))
+    def spatial_size(self, data: np.ndarray) -> tuple[int, int]:
+        x = self._to_nchw(np.asarray(data))
         return int(x.shape[-2]), int(x.shape[-1])
 
     def _match_channels(self, x_t: torch.Tensor) -> torch.Tensor:
@@ -61,7 +63,7 @@ class ImagePreprocessor:
         x = np.asarray(data, dtype=np.float32)
         x = self._to_nchw(x)
 
-        if x.size > 0 and float(x.max()) > 1.0:
+        if self._input_range == "uint8":
             x = x / 255.0
 
         x_t = torch.from_numpy(x)

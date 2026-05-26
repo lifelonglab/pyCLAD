@@ -29,6 +29,8 @@ class PaSTeConfig(BaseModel):
 
     normalize_mean: Optional[tuple[float, ...]] = (0.485, 0.456, 0.406)
     normalize_std: Optional[tuple[float, ...]] = (0.229, 0.224, 0.225)
+    input_range: Literal["uint8", "float01"] = "uint8"
+    input_layout: Literal["NHWC", "NCHW"] = "NHWC"
 
     device: Optional[str] = None
 

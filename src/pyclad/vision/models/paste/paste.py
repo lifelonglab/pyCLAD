@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Optional
 
 import numpy as np
 import pytorch_lightning as pl
@@ -10,7 +10,6 @@ from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.types import OptimizerLRScheduler
 from torch.utils.data import DataLoader, TensorDataset
 
-from pyclad.vision.models.base import VisionModel
 from pyclad.vision.models.paste.architecture import PaSTeArchitecture
 from pyclad.vision.models.paste.config import PaSTeConfig
 from pyclad.vision.models.utilities.preprocessing import ImagePreprocessor
@@ -20,6 +19,7 @@ from pyclad.vision.models.utilities.utils import (
     to_float,
     trainer_device_config,
 )
+from pyclad.vision.models.vision_model import VisionModel
 
 
 class PaSTe(VisionModel):
@@ -30,6 +30,8 @@ class PaSTe(VisionModel):
         self._preprocessor = ImagePreprocessor(
             input_size=self.config.input_size,
             in_channels=3,
+            input_range=self.config.input_range,
+            input_layout=self.config.input_layout,
             normalize_mean=self.config.normalize_mean,
             normalize_std=self.config.normalize_std,
         )
@@ -122,6 +124,7 @@ class PaSTe(VisionModel):
 
     @staticmethod
     def _resize_maps(score_maps: torch.Tensor, output_size: tuple[int, int]) -> torch.Tensor:
+        """Resize continuous per-pixel anomaly scores to ``output_size`` via bilinear."""
         if tuple(score_maps.shape[-2:]) == tuple(output_size):
             return score_maps
         resized = F.interpolate(score_maps[:, None, :, :], size=output_size, mode="bilinear", align_corners=False)
@@ -164,29 +167,23 @@ class PaSTe(VisionModel):
 
     def predict(self, data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         anomaly_scores = self._score_data(data)
-        threshold = float(self.config.threshold) if self.config.threshold is not None else float(self._threshold or 0.0)
+        if self.config.threshold is not None:
+            threshold = float(self.config.threshold)
+        elif self._threshold is not None:
+            threshold = float(self._threshold)
+        else:
+            threshold = 0.0
         y_pred = (anomaly_scores > threshold).astype(int)
         return y_pred, anomaly_scores
 
     def name(self) -> str:
         return "PaSTe"
 
-    def additional_info(self) -> Dict:
+    def additional_info(self) -> dict:
         return {
-            "threshold": self._threshold,
-            "backbone": self.config.backbone_name,
+            **self.config.model_dump(),
             "ad_layers": self.module.network.ad_layers,
-            "student_bootstrap_layer": self.config.student_bootstrap_layer,
-            "input_size": self.config.input_size,
-            "pretrained_teacher": self.config.pretrained_teacher,
-            "pretrained_student": self.config.pretrained_student,
-            "batch_size": self.config.batch_size,
-            "epochs": self.config.epochs,
-            "learning_rate": self.config.learning_rate,
-            "momentum": self.config.momentum,
-            "weight_decay": self.config.weight_decay,
-            "score_mode": self.config.score_mode,
-            "threshold_quantile": self.config.threshold_quantile,
+            "threshold": self._threshold,
             "last_loss": self._last_loss,
         }
 

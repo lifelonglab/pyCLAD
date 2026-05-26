@@ -11,11 +11,11 @@ from pyclad.vision.data.base import (
     VisionBenchmarkReader,
     VisionSample,
 )
-from pyclad.vision.data.benchmarks.readers import VisionBenchmarkSpec
-from pyclad.vision.data.benchmarks.registry import (
-    build_registered_vision_benchmark_reader,
+from pyclad.vision.data.benchmarks.readers import (
+    VisionBenchmarkSpec,
+    build_vision_benchmark_reader,
 )
-from pyclad.vision.data.generic_reader import (
+from pyclad.vision.data.readers.generic_reader import (
     DEFAULT_NORMAL_LABELS,
     FolderLayout,
     GenericFolderReader,
@@ -23,7 +23,7 @@ from pyclad.vision.data.generic_reader import (
 
 
 def build_vision_reader(
-    root: Optional[Union[str, Path]] = None,
+    root: Union[str, Path],
     benchmark: Optional[Union[str, VisionBenchmarkSpec]] = None,
     name: str = "custom",
     layout: Optional[Union[str, FolderLayout]] = None,
@@ -34,21 +34,17 @@ def build_vision_reader(
     mask_suffix: str = "_mask",
     image_extensions: Tuple[str, ...] = SUPPORTED_IMAGE_EXTENSIONS,
     single_category_name: str = "default",
-    registry_path: Optional[Union[str, Path]] = None,
 ) -> VisionBenchmarkReader:
+    resolved_root = Path(root).expanduser().resolve()
+    if not resolved_root.exists():
+        raise FileNotFoundError(f"Vision dataset root does not exist: {resolved_root}")
+
     if benchmark is not None:
-        return build_registered_vision_benchmark_reader(
-            benchmark=benchmark,
-            root=root,
-            registry_path=registry_path,
-        )
+        return build_vision_benchmark_reader(root=resolved_root, benchmark=benchmark)
 
-    if root is None:
-        raise ValueError("root is required when benchmark is not provided")
-
-    resolved_layout = layout if layout is not None else GenericFolderReader.detect_layout(root)
+    resolved_layout = layout if layout is not None else GenericFolderReader.detect_layout(resolved_root)
     return GenericFolderReader(
-        root=root,
+        root=resolved_root,
         name=name,
         layout=resolved_layout,
         train_split_dir=train_split_dir,
@@ -62,7 +58,7 @@ def build_vision_reader(
 
 
 def index_vision_dataset(
-    root: Optional[Union[str, Path]] = None,
+    root: Union[str, Path],
     benchmark: Optional[Union[str, VisionBenchmarkSpec]] = None,
     name: str = "custom",
     layout: Optional[Union[str, FolderLayout]] = None,
@@ -73,7 +69,6 @@ def index_vision_dataset(
     mask_suffix: str = "_mask",
     image_extensions: Tuple[str, ...] = SUPPORTED_IMAGE_EXTENSIONS,
     single_category_name: str = "default",
-    registry_path: Optional[Union[str, Path]] = None,
     categories: Optional[Sequence[str]] = None,
     max_train_samples_per_category: Optional[int] = None,
     max_test_samples_per_category: Optional[int] = None,
@@ -90,7 +85,6 @@ def index_vision_dataset(
         mask_suffix=mask_suffix,
         image_extensions=image_extensions,
         single_category_name=single_category_name,
-        registry_path=registry_path,
     )
     return reader.index_samples(
         categories=categories,
@@ -100,7 +94,7 @@ def index_vision_dataset(
 
 
 def read_vision_dataset(
-    root: Optional[Union[str, Path]] = None,
+    root: Union[str, Path],
     benchmark: Optional[Union[str, VisionBenchmarkSpec]] = None,
     name: str = "custom",
     layout: Optional[Union[str, FolderLayout]] = None,
@@ -111,7 +105,6 @@ def read_vision_dataset(
     mask_suffix: str = "_mask",
     image_extensions: Tuple[str, ...] = SUPPORTED_IMAGE_EXTENSIONS,
     single_category_name: str = "default",
-    registry_path: Optional[Union[str, Path]] = None,
     dataset_name: Optional[str] = None,
     categories: Optional[Sequence[str]] = None,
     data_mode: str = "numpy",
@@ -132,7 +125,6 @@ def read_vision_dataset(
         mask_suffix=mask_suffix,
         image_extensions=image_extensions,
         single_category_name=single_category_name,
-        registry_path=registry_path,
     )
     return reader.read_dataset(
         dataset_name=dataset_name,

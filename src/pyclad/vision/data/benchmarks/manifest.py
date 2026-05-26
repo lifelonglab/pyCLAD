@@ -8,10 +8,6 @@ from typing import Mapping, Optional, Sequence, Union
 import numpy as np
 
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
-from pyclad.vision.data._paths import (
-    DEFAULT_VISION_BENCHMARK_MANIFESTS_DIR,
-    DEFAULT_VISION_BENCHMARK_ORDERINGS_DIR,
-)
 from pyclad.vision.data._utils import find_duplicates, infer_category_order_from_samples
 from pyclad.vision.data.benchmarks.ordering import (
     load_concept_order_from_file,
@@ -23,10 +19,6 @@ from pyclad.vision.data.benchmarks.readers import (
     VisionSample,
     index_vision_benchmark,
     read_vision_benchmark_dataset,
-)
-from pyclad.vision.data.benchmarks.registry import (
-    index_registered_vision_benchmark,
-    resolve_vision_benchmark_root,
 )
 
 VISION_BENCHMARK_MANIFEST_FIELDNAMES = (
@@ -100,7 +92,7 @@ def build_vision_benchmark_manifest_spec(
     )
 
 
-def manifest_output_filename(benchmark: str, ordering_name: str = "dataset", **_kwargs) -> str:
+def manifest_output_filename(benchmark: str, ordering_name: str = "dataset") -> str:
     benchmark_name = normalize_vision_benchmark_manifest_name(benchmark)
     if ordering_name == "dataset":
         return f"{benchmark_name}_samples.csv"
@@ -118,18 +110,16 @@ def resolve_vision_benchmark_manifest_path(
     if output_path is not None:
         return Path(output_path).expanduser().resolve()
 
-    resolved_output_dir = (
-        Path(output_dir).expanduser().resolve()
-        if output_dir is not None
-        else DEFAULT_VISION_BENCHMARK_MANIFESTS_DIR.resolve()
-    )
+    if output_dir is None:
+        raise ValueError("Provide output_path= (full file path) or output_dir= (directory to write the manifest into).")
+
+    resolved_output_dir = Path(output_dir).expanduser().resolve()
     return resolved_output_dir / manifest_output_filename(benchmark=benchmark, ordering_name=ordering_name)
 
 
-def write_registered_vision_benchmark_manifest(
+def write_vision_benchmark_manifest(
     benchmark: str,
-    root: Optional[Union[str, Path]] = None,
-    registry_path: Optional[Union[str, Path]] = None,
+    root: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
     output_dir: Optional[Union[str, Path]] = None,
     categories: Optional[Sequence[str]] = None,
@@ -141,11 +131,12 @@ def write_registered_vision_benchmark_manifest(
     max_test_samples_per_category: Optional[int] = None,
 ) -> Path:
     benchmark_name = normalize_vision_benchmark_manifest_name(benchmark)
-    resolved_root = resolve_vision_benchmark_root(benchmark=benchmark_name, root=root, registry_path=registry_path)
-    samples = index_registered_vision_benchmark(
-        benchmark=benchmark_name,
+    resolved_root = Path(root).expanduser().resolve()
+    if not resolved_root.exists():
+        raise FileNotFoundError(f"Benchmark root does not exist: {resolved_root}")
+    samples = index_vision_benchmark(
         root=resolved_root,
-        registry_path=registry_path,
+        benchmark=benchmark_name,
         categories=categories,
         max_train_samples_per_category=max_train_samples_per_category,
         max_test_samples_per_category=max_test_samples_per_category,
@@ -173,10 +164,9 @@ def write_registered_vision_benchmark_manifest(
     return manifest_path
 
 
-def write_registered_vision_benchmark_manifests(
+def write_vision_benchmark_manifests(
     benchmarks: Sequence[str],
-    roots: Optional[Mapping[str, Union[str, Path]]] = None,
-    registry_path: Optional[Union[str, Path]] = None,
+    roots: Mapping[str, Union[str, Path]],
     output_dir: Optional[Union[str, Path]] = None,
     categories_by_benchmark: Optional[Mapping[str, Sequence[str]]] = None,
     category_order_by_benchmark: Optional[Mapping[str, Sequence[str]]] = None,
@@ -189,15 +179,15 @@ def write_registered_vision_benchmark_manifests(
     manifest_paths: dict[str, Path] = {}
     for benchmark in benchmarks:
         benchmark_name = normalize_vision_benchmark_manifest_name(benchmark)
-        benchmark_root = None if roots is None else roots.get(benchmark_name)
+        if benchmark_name not in roots:
+            raise KeyError(f"roots= must contain an entry for benchmark '{benchmark_name}'")
         benchmark_categories = None if categories_by_benchmark is None else categories_by_benchmark.get(benchmark_name)
         benchmark_category_order = (
             None if category_order_by_benchmark is None else category_order_by_benchmark.get(benchmark_name)
         )
-        manifest_paths[benchmark_name] = write_registered_vision_benchmark_manifest(
+        manifest_paths[benchmark_name] = write_vision_benchmark_manifest(
             benchmark=benchmark_name,
-            root=benchmark_root,
-            registry_path=registry_path,
+            root=roots[benchmark_name],
             output_dir=output_dir,
             categories=benchmark_categories,
             category_order=benchmark_category_order,
@@ -324,8 +314,7 @@ def index_vision_benchmark_manifest(
 
 def load_vision_benchmark_manifest_ordering(
     benchmark: str,
-    root: Optional[Union[str, Path]] = None,
-    registry_path: Optional[Union[str, Path]] = None,
+    root: Union[str, Path],
     ordering_name: str = "dataset",
     ordering_dir: Optional[Union[str, Path]] = None,
     ordering_metric: str = "roc-auc",
@@ -333,22 +322,22 @@ def load_vision_benchmark_manifest_ordering(
     run_index: int = 0,
 ) -> VisionBenchmarkManifestOrdering:
     benchmark_name = normalize_vision_benchmark_manifest_name(benchmark)
-    samples = index_registered_vision_benchmark(
-        benchmark=benchmark_name,
-        root=root,
-        registry_path=registry_path,
-    )
+    resolved_root = Path(root).expanduser().resolve()
+    if not resolved_root.exists():
+        raise FileNotFoundError(f"Benchmark root does not exist: {resolved_root}")
+    samples = index_vision_benchmark(root=resolved_root, benchmark=benchmark_name)
     base_category_order = infer_category_order_from_samples(samples)
 
     if ordering_name == "dataset":
         return VisionBenchmarkManifestOrdering(name="dataset", category_order=base_category_order)
 
     if ordering_name in {"easy_to_hard", "hard_to_easy"}:
-        resolved_ordering_dir = (
-            Path(ordering_dir).expanduser().resolve()
-            if ordering_dir is not None
-            else DEFAULT_VISION_BENCHMARK_ORDERINGS_DIR.resolve()
-        )
+        if ordering_dir is None:
+            raise ValueError(
+                f"ordering_name={ordering_name!r} requires ordering_dir= pointing to the directory with "
+                f"ordering CSV files (e.g. <benchmark>_{ordering_name}_<metric>.csv)."
+            )
+        resolved_ordering_dir = Path(ordering_dir).expanduser().resolve()
         ordering_path = resolve_benchmark_ordering_path(
             ordering_dir=resolved_ordering_dir,
             benchmark=benchmark_name,

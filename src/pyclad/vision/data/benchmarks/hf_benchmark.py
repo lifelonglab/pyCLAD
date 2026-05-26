@@ -13,7 +13,6 @@ from pyclad.vision.data.benchmarks.manifest import (
     build_vision_benchmark_manifest_spec,
 )
 from pyclad.vision.data.benchmarks.readers import read_vision_benchmark_dataset
-from pyclad.vision.data.benchmarks.registry import resolve_vision_benchmark_root
 
 INCLAD_BENCH_HF_REPO = "anonmllab/inclad-bench"
 
@@ -38,26 +37,21 @@ def _hf_manifest_to_csv(hf_dataset, output_path: Path) -> Path:
 
 
 class InCLADBenchDataset(ConceptsDataset):
-    """
-    Loader for the InCLAD-Bench benchmark hosted on HuggingFace
+    """Loader for the InCLAD-Bench benchmark hosted on HuggingFace
     (https://huggingface.co/datasets/anonmllab/inclad-bench).
 
-    The HuggingFace dataset contains sample manifests (metadata with image
+    The HuggingFace dataset contains only sample manifests (metadata with image
     relative paths, labels, and category orderings) for five vision anomaly
-    detection benchmarks: BTech, DAGM, MPDD, MVTec AD, and VisA.
-
-    Actual images are *not* included in the HuggingFace repository — they
-    must be available locally. The ``root`` parameter (or the pyCLAD vision
-    dataset registry / environment variables) is used to locate the images
-    on disk.
+    detection benchmarks: BTech, DAGM, MPDD, MVTec AD, and VisA. The actual
+    images are *not* in the HuggingFace repo — pass ``root=`` pointing at the
+    local benchmark directory containing them.
     """
 
     def __init__(
         self,
         benchmark: InCLADBenchConfig,
+        root: Union[str, Path],
         ordering: InCLADBenchOrdering = "easy_to_hard",
-        root: Optional[Union[str, Path]] = None,
-        registry_path: Optional[Union[str, Path]] = None,
         categories: Optional[Sequence[str]] = None,
         data_mode: str = "numpy",
         resize_to: Optional[tuple[int, int]] = None,
@@ -68,12 +62,9 @@ class InCLADBenchDataset(ConceptsDataset):
     ):
         """
         :param benchmark: One of ``"btech"``, ``"dagm"``, ``"mpdd"``, ``"mvtec"``, ``"visa"``.
+        :param root: Local path to the benchmark image directory.
         :param ordering: Category ordering strategy — ``"easy_to_hard"``,
             ``"hard_to_easy"``, or ``"random"``.
-        :param root: Local path to the benchmark image directory. When ``None``,
-            resolved via ``PYCLAD_VISION_DATASETS_ROOT``, per-benchmark env vars,
-            or the pyCLAD vision dataset registry.
-        :param registry_path: Optional path to the vision dataset registry JSON.
         :param categories: Subset of categories to include. ``None`` = all.
         :param data_mode: ``"numpy"`` to load images as arrays, ``"paths"`` for
             file paths only.
@@ -86,11 +77,13 @@ class InCLADBenchDataset(ConceptsDataset):
         """
         benchmark_key = benchmark.lower()
         if benchmark_key not in INCLAD_BENCH_CONFIGS:
-            raise ValueError(f"Unknown InCLAD-Bench benchmark '{benchmark}'. " f"Available: {INCLAD_BENCH_CONFIGS}")
+            raise ValueError(f"Unknown InCLAD-Bench benchmark '{benchmark}'. Available: {INCLAD_BENCH_CONFIGS}")
         if ordering not in INCLAD_BENCH_ORDERINGS:
             raise ValueError(f"Unknown ordering '{ordering}'. Available: {INCLAD_BENCH_ORDERINGS}")
 
-        resolved_root = resolve_vision_benchmark_root(benchmark=benchmark_key, root=root, registry_path=registry_path)
+        resolved_root = Path(root).expanduser().resolve()
+        if not resolved_root.exists():
+            raise FileNotFoundError(f"InCLAD-Bench root does not exist: {resolved_root}")
 
         hf_dataset = load_dataset(INCLAD_BENCH_HF_REPO, benchmark_key, split=ordering, cache_dir=cache_dir)
 
@@ -120,9 +113,8 @@ class InCLADBenchDataset(ConceptsDataset):
 
 def load_inclad_bench(
     benchmark: InCLADBenchConfig,
+    root: Union[str, Path],
     ordering: InCLADBenchOrdering = "easy_to_hard",
-    root: Optional[Union[str, Path]] = None,
-    registry_path: Optional[Union[str, Path]] = None,
     categories: Optional[Sequence[str]] = None,
     data_mode: str = "numpy",
     resize_to: Optional[tuple[int, int]] = None,
@@ -131,15 +123,11 @@ def load_inclad_bench(
     max_test_samples_per_category: Optional[int] = None,
     cache_dir: Optional[str] = None,
 ) -> ConceptsDataset:
-    """Convenience function to load an InCLAD-Bench dataset.
-
-    See :class:`InCLADBenchDataset` for parameter documentation.
-    """
+    """Convenience wrapper for :class:`InCLADBenchDataset`."""
     return InCLADBenchDataset(
         benchmark=benchmark,
-        ordering=ordering,
         root=root,
-        registry_path=registry_path,
+        ordering=ordering,
         categories=categories,
         data_mode=data_mode,
         resize_to=resize_to,
