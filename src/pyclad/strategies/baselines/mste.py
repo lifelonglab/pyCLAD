@@ -1,4 +1,4 @@
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import numpy as np
 
@@ -30,3 +30,6 @@ class MSTE(ConceptAwareStrategy):
             "model_name": self._model_creation_fn().name(),
             "number_of_models": len(self._models),
         }
+
+    def model_for_concept(self, concept_id: str) -> Optional[Model]:
+        return self._models.get(concept_id)
