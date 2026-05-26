@@ -1,15 +1,8 @@
 from pathlib import Path
 
-from PIL import Image
-
 from pyclad.vision.data.readers.vision_reader import build_vision_reader, read_vision_dataset
-from pyclad.vision.data.generic_reader import GenericFolderReader
-
-
-def _write_rgb_image(path: Path, rgb: tuple[int, int, int] = (128, 64, 32)) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    img = Image.new("RGB", (4, 4), rgb)
-    img.save(path)
+from pyclad.vision.data.readers.generic_reader import GenericFolderReader
+from tests.vision._helpers import write_rgb_image as _write_rgb_image
 
 
 def test_readers_vision_reader_is_public_entrypoint(tmp_path: Path):

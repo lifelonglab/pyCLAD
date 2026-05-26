@@ -1,27 +1,15 @@
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
 
 from pyclad.vision.data.benchmarks.readers import MVTecBenchmarkReader
-from pyclad.vision.data.generic_reader import GenericFolderReader
+from pyclad.vision.data.readers.generic_reader import GenericFolderReader
 from pyclad.vision.data.readers.vision_reader import (
     build_vision_reader,
     index_vision_dataset,
     read_vision_dataset,
 )
-
-
-def _write_rgb_image(path: Path, rgb: tuple[int, int, int] = (128, 64, 32)) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    img = Image.new("RGB", (4, 4), rgb)
-    img.save(path)
-
-
-def _write_mask(path: Path, value: int = 255) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    img = Image.new("L", (4, 4), value)
-    img.save(path)
+from tests.vision._helpers import write_rgb_image as _write_rgb_image, write_mask as _write_mask
 
 
 def test_build_vision_reader_dispatches_to_generic_reader_with_auto_layout(tmp_path: Path):

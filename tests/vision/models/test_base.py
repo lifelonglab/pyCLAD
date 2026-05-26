@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from pyclad.models.model import Model
-from pyclad.vision.models.base import VisionModel
+from pyclad.vision.models.vision_model import VisionModel
 
 
 def test_vision_model_cannot_be_instantiated_without_score_maps():

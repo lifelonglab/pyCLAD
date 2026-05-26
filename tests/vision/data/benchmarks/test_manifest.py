@@ -12,33 +12,29 @@ from pyclad.vision.data.benchmarks.manifest import (
     load_vision_benchmark_manifest_ordering,
     manifest_output_filename,
     read_vision_benchmark_manifest_dataset,
-    write_registered_vision_benchmark_manifest,
+    write_vision_benchmark_manifest,
 )
 
 
+from tests.vision._helpers import write_mask as _write_helper_mask, write_rgb_image as _write_helper_rgb
+
+
 def _write_rgb_image(path: Path, color: tuple[int, int, int]):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    array = np.zeros((6, 5, 3), dtype=np.uint8)
-    array[..., 0] = color[0]
-    array[..., 1] = color[1]
-    array[..., 2] = color[2]
-    Image.fromarray(array, mode="RGB").save(path)
+    _write_helper_rgb(path, color=color, size=(6, 5))
 
 
 def _write_mask(path: Path, value: int = 255):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    array = np.full((6, 5), value, dtype=np.uint8)
-    Image.fromarray(array, mode="L").save(path)
+    _write_helper_mask(path, value=value, size=(6, 5))
 
 
-def test_write_registered_vision_benchmark_manifest_exports_standard_csv(tmp_path: Path):
+def test_write_vision_benchmark_manifest_exports_standard_csv(tmp_path: Path):
     root = tmp_path / "mvtec_like"
     _write_rgb_image(root / "widget" / "train" / "good" / "000.png", (10, 20, 30))
     _write_rgb_image(root / "widget" / "test" / "good" / "100.png", (20, 30, 40))
     _write_rgb_image(root / "widget" / "test" / "crack" / "101.png", (30, 40, 50))
     _write_mask(root / "widget" / "ground_truth" / "crack" / "101_mask.png")
 
-    manifest_path = write_registered_vision_benchmark_manifest(
+    manifest_path = write_vision_benchmark_manifest(
         benchmark="mvtec",
         root=root,
         output_dir=tmp_path / "manifests",
@@ -78,7 +74,7 @@ def test_read_vision_benchmark_manifest_dataset_round_trips_back_into_dataset(tm
     _write_rgb_image(root / "widget" / "test" / "crack" / "101.png", (30, 40, 50))
     _write_mask(root / "widget" / "ground_truth" / "crack" / "101_mask.png")
 
-    manifest_path = write_registered_vision_benchmark_manifest(
+    manifest_path = write_vision_benchmark_manifest(
         benchmark="mvtec",
         root=root,
         output_path=tmp_path / "mvtec_samples.csv",
@@ -113,26 +109,12 @@ def test_build_vision_benchmark_manifest_spec_uses_standard_columns():
     assert spec.defect_type_column == "defect_type"
 
 
-def test_manifest_output_filename_keeps_seeds_in_columns_not_in_filename():
+def test_manifest_output_filename_encodes_only_benchmark_and_ordering():
+    """Filename never includes seeds (they go to CSV columns, not the filename).
+    The contract is intentionally narrow: ``benchmark`` + ``ordering_name``."""
     assert manifest_output_filename("mvtec", ordering_name="dataset") == "mvtec_samples.csv"
-    assert (
-        manifest_output_filename(
-            "mvtec",
-            ordering_name="easy_to_hard",
-            ordering_master_seed=42,
-            ordering_seed=191664963,
-        )
-        == "mvtec_easy_to_hard_samples.csv"
-    )
-    assert (
-        manifest_output_filename(
-            "mvtec",
-            ordering_name="random",
-            ordering_master_seed=123,
-            ordering_seed=derive_per_run_seed(123),
-        )
-        == "mvtec_random_samples.csv"
-    )
+    assert manifest_output_filename("mvtec", ordering_name="easy_to_hard") == "mvtec_easy_to_hard_samples.csv"
+    assert manifest_output_filename("mvtec", ordering_name="random") == "mvtec_random_samples.csv"
 
 
 def test_read_vision_benchmark_manifest_dataset_preserves_manifest_category_order(tmp_path: Path):
@@ -143,7 +125,7 @@ def test_read_vision_benchmark_manifest_dataset_preserves_manifest_category_orde
         _write_rgb_image(root / category / "test" / "ko" / "002.bmp", (base + 6, base + 7, base + 8))
         _write_mask(root / category / "ground_truth" / "ko" / "002.png")
 
-    manifest_path = write_registered_vision_benchmark_manifest(
+    manifest_path = write_vision_benchmark_manifest(
         benchmark="btech",
         root=root,
         output_path=tmp_path / "btech_easy_to_hard.csv",

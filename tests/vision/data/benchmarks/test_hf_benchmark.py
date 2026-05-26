@@ -1,33 +1,34 @@
 from pathlib import Path
 from unittest.mock import patch
 
-import numpy as np
 import pandas as pd
 import pytest
-from PIL import Image
 
 from pyclad.vision.data.benchmarks.hf_benchmark import (
-    INCLAD_BENCH_CONFIGS,
-    INCLAD_BENCH_ORDERINGS,
     InCLADBenchDataset,
     load_inclad_bench,
 )
-from pyclad.vision.data.benchmarks.manifest import VISION_BENCHMARK_MANIFEST_FIELDNAMES
+from tests.vision._helpers import write_mask as _write_helper_mask, write_rgb_image as _write_helper_rgb
 
 
 def _write_rgb_image(path: Path, color: tuple[int, int, int] = (10, 20, 30)):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    array = np.zeros((8, 8, 3), dtype=np.uint8)
-    array[..., 0] = color[0]
-    array[..., 1] = color[1]
-    array[..., 2] = color[2]
-    Image.fromarray(array, mode="RGB").save(path)
+    _write_helper_rgb(path, color=color, size=(8, 8))
 
 
 def _write_mask(path: Path, value: int = 255):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    array = np.full((8, 8), value, dtype=np.uint8)
-    Image.fromarray(array, mode="L").save(path)
+    _write_helper_mask(path, value=value, size=(8, 8))
+
+
+_COMMON_ROW_DEFAULTS = {
+    "ordering_name": "easy_to_hard",
+    "ordering_master_seed": 42,
+    "ordering_seed": 42,
+    "source_homepage": "https://example.com",
+    "source_license": "MIT",
+    "mask_relpath": "",
+    "image_label": 0,
+    "defect_type": "",
+}
 
 
 def _build_fake_hf_manifest(root: Path, benchmark: str = "mvtec") -> pd.DataFrame:
@@ -45,119 +46,40 @@ def _build_fake_hf_manifest(root: Path, benchmark: str = "mvtec") -> pd.DataFram
     _write_rgb_image(root / cat2 / "test" / "dent" / "101.png")
     _write_mask(root / cat2 / "ground_truth" / "dent" / "101_mask.png")
 
+    def row(index: int, **overrides) -> dict:
+        return {
+            "sample_id": f"{benchmark}:{index:06d}",
+            "source_dataset": benchmark,
+            **_COMMON_ROW_DEFAULTS,
+            **overrides,
+        }
+
     rows = [
-        {
-            "sample_id": f"{benchmark}:000000",
-            "source_dataset": benchmark,
-            "category": cat1,
-            "category_order": 1,
-            "split": "train",
-            "image_relpath": f"{cat1}/train/good/000.png",
-            "mask_relpath": "",
-            "image_label": 0,
-            "defect_type": "",
-            "ordering_name": "easy_to_hard",
-            "ordering_master_seed": 42,
-            "ordering_seed": 42,
-            "source_homepage": "https://example.com",
-            "source_license": "MIT",
-        },
-        {
-            "sample_id": f"{benchmark}:000001",
-            "source_dataset": benchmark,
-            "category": cat1,
-            "category_order": 1,
-            "split": "train",
-            "image_relpath": f"{cat1}/train/good/001.png",
-            "mask_relpath": "",
-            "image_label": 0,
-            "defect_type": "",
-            "ordering_name": "easy_to_hard",
-            "ordering_master_seed": 42,
-            "ordering_seed": 42,
-            "source_homepage": "https://example.com",
-            "source_license": "MIT",
-        },
-        {
-            "sample_id": f"{benchmark}:000002",
-            "source_dataset": benchmark,
-            "category": cat1,
-            "category_order": 1,
-            "split": "test",
-            "image_relpath": f"{cat1}/test/good/100.png",
-            "mask_relpath": "",
-            "image_label": 0,
-            "defect_type": "",
-            "ordering_name": "easy_to_hard",
-            "ordering_master_seed": 42,
-            "ordering_seed": 42,
-            "source_homepage": "https://example.com",
-            "source_license": "MIT",
-        },
-        {
-            "sample_id": f"{benchmark}:000003",
-            "source_dataset": benchmark,
-            "category": cat1,
-            "category_order": 1,
-            "split": "test",
-            "image_relpath": f"{cat1}/test/scratch/101.png",
-            "mask_relpath": f"{cat1}/ground_truth/scratch/101_mask.png",
-            "image_label": 1,
-            "defect_type": "scratch",
-            "ordering_name": "easy_to_hard",
-            "ordering_master_seed": 42,
-            "ordering_seed": 42,
-            "source_homepage": "https://example.com",
-            "source_license": "MIT",
-        },
-        {
-            "sample_id": f"{benchmark}:000004",
-            "source_dataset": benchmark,
-            "category": cat2,
-            "category_order": 2,
-            "split": "train",
-            "image_relpath": f"{cat2}/train/good/000.png",
-            "mask_relpath": "",
-            "image_label": 0,
-            "defect_type": "",
-            "ordering_name": "easy_to_hard",
-            "ordering_master_seed": 42,
-            "ordering_seed": 42,
-            "source_homepage": "https://example.com",
-            "source_license": "MIT",
-        },
-        {
-            "sample_id": f"{benchmark}:000005",
-            "source_dataset": benchmark,
-            "category": cat2,
-            "category_order": 2,
-            "split": "test",
-            "image_relpath": f"{cat2}/test/good/100.png",
-            "mask_relpath": "",
-            "image_label": 0,
-            "defect_type": "",
-            "ordering_name": "easy_to_hard",
-            "ordering_master_seed": 42,
-            "ordering_seed": 42,
-            "source_homepage": "https://example.com",
-            "source_license": "MIT",
-        },
-        {
-            "sample_id": f"{benchmark}:000006",
-            "source_dataset": benchmark,
-            "category": cat2,
-            "category_order": 2,
-            "split": "test",
-            "image_relpath": f"{cat2}/test/dent/101.png",
-            "mask_relpath": f"{cat2}/ground_truth/dent/101_mask.png",
-            "image_label": 1,
-            "defect_type": "dent",
-            "ordering_name": "easy_to_hard",
-            "ordering_master_seed": 42,
-            "ordering_seed": 42,
-            "source_homepage": "https://example.com",
-            "source_license": "MIT",
-        },
+        row(0, category=cat1, category_order=1, split="train", image_relpath=f"{cat1}/train/good/000.png"),
+        row(1, category=cat1, category_order=1, split="train", image_relpath=f"{cat1}/train/good/001.png"),
+        row(2, category=cat1, category_order=1, split="test", image_relpath=f"{cat1}/test/good/100.png"),
+        row(
+            3,
+            category=cat1,
+            category_order=1,
+            split="test",
+            image_relpath=f"{cat1}/test/scratch/101.png",
+            mask_relpath=f"{cat1}/ground_truth/scratch/101_mask.png",
+            image_label=1,
+            defect_type="scratch",
+        ),
+        row(4, category=cat2, category_order=2, split="train", image_relpath=f"{cat2}/train/good/000.png"),
+        row(5, category=cat2, category_order=2, split="test", image_relpath=f"{cat2}/test/good/100.png"),
+        row(
+            6,
+            category=cat2,
+            category_order=2,
+            split="test",
+            image_relpath=f"{cat2}/test/dent/101.png",
+            mask_relpath=f"{cat2}/ground_truth/dent/101_mask.png",
+            image_label=1,
+            defect_type="dent",
+        ),
     ]
 
     return pd.DataFrame(rows)

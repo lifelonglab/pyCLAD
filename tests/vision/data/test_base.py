@@ -2,10 +2,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from PIL import Image
 
 from pyclad.vision.data.base import VisionSample, build_concepts_dataset_from_samples
 from pyclad.vision.data.vision_concept import VisionConcept
+from tests.vision._helpers import write_mask as _write_mask, write_rgb_image as _write_rgb_image
 
 
 def test_vision_concept_rejects_masks_misaligned_with_data():
@@ -35,16 +35,6 @@ def test_vision_concept_without_masks_skips_alignment_check():
         labels=np.array([0, 1, 0, 1, 0], dtype=np.int64),
     )
     assert concept.masks is None
-
-
-def _write_rgb_image(path: Path, rgb: tuple[int, int, int] = (128, 64, 32)) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    Image.new("RGB", (4, 4), rgb).save(path)
-
-
-def _write_mask(path: Path, value: int = 255) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    Image.new("L", (4, 4), value).save(path)
 
 
 def test_build_concepts_dataset_keeps_data_labels_masks_aligned_when_anomaly_mask_missing(tmp_path: Path):

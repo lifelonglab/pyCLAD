@@ -2,7 +2,6 @@ import csv
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
 
 from pyclad.vision.data.benchmarks.readers import (
     BTechBenchmarkReader,
@@ -17,21 +16,15 @@ from pyclad.vision.data.benchmarks.readers import (
     index_vision_benchmark,
     read_vision_benchmark_dataset,
 )
+from tests.vision._helpers import write_mask as _write_helper_mask, write_rgb_image as _write_helper_rgb
 
 
 def _write_rgb_image(path: Path, color: tuple[int, int, int]):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    array = np.zeros((6, 5, 3), dtype=np.uint8)
-    array[..., 0] = color[0]
-    array[..., 1] = color[1]
-    array[..., 2] = color[2]
-    Image.fromarray(array, mode="RGB").save(path)
+    _write_helper_rgb(path, color=color, size=(6, 5))
 
 
 def _write_mask(path: Path, value: int = 255):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    array = np.full((6, 5), value, dtype=np.uint8)
-    Image.fromarray(array, mode="L").save(path)
+    _write_helper_mask(path, value=value, size=(6, 5))
 
 
 def test_read_vision_benchmark_dataset_supports_mvtec_preset(tmp_path: Path):
