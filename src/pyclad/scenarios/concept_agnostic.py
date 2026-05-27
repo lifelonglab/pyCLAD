@@ -1,4 +1,5 @@
 import logging
+from dataclasses import fields
 from typing import List
 
 from pyclad.callbacks.callback import Callback
@@ -25,7 +26,7 @@ class ConceptAgnosticScenario:
 
             batch_id = 0
             while batch_size * batch_id < len(train_concept.data):
-                batch = train_concept.data[batch_id * batch_size: (batch_id + 1) * batch_size]
+                batch = train_concept.data[batch_id * batch_size : (batch_id + 1) * batch_size]
                 logger.info(
                     f"Starting training on concept {train_concept.name}, batch: {batch_id} with size {len(batch)}"
                 )
@@ -40,8 +41,7 @@ class ConceptAgnosticScenario:
                 callback_composite.after_evaluation(
                     evaluated_concept=test_concept,
                     y_true=test_concept.labels,
-                    y_pred=result.y_pred,
-                    anomaly_scores=result.anomaly_scores,
+                    **{f.name: getattr(result, f.name) for f in fields(result)},
                 )
 
             callback_composite.after_concept_processing(concept=train_concept)

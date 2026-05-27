@@ -1,4 +1,5 @@
 import logging
+from dataclasses import fields
 from typing import List
 
 from pyclad.callbacks.callback import Callback
@@ -35,8 +36,7 @@ class ConceptIncrementalScenario:
                 callback_composite.after_evaluation(
                     evaluated_concept=test_concept,
                     y_true=test_concept.labels,
-                    y_pred=result.y_pred,
-                    anomaly_scores=result.anomaly_scores,
+                    **{f.name: getattr(result, f.name) for f in fields(result)},
                 )
 
             callback_composite.after_concept_processing(concept=train_concept)
