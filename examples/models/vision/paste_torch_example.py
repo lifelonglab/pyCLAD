@@ -3,6 +3,7 @@ import pathlib
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
+from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import VisionPixelConceptMetricCallback
 from pyclad.vision.data.readers.vision_reader import read_vision_dataset
 from pyclad.metrics.base.average_precision import AveragePrecision
@@ -23,7 +24,6 @@ from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
 from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
 from pyclad.strategies.replay.selection.random import RandomSelection
-from pyclad.vision.scenarios.concept_incremental import VisionConceptIncrementalScenario
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,8 +37,8 @@ if __name__ == "__main__":
         resize_to=(224, 224),
         data_mode="numpy",
         color_mode="rgb",
-        max_train_samples_per_category=50,
-        max_test_samples_per_category=50,
+        # max_train_samples_per_category=150,
+        # max_test_samples_per_category=150,
     )
 
     model_config = PaSTeConfig(
@@ -75,8 +75,8 @@ if __name__ == "__main__":
         TimeEvaluationCallback(),
     ]
 
-    scenario = VisionConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=callbacks)
+    scenario = ConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()
 
-    output_writer = JsonOutputWriter(pathlib.Path("paste_output.json"))
+    output_writer = JsonOutputWriter(pathlib.Path("dagm_output.json"))
     output_writer.write([model, dataset, strategy, *callbacks])
