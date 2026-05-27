@@ -21,13 +21,15 @@ class VisionPixelConceptMetricCallback(Callback, InfoProvider):
 
     Same shape as ``ConceptMetricCallback`` — one ``base_metric`` per callback
     instance, optional ``summarized_metrics`` — but reads per-pixel ``score_maps``
-    (supplied by :class:`pyclad.vision.scenarios.concept_incremental.VisionConceptIncrementalScenario`
-    via the ``score_maps`` kwarg on ``after_evaluation``) and ground-truth masks
-    from the evaluated :class:`VisionConcept`.
+    (forwarded by the scenario as the ``score_maps`` kwarg on
+    ``after_evaluation`` whenever the strategy's ``predict()`` returns
+    :class:`pyclad.vision.prediction_results.VisionPredictionResults`) and
+    ground-truth masks from the evaluated :class:`VisionConcept`.
 
-    Skips silently when the scenario does not provide ``score_maps`` (i.e. when
-    running under a non-vision scenario), when the evaluated concept is not a
-    :class:`VisionConcept`, or when the concept carries no masks.
+    Skips silently when ``score_maps`` is absent (i.e. the strategy returned a
+    plain :class:`pyclad.output.prediction_results.PredictionResults`), when the
+    evaluated concept is not a :class:`VisionConcept`, or when the concept
+    carries no masks.
     """
 
     def __init__(
