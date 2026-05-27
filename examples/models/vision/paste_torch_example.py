@@ -78,5 +78,5 @@ if __name__ == "__main__":
     scenario = ConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()
 
-    output_writer = JsonOutputWriter(pathlib.Path("dagm_output.json"))
+    output_writer = JsonOutputWriter(pathlib.Path("output.json"))
     output_writer.write([model, dataset, strategy, *callbacks])
