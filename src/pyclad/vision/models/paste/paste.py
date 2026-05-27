@@ -156,7 +156,9 @@ class PaSTe(VisionModel):
     def predict(self, data: np.ndarray) -> VisionPredictionResults:
         if len(data) == 0:
             empty = np.asarray([], dtype=np.float32)
-            return VisionPredictionResults(y_pred=np.asarray([], dtype=np.int64), anomaly_scores=empty, score_maps=empty)
+            return VisionPredictionResults(
+                y_pred=np.asarray([], dtype=np.int64), anomaly_scores=empty, score_maps=empty
+            )
 
         target_size = self._preprocessor.spatial_size(data)
         all_maps: list[np.ndarray] = []
