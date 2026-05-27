@@ -167,6 +167,11 @@ output.json
 heatmap.pdf
 lightning_logs
 
+# MacOS files
+.DS_Store
+
+# visual datasets
+examples/resources/vision/
 
 # custom
 memory

@@ -15,7 +15,7 @@ class FlattenTimeSeriesAdapter(Model):
         data = data.reshape(data.shape[0], -1)
         self.model.fit(data)
 
-    def predict(self, data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, data: np.ndarray):
         data = data.reshape(data.shape[0], -1)
         return self.model.predict(data)
 

@@ -31,7 +31,7 @@ class TorchModelAdapter(Model):
             self._epochs,
         )
 
-    def predict(self, data: np.ndarray):
+    def predict(self, data: np.ndarray):  # return type follows backbone
         return self._backbone.predict(data)
 
     def name(self) -> str:

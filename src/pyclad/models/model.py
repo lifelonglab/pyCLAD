@@ -5,6 +5,7 @@ from typing import Any, Dict
 import numpy as np
 
 from pyclad.output.output_writer import InfoProvider
+from pyclad.output.prediction_results import PredictionResults
 
 
 class Model(InfoProvider):
@@ -12,12 +13,7 @@ class Model(InfoProvider):
     def fit(self, data: np.ndarray): ...
 
     @abstractmethod
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-        """
-        :param data:
-        :return: (predicted labels (0 for normal class, 1 for anomaly), anomaly scores (the higher the more anomalous))
-        """
-        ...
+    def predict(self, data: np.ndarray) -> PredictionResults: ...
 
     @abc.abstractmethod
     def name(self) -> str: ...

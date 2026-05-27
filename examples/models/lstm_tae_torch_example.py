@@ -73,5 +73,7 @@ if __name__ == "__main__":
     input_batch = torch.randn(batch_size, seq_len, n_features)
     true_labels_batch = torch.randn(batch_size, seq_len, 1)
 
-    binary_predictions, rec_error = autoencoder.predict(input_batch.numpy())
+    result = autoencoder.predict(input_batch.numpy())
+    binary_predictions = result.y_pred
+    rec_error = result.anomaly_scores
     assert binary_predictions.shape == true_labels_batch.shape

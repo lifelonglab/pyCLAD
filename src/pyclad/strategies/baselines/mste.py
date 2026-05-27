@@ -3,6 +3,7 @@ from typing import Callable, Dict
 import numpy as np
 
 from pyclad.models.model import Model
+from pyclad.output.prediction_results import PredictionResults
 from pyclad.strategies.strategy import ConceptAwareStrategy
 
 
@@ -16,11 +17,13 @@ class MSTE(ConceptAwareStrategy):
         new_model.fit(data)
         self._models[concept_id] = new_model
 
-    def predict(self, data: np.ndarray, concept_id: str) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, concept_id: str) -> PredictionResults:
         if concept_id in self._models:
             return self._models[concept_id].predict(data)
-        else:
-            return np.zeros(shape=data.shape[0]), np.zeros(shape=data.shape[0])
+        return PredictionResults(
+            y_pred=np.zeros(shape=data.shape[0]),
+            anomaly_scores=np.zeros(shape=data.shape[0]),
+        )
 
     def name(self) -> str:
         return "MSTE"

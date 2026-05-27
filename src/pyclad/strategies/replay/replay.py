@@ -20,7 +20,7 @@ class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         self._buffer.update(data)
         self._model.fit(self._buffer.data())
 
-    def predict(self, data: np.ndarray, **kwargs) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, **kwargs):
         return self._model.predict(data)
 
     def name(self) -> str:
@@ -39,7 +39,7 @@ class ReplayEnhancedStrategy(ConceptAgnosticStrategy, ConceptIncrementalStrategy
         self._model.fit(np.concatenate([self._buffer.data(), data]) if len(self._buffer.data()) > 0 else data)
         self._buffer.update(data)
 
-    def predict(self, data: np.ndarray, **kwargs) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray, **kwargs):
         return self._model.predict(data)
 
     def name(self) -> str:

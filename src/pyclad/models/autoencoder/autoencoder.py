@@ -10,6 +10,7 @@ from torch.utils.data import TensorDataset
 from pyclad.models.autoencoder.loss import VariationalMSELoss
 from pyclad.models.model import Model
 from pyclad.models.torch_backbone import TorchBackbone
+from pyclad.output.prediction_results import PredictionResults
 
 
 class Autoencoder(TorchBackbone):
@@ -36,13 +37,15 @@ class Autoencoder(TorchBackbone):
     def forward(self, x: Tensor) -> Tensor:
         return self.module(x)
 
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray) -> PredictionResults:
         self.module.eval()
         with torch.no_grad():
             x_hat = self.forward(torch.tensor(data, dtype=torch.float32)).numpy()
         rec_error = ((data - x_hat) ** 2).mean(axis=1)
-        binary_predictions = (rec_error > self.threshold).astype(int)
-        return binary_predictions, rec_error
+        return PredictionResults(
+            y_pred=(rec_error > self.threshold).astype(int),
+            anomaly_scores=rec_error,
+        )
 
     def name(self) -> str:
         return "Autoencoder"
@@ -86,14 +89,15 @@ class TemporalAutoencoder(Model):
         trainer = pl.Trainer(max_epochs=self.epochs)
         trainer.fit(self.module, dataloader)
 
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray) -> PredictionResults:
         batch_size, seq_len, input_size = data.shape
         x_hat = self.module(torch.Tensor(data)).detach()
         rec_error = ((data - x_hat.numpy()) ** 2).mean(axis=2)
         rec_error = rec_error.reshape((batch_size, seq_len, 1))
-
-        binary_predictions = (rec_error > self.threshold).astype(int)
-        return binary_predictions, rec_error
+        return PredictionResults(
+            y_pred=(rec_error > self.threshold).astype(int),
+            anomaly_scores=rec_error,
+        )
 
     def name(self) -> str:
         return "TemporalAutoencoder"
@@ -161,15 +165,16 @@ class VariationalTemporalAutoencoder(Model):
         trainer = pl.Trainer(max_epochs=self.epochs)
         trainer.fit(self.module, dataloader)
 
-    def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
+    def predict(self, data: np.ndarray) -> PredictionResults:
         batch_size, seq_len, input_size = data.shape
         x_hat, mean, var = self.module(torch.Tensor(data))
         x_hat = x_hat.detach()
         rec_error = ((data - x_hat.numpy()) ** 2).mean(axis=2)
         rec_error = rec_error.reshape((batch_size, seq_len, 1))
-
-        binary_predictions = (rec_error > self.threshold).astype(int)
-        return binary_predictions, rec_error
+        return PredictionResults(
+            y_pred=(rec_error > self.threshold).astype(int),
+            anomaly_scores=rec_error,
+        )
 
     @staticmethod
     def create_sequences(data: np.ndarray, seq_len: int, step: int = 1) -> np.ndarray:
