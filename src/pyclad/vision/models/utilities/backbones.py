@@ -3,6 +3,20 @@ import inspect
 import torchvision.models as tv_models
 from torch import nn
 
+RESNET_BACKBONES: tuple[str, ...] = ("resnet18", "resnet34", "resnet50", "wide_resnet50_2")
+MOBILENET_BACKBONES: tuple[str, ...] = ("mobilenet_v2",)
+EFFICIENTNET_BACKBONES: tuple[str, ...] = (
+    "efficientnet_b0",
+    "efficientnet_b1",
+    "efficientnet_b2",
+    "efficientnet_b3",
+    "efficientnet_b4",
+    "efficientnet_v2_s",
+    "efficientnet_v2_m",
+    "efficientnet_v2_l",
+)
+SUPPORTED_BACKBONES: tuple[str, ...] = RESNET_BACKBONES + MOBILENET_BACKBONES + EFFICIENTNET_BACKBONES
+
 
 def _resolve_torchvision_weights(model_fn, backbone_name: str):
     get_model_weights = getattr(tv_models, "get_model_weights", None)

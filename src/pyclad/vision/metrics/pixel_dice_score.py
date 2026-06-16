@@ -1,13 +1,10 @@
 from pyclad.vision.metrics.pixel_metric import PixelMetric
-from pyclad.vision.metrics.pixel_threshold_utils import (
-    binary_confusion,
-    threshold_pixel_scores,
-)
+from pyclad.vision.metrics.pixel_threshold_utils import binary_confusion
 
 
 class PixelDiceScore(PixelMetric):
     def compute(self, anomaly_scores, y_pred, y_true) -> float:
-        y_pred_binary = threshold_pixel_scores(anomaly_scores, self._threshold)
+        y_pred_binary = self._binarize(anomaly_scores)
         tp, fp, fn = binary_confusion(y_true, y_pred_binary)
 
         denominator = 2 * tp + fp + fn

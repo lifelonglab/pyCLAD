@@ -47,6 +47,31 @@ def test_paste_rejects_invalid_bootstrap_layer():
         PaSTeConfig(backbone_name="resnet18", ad_layers=(1, 2, 3), student_bootstrap_layer=1)
 
 
+def test_paste_seed_makes_results_reproducible():
+    data = np.random.default_rng(7).random((2, 64, 64, 3), dtype=np.float32)
+
+    def score_maps(seed: int) -> np.ndarray:
+        model = PaSTe(
+            PaSTeConfig(
+                input_size=(64, 64),
+                backbone_name="resnet18",
+                student_bootstrap_layer=0,
+                pretrained_teacher=False,
+                pretrained_student=False,  # random student init -> seed-dependent
+                input_range="float01",
+                batch_size=1,
+                epochs=0,
+                threshold=0.5,
+                show_training_progress=False,
+                seed=seed,
+            )
+        )
+        return model.predict(data).score_maps
+
+    assert np.array_equal(score_maps(123), score_maps(123))  # same seed -> identical
+    assert not np.array_equal(score_maps(123), score_maps(456))  # different seed -> different
+
+
 def test_paste_fit_smoke_run():
     data = np.random.default_rng(1).random((2, 64, 64, 3), dtype=np.float32)
     model = PaSTe(
