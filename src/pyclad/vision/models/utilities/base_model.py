@@ -52,6 +52,11 @@ class VisionScoringBase(VisionModel):
         """Return per-pixel anomaly maps ``(B, H, W)``; higher values are more anomalous.
 
         ``batch`` is a preprocessed float tensor on this model's device.
+
+        For :class:`LightningVisionModel` subclasses this is invoked inside an eval-mode,
+        ``no_grad`` context managed by :meth:`LightningVisionModel._run_inference` (which also
+        restores the prior training mode), so the implementation should be a plain forward
+        pass. Single-pass (non-Lightning) models manage any grad/eval context themselves.
         """
 
     def _extra_info(self) -> dict:
@@ -184,6 +189,25 @@ class LightningVisionModel(VisionScoringBase):
     @abstractmethod
     def _build_module(self) -> pl.LightningModule:
         """Build the LightningModule. It must expose the trainable network as ``.network``."""
+
+    def _run_inference(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Run inference in eval mode under ``no_grad`` and restore the prior training mode.
+
+        Switching to ``eval()`` is required for correct inference (frozen BatchNorm stats,
+        disabled Dropout), but the previous mode must be restored afterwards: pyCLAD reuses
+        the same model instance across the concept stream, and PyTorch Lightning (>=2.2) no
+        longer resets train mode at the start of ``fit()``. A leaked ``eval()`` would silently
+        train BatchNorm/Dropout submodules in eval mode on every fit after the first.
+        ``train(was_training)`` re-dispatches into the architecture's overridden ``train()``,
+        so frozen backbones remain pinned to eval.
+        """
+        was_training = self.module.training
+        self.module.eval()
+        try:
+            with torch.no_grad():
+                return super()._run_inference(batch_x)
+        finally:
+            self.module.train(was_training)
 
     def fit(self, data: np.ndarray):
         if len(data) == 0 or self.config.epochs == 0:

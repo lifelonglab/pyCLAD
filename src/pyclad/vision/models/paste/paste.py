@@ -33,9 +33,7 @@ class PaSTe(LightningVisionModel):
         )
 
     def _inference_maps(self, batch: torch.Tensor) -> torch.Tensor:
-        self.module.eval()
-        with torch.no_grad():
-            score_maps, _ = self.module.network.inference(batch)
+        score_maps, _ = self.module.network.inference(batch)
         return score_maps
 
     def _extra_info(self) -> dict:

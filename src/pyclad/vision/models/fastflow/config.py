@@ -2,11 +2,11 @@ from typing import Optional
 
 from pydantic import Field
 
-from pyclad.vision.models.utilities.config import LightningVisionConfig
+from pyclad.vision.models.utilities.config import ImageSize, LightningVisionConfig
 
 
 class FastFlowConfig(LightningVisionConfig):
-    input_size: tuple[int, int] = (256, 256)
+    input_size: ImageSize = (256, 256)
     batch_size: int = Field(default=8, gt=0)
     epochs: int = Field(default=200, ge=0)
 

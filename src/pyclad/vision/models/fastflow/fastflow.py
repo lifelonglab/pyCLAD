@@ -36,9 +36,7 @@ class FastFlow(LightningVisionModel):
         )
 
     def _inference_maps(self, batch: torch.Tensor) -> torch.Tensor:
-        self.module.eval()
-        with torch.no_grad():
-            return self.module.network.inference(batch)
+        return self.module.network.inference(batch)
 
     def _extra_info(self) -> dict:
         return {"backbone_return_nodes": self.module.network.return_nodes}
