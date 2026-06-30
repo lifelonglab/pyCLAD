@@ -6,7 +6,12 @@ from typing import Callable, List, Optional, Tuple
 import torch
 from torch import nn
 
-from pyclad.vision.models.utilities.backbones import create_torchvision_model
+from pyclad.vision.models.utilities.backbones import (
+    EFFICIENTNET_BACKBONES,
+    MOBILENET_BACKBONES,
+    RESNET_BACKBONES,
+    create_torchvision_model,
+)
 
 
 @dataclass(frozen=True)
@@ -34,21 +39,9 @@ _MOBILENET_V2_SPEC = PaSTeBackboneSpec(default_ad_layers=(3, 6, 13), stage_build
 _EFFICIENTNET_SPEC = PaSTeBackboneSpec(default_ad_layers=(2, 3, 5), stage_builder=_features_stages)
 
 _BACKBONE_SPECS: dict[str, PaSTeBackboneSpec] = {
-    **{name: _RESNET_SPEC for name in ("resnet18", "resnet34", "resnet50", "wide_resnet50_2")},
-    "mobilenet_v2": _MOBILENET_V2_SPEC,
-    **{
-        name: _EFFICIENTNET_SPEC
-        for name in (
-            "efficientnet_b0",
-            "efficientnet_b1",
-            "efficientnet_b2",
-            "efficientnet_b3",
-            "efficientnet_b4",
-            "efficientnet_v2_s",
-            "efficientnet_v2_m",
-            "efficientnet_v2_l",
-        )
-    },
+    **{name: _RESNET_SPEC for name in RESNET_BACKBONES},
+    **{name: _MOBILENET_V2_SPEC for name in MOBILENET_BACKBONES},
+    **{name: _EFFICIENTNET_SPEC for name in EFFICIENTNET_BACKBONES},
 }
 
 
