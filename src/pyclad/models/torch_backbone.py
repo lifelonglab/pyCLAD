@@ -53,5 +53,4 @@ class TorchBackbone(InfoProvider, abc.ABC):
         return {}
 
     @abc.abstractmethod
-    def name(self):
-        ...
+    def name(self): ...

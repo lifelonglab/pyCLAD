@@ -11,6 +11,7 @@ class StandardRunner(TorchRunner):
     """
     The training loop, with validation and early stopping as optional add-ons.
     """
+
     def __init__(
         self,
         max_epochs: int,

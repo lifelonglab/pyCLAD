@@ -48,13 +48,10 @@ class TorchRunner(InfoProvider, abc.ABC):
         self._seed = seed
 
     def split_train_test(self, data: np.ndarray) -> Tuple[np.ndarray, Optional[np.ndarray]]:
-        """Split concept data into (train, validation)
-        """
+        """Split concept data into (train, validation)"""
         if self.validation_fraction <= 0.0:
             return data, None
-        train, val = train_test_split(
-            data, test_size=self.validation_fraction, random_state=self._seed, shuffle=True
-        )
+        train, val = train_test_split(data, test_size=self.validation_fraction, random_state=self._seed, shuffle=True)
         return train, val
 
     @abc.abstractmethod
