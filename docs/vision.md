@@ -6,10 +6,10 @@ Every model ships with a ready-to-run example under `examples/models/vision/`.
 
 ## Models
 
-| Model | What it is | Branch to check out | Example script |
-|---|---|---|---|
-| **PaSTe** | Student–teacher distillation | any vision branch (base) | `paste_torch_example.py` |
-| **FastFlow** | Normalizing flow on features | `vision_fastflow` | `fastflow_torch_example.py` |
+| Model | What it is | Example script |
+|---|---|--|
+| **PaSTe** | Student–teacher distillation | `paste_torch_example.py` |
+| **FastFlow** | Normalizing flow on features | `fastflow_torch_example.py` |
 
 ## Setup — extra libraries required
 
@@ -25,7 +25,7 @@ Beyond a normal pyCLAD install, the vision models need **exactly three additiona
 
 The example scripts read data from `examples/resources/vision/<dataset>/`. Datasets are *not* included in the repository, so after cloning you must download and place them yourself.
 
-**1. Put the dataset here** (folder name is up to you; it just has to match the `root=` in the script):
+**1. Put the dataset here** (folder name is up to you. It just has to match the `root=` in the script):
 
 ```
 examples/resources/vision/
@@ -85,8 +85,8 @@ The examples use **relative paths** to the dataset, so run them from their own f
 ```bash
 cd examples/models/vision
 
-python paste_torch_example.py      # PaSTe
-python fastflow_torch_example.py   # FastFlow
+python paste_torch_example.py
+python fastflow_torch_example.py
 ```
 
 Each run:
