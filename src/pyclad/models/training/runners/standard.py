@@ -70,5 +70,5 @@ class StandardRunner(TorchRunner):
         return {
             "max_epochs": self._max_epochs,
             "validation_fraction": self.validation_fraction,
-            "early_stopping": self._early_stopping,
+            "early_stopping": self._early_stopping.info() if self._early_stopping is not None else None,
         }

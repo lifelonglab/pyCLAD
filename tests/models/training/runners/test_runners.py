@@ -104,14 +104,20 @@ def test_warns_when_early_stopping_configured_but_no_validation(caplog):
 
 
 def test_plain_runner_reports_itself():
-    assert StandardRunner(max_epochs=3).info() == {"name": "standard", "max_epochs": 3}
+    assert StandardRunner(max_epochs=3).info() == {
+        "name": "StandardRunner",
+        "max_epochs": 3,
+        "validation_fraction": 0.0,
+        "early_stopping": None,
+    }
 
 
 def test_reports_injected_early_stopping():
     runner = StandardRunner(max_epochs=3, validation_fraction=0.2, early_stopping=EarlyStopping(patience=4))
     info = runner.info()
-    assert info["name"] == "standard"
+    assert info["name"] == "StandardRunner"
     assert info["validation_fraction"] == 0.2
+    # the monitor is reported as a serializable dict, not the object itself
     assert info["early_stopping"] == {"patience": 4, "min_delta": 0.0, "restore_best_weights": True}
 
 
@@ -158,7 +164,7 @@ def test_validation_without_early_stopping_is_allowed():
     # Validation is meaningful on its own (monitoring), so this must not raise.
     runner = StandardRunner(max_epochs=1, validation_fraction=0.2)
     assert runner.validation_fraction == 0.2
-    assert runner.additional_info() == {"max_epochs": 1, "validation_fraction": 0.2}
+    assert runner.additional_info() == {"max_epochs": 1, "validation_fraction": 0.2, "early_stopping": None}
 
 
 def test_early_stopping_requires_validation_fraction():
