@@ -7,7 +7,10 @@ from torch import Tensor
 from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.models.torch_backbone import TorchBackbone
-from pyclad.strategies.strategy import ConceptAgnosticStrategy, ConceptIncrementalStrategy
+from pyclad.strategies.strategy import (
+    ConceptAgnosticStrategy,
+    ConceptIncrementalStrategy,
+)
 
 
 class LwFStrategy(ConceptIncrementalStrategy, ConceptAgnosticStrategy):

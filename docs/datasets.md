@@ -18,6 +18,11 @@ As for now, we have:
 - **NSL-KDD** - available through class `NslKddDataset`.
 - **Wind Energy** - available through class `WindEnergyDataset`.
 - **Energy Plants** - available through class `EnergyPlantsDataset`.
+- **CAD-CICIDS2017** - available through class `CadCicids2017Dataset`.
+- **CAD-CICIDS2018** - available through class `CadCicids2018Dataset`.
+- **CAD-CICUNSW** - available through class `CadCicunswDataset`.
+- **MCAD-CIC-3x1** - available through class `McadCic3x1Dataset`.
+- **MCAD-CIC-3xN** - available through class `McadCic3xNDataset`.
 
 You can easily use any of them by simply importing the class and creating an instance of it. For example:
 
@@ -29,6 +34,18 @@ unsw_dataset = UnswDataset(dataset_type='random_anomalies')
 
 `dataset_type` can be one of the following: `random_anomalies`, `clustered_with_closest_assignment`, and
 `clustered_with_random_assignment`. See more details in the section below describing the continual scenario extraction.
+
+The CAD/MCAD benchmarks (from the [tabular CAD benchmarks
+collection](https://huggingface.co/collections/lifelonglab/tabular-cad-benchmarks)) share a common base class,
+`TabularCadDataset`, and instead take an `ordering` parameter that selects one of the predefined task sequences
+shipped with each dataset in its `orderings.json`:
+
+```python
+from pyclad.data.datasets.cad_cicids2017_dataset import CadCicids2017Dataset
+
+cad_dataset = CadCicids2017Dataset(ordering='curriculum_asc')
+```
+
 
 ### Continual Scenario Extraction
 

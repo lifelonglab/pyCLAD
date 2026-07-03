@@ -5,7 +5,11 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.models.torch_backbone import TorchBackbone
 from pyclad.strategies.replay.buffers.reservoir import ReservoirBuffer
-from pyclad.strategies.strategy import ConceptAgnosticStrategy, ConceptAwareStrategy, ConceptIncrementalStrategy
+from pyclad.strategies.strategy import (
+    ConceptAgnosticStrategy,
+    ConceptAwareStrategy,
+    ConceptIncrementalStrategy,
+)
 
 
 class AGEMStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgnosticStrategy):
