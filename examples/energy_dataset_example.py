@@ -1,6 +1,8 @@
 import logging
 import pathlib
 
+import torch.nn as nn
+
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
@@ -13,11 +15,10 @@ from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.pyod_adapters import LocalOutlierFactorAdapter
 from pyclad.models.adapters.temporal_adapter import FlattenTimeSeriesAdapter
 from pyclad.models.autoencoder.autoencoder import Autoencoder
+from pyclad.models.training.runners.standard import StandardRunner
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
-import torch.nn as nn
-
 from pyclad.strategies.regularization.ewc import EWCStrategy
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     )
 
     model = Autoencoder(encoder, decoder)
-    strategy = EWCStrategy(model, lambda_ewc=1000)
+    strategy = EWCStrategy(model, StandardRunner(max_epochs=20), lambda_ewc=1000)
     callbacks = [
         ConceptMetricCallback(
             base_metric=RocAuc(),

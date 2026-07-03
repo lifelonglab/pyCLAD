@@ -12,6 +12,7 @@ from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.torch_adapter import TorchModelAdapter
 from pyclad.models.autoencoder.autoencoder import Autoencoder
+from pyclad.models.training.runners.standard import StandardRunner
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
 from pyclad.strategies.replay.buffers.adaptive_balanced import (
@@ -46,7 +47,7 @@ if __name__ == "__main__":
     )
 
     backbone = Autoencoder(encoder, decoder)
-    model = TorchModelAdapter(backbone, epochs=20, batch_size=32)
+    model = TorchModelAdapter(backbone, StandardRunner(max_epochs=20), batch_size=32)
 
     replay_buffer = AdaptiveBalancedReplayBuffer(selection_method=RandomSelection(), max_size=1000)
     strategy = ReplayEnhancedStrategy(model, replay_buffer)
