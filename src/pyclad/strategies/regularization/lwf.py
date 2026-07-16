@@ -4,9 +4,10 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor
-from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.models.torch_backbone import TorchBackbone
+from pyclad.models.training.loaders import float_tensor_loader
+from pyclad.models.training.runners.runner import TorchRunner
 from pyclad.strategies.strategy import (
     ConceptAgnosticStrategy,
     ConceptIncrementalStrategy,
@@ -19,41 +20,41 @@ class LwFStrategy(ConceptIncrementalStrategy, ConceptAgnosticStrategy):
     def __init__(
         self,
         model: TorchBackbone,
+        runner: TorchRunner,
         alpha: float = 0.5,
         batch_size: int = 32,
-        epochs: int = 20,
         device: str | torch.device = "cpu",
     ) -> None:
         """
         :param model: torch-backed model whose parameters are trained directly.
+        :param runner: training-loop runner (plain or early-stopping).
         :param alpha: weight of the teacher-output distillation term.
         :param batch_size: training batch size.
-        :param epochs: number of training epochs per concept.
         :param device: device to move input batches to before training.
         """
         if batch_size <= 0:
             raise ValueError(f"batch_size must be positive, got {batch_size}")
-        if epochs <= 0:
-            raise ValueError(f"epochs must be positive, got {epochs}")
 
         self._model = model
+        self._runner = runner
         self._alpha = alpha
         self._batch_size = batch_size
-        self._epochs = epochs
         self._device = torch.device(device)
         self._task_count = 0
         self._teacher: TorchBackbone | None = None
 
     def learn(self, data: np.ndarray, *args, **kwargs) -> None:
         del args, kwargs
-        loader = self._loader(data)
-        self._model.fit_with_loss(loader, self._compute_loss, self._epochs)
+        train, val = self._runner.split_train_test(data)
+        self._runner.run(
+            self._model,
+            float_tensor_loader(train, self._batch_size, shuffle=True),
+            self._compute_loss,
+            val_loader=float_tensor_loader(val, self._batch_size, shuffle=False) if val is not None else None,
+            val_loss_fn=lambda batch: self._model.compute_loss(batch[0].to(self._device)),
+        )
         self._task_count += 1
         self._teacher = self._clone_teacher()
-
-    def _loader(self, data: np.ndarray) -> DataLoader:
-        tensor_data = torch.tensor(np.asarray(data, dtype=np.float32), dtype=torch.float32)
-        return DataLoader(TensorDataset(tensor_data), batch_size=self._batch_size, shuffle=True)
 
     def _compute_loss(self, batch) -> Tensor:
         (x,) = batch
@@ -88,7 +89,7 @@ class LwFStrategy(ConceptIncrementalStrategy, ConceptAgnosticStrategy):
             "model": self._model.name(),
             "alpha": self._alpha,
             "batch_size": self._batch_size,
-            "epochs": self._epochs,
+            "runner": self._runner.info(),
             "device": str(self._device),
             "task_count": self._task_count,
             "has_teacher": self._teacher is not None,

@@ -1,10 +1,9 @@
 import abc
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict
 
 import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
-from torch.utils.data import DataLoader
 
 from pyclad.output.output_writer import InfoProvider
 
@@ -40,26 +39,6 @@ class TorchBackbone(InfoProvider, abc.ABC):
         """
         ...
 
-    def fit_with_loss(
-        self,
-        dataloader: DataLoader,
-        loss_fn: Callable[[Any], Tensor],
-        epochs: int,
-        grad_callback: Optional[Callable[[nn.Module], None]] = None,
-    ) -> None:
-        """Run the training loop with a caller-supplied loss function."""
-        module = self.get_module()
-        optimizer = self.get_optimizer()
-        module.train()
-        for _ in range(epochs):
-            for batch in dataloader:
-                loss = loss_fn(batch)
-                optimizer.zero_grad()
-                loss.backward()
-                if grad_callback is not None:
-                    grad_callback(module)
-                optimizer.step()
-
     def to(self, device: torch.device) -> "TorchBackbone":
         self.get_module().to(device)
         return self
@@ -72,3 +51,6 @@ class TorchBackbone(InfoProvider, abc.ABC):
 
     def additional_info(self):
         return {}
+
+    @abc.abstractmethod
+    def name(self): ...
