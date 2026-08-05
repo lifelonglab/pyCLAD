@@ -30,25 +30,21 @@ def plot_metric_heatmap(
     figsize: tuple = (6, 5),
     ignore_upper_diagonal: bool = False,
 ):
-    sns.set_theme(style="darkgrid")
-    sns.set(rc={"figure.figsize": figsize})
+    matrix_keys = set(matrix.keys())
+    assert all(
+        set(concept_results.keys()) == matrix_keys for concept_results in matrix.values()
+    ), "The outer dict and every inner dict must have the same keys."  # TODO: Allow for different keys in the inner dicts
 
-    data = []  # learned_concept, evaluated_concept, metric_value
+    sns.set_theme(style="darkgrid", rc={"figure.figsize": figsize})
 
-    for learned_concept in concepts_order:
-        for evaluated_concept in concepts_order:
-            metric_value = matrix[learned_concept][evaluated_concept]
-            data.append(
-                [
-                    learned_concept if names_mapping is None else names_mapping[learned_concept],
-                    evaluated_concept if names_mapping is None else names_mapping[evaluated_concept],
-                    metric_value,
-                ]
-            )
+    df = pd.DataFrame(
+        [[matrix[learned][evaluated] for evaluated in concepts_order] for learned in concepts_order],
+        index=concepts_order,
+        columns=concepts_order,
+    )
+    if names_mapping is not None:
+        df = df.rename(index=names_mapping, columns=names_mapping)
 
-    df = pd.DataFrame(data, columns=["learned_concept", "evaluated_concept", "metric_value"])
-    df = df.pivot(index="learned_concept", columns="evaluated_concept", values="metric_value")
-    df = df.reindex(index=concepts_order, columns=concepts_order)
     p: Axes = sns.heatmap(
         df,
         vmin=0,
