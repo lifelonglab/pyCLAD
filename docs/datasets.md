@@ -21,6 +21,9 @@ As for now, we have:
 - **CAD-CICIDS2017** - available through class `CadCicids2017Dataset`.
 - **CAD-CICIDS2018** - available through class `CadCicids2018Dataset`.
 - **CAD-CICUNSW** - available through class `CadCicunswDataset`.
+- **CAD-TCM** - available through class `CadTcmDataset`.
+- **CAD-MiniBooNe** - available through class `CadMiniBooNeDataset`.
+- **CAD-Scania** - available through class `CadScaniaDataset`.
 - **MCAD-CIC-3x1** - available through class `McadCic3x1Dataset`.
 - **MCAD-CIC-3xN** - available through class `McadCic3xNDataset`.
 

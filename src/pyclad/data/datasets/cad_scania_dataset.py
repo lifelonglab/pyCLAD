@@ -1,10 +1,9 @@
 from pyclad.data.datasets.tabular_cad_dataset import TabularCadDataset
 
 
-class McadCic3xNDataset(TabularCadDataset):
+class CadScaniaDataset(TabularCadDataset):
     """
-    MCAD-CIC-3xN benchmark: a multi-source scenario with 13 concepts drawn from CIC-IDS2017, CIC-IDS2018, and
-    CIC-UNSW. See :class:`TabularCadDataset` for details and the ``ordering`` parameter.
+    CAD-Scania benchmark (3 concepts). See :class:`TabularCadDataset` for details and the ``ordering`` parameter.
 
     If using, please cite:
 
@@ -21,5 +20,5 @@ class McadCic3xNDataset(TabularCadDataset):
         }
     """
 
-    _hf_repo = "lifelonglab/MCAD-CIC-3xN"
-    _display_name = "MCAD-CIC-3xN"
+    _hf_repo = "lifelonglab/CAD-Scania"
+    _display_name = "CAD-Scania"

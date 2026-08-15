@@ -5,6 +5,9 @@ import pytest
 from pyclad.data.datasets.cad_cicids2017_dataset import CadCicids2017Dataset
 from pyclad.data.datasets.cad_cicids2018_dataset import CadCicids2018Dataset
 from pyclad.data.datasets.cad_cicunsw_dataset import CadCicunswDataset
+from pyclad.data.datasets.cad_miniboone_dataset import CadMiniBooNeDataset
+from pyclad.data.datasets.cad_scania_dataset import CadScaniaDataset
+from pyclad.data.datasets.cad_tcm_dataset import CadTcmDataset
 from pyclad.data.datasets.mcad_cic_3x1_dataset import McadCic3x1Dataset
 from pyclad.data.datasets.mcad_cic_3xn_dataset import McadCic3xNDataset
 
@@ -12,7 +15,14 @@ from pyclad.data.datasets.mcad_cic_3xn_dataset import McadCic3xNDataset
 @pytest.mark.longrun
 @pytest.mark.parametrize(
     "dataset_cls, concepts_no",
-    [(CadCicids2017Dataset, 6), (CadCicids2018Dataset, 5), (CadCicunswDataset, 5)],
+    [
+        (CadCicids2017Dataset, 6),
+        (CadCicids2018Dataset, 5),
+        (CadCicunswDataset, 5),
+        (CadTcmDataset, 8),
+        (CadMiniBooNeDataset, 5),
+        (CadScaniaDataset, 3),
+    ],
 )
 def test_downloading_tabular_cad_dataset(dataset_cls, concepts_no):
     with TemporaryDirectory() as tmpdir:
@@ -34,6 +44,9 @@ def test_downloading_tabular_cad_dataset(dataset_cls, concepts_no):
         (CadCicids2017Dataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
         (CadCicids2018Dataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
         (CadCicunswDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
+        (CadTcmDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
+        (CadMiniBooNeDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
+        (CadScaniaDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
         (McadCic3x1Dataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
         (McadCic3xNDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
     ],
