@@ -174,4 +174,4 @@ lightning_logs
 examples/resources/vision/
 
 # custom
-memory
+/memory
