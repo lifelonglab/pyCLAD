@@ -16,11 +16,6 @@ class STFPMConfig(LightningVisionConfig):
     pretrained_teacher: bool = True
     pretrained_student: bool = False
     freeze_teacher: bool = True
-    # Torchvision weight variant loaded for the backbone, e.g. "IMAGENET1K_V2" or "DEFAULT".
-    # Applies only where the backbone is actually pretrained -- it is ignored for randomly
-    # initialised parts (any ``pretrained_*`` set to False). Spelled out rather than left implicit
-    # so a serialised config records which weights produced a result. See ``utilities/backbones.py``
-    # for why torchvision's own default is not followed.
     backbone_weights: str = "IMAGENET1K_V1"
 
     learning_rate: float = Field(default=0.4, gt=0.0)
