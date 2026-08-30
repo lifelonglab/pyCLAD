@@ -1,4 +1,5 @@
 from typing import Optional
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -6,6 +7,7 @@ import torch
 
 from pyclad.vision.models.paste.config import PaSTeConfig
 from pyclad.vision.models.paste.paste import PaSTe
+from pyclad.vision.models.utilities.backbones import create_torchvision_model
 from pyclad.vision.prediction_results import VisionPredictionResults
 
 
@@ -158,3 +160,32 @@ def test_paste_second_fit_still_trains_student_in_train_mode():
 
     assert bn.num_batches_tracked.item() > tracked_before.item()  # 2nd fit trained student in train mode
     assert model.module.training is True
+
+
+def test_paste_passes_pretrained_weights_to_teacher_and_student():
+    config = PaSTeConfig(
+        input_size=(64, 64),
+        backbone_name="resnet18",
+        pretrained_teacher=False,
+        pretrained_student=False,
+        backbone_weights="IMAGENET1K_V2",
+        input_range="float01",
+        batch_size=1,
+        epochs=0,
+        show_training_progress=False,
+    )
+
+    with patch(
+        "pyclad.vision.models.paste.backbones.create_torchvision_model",
+        wraps=create_torchvision_model,
+    ) as create_backbone:
+        PaSTe(config)
+
+    assert create_backbone.call_count == 2
+    assert {call.kwargs["weights"] for call in create_backbone.call_args_list} == {"IMAGENET1K_V2"}
+
+
+def test_paste_config_defaults_to_the_pinned_weight_variant():
+    # Spelled out rather than left implicit so a serialised config records which weights
+    # produced a result, and keeps that meaning if the library ever moves its pin.
+    assert PaSTeConfig().backbone_weights == "IMAGENET1K_V1"

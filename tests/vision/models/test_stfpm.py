@@ -15,6 +15,7 @@ from pyclad.vision.models.utilities.backbones import (
     EFFICIENTNET_BACKBONES,
     MOBILENET_BACKBONES,
     RESNET_BACKBONES,
+    create_torchvision_model,
 )
 from pyclad.vision.prediction_results import VisionPredictionResults
 
@@ -310,3 +311,20 @@ def test_stfpm_default_return_nodes_cover_shared_backbone_families():
 def test_stfpm_default_return_nodes_rejects_unknown_backbone():
     with pytest.raises(ValueError, match="No default return nodes"):
         default_stfpm_return_nodes("not_a_backbone")
+
+
+def test_stfpm_passes_pretrained_weights_to_teacher_and_student():
+    with patch(
+        "pyclad.vision.models.utilities.backbones.create_torchvision_model",
+        wraps=create_torchvision_model,
+    ) as create_backbone:
+        STFPM(_config(backbone_weights="IMAGENET1K_V2"))
+
+    assert create_backbone.call_count == 2
+    assert {call.kwargs["weights"] for call in create_backbone.call_args_list} == {"IMAGENET1K_V2"}
+
+
+def test_stfpm_config_defaults_to_the_pinned_weight_variant():
+    # Spelled out rather than left implicit so a serialised config records which weights
+    # produced a result, and keeps that meaning if the library ever moves its pin.
+    assert STFPMConfig().backbone_weights == "IMAGENET1K_V1"

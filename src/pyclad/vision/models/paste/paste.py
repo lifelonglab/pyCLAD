@@ -24,6 +24,7 @@ class PaSTe(LightningVisionModel):
             pretrained_student=self.config.pretrained_student,
             freeze_teacher=self.config.freeze_teacher,
             input_size=self.config.input_size,
+            backbone_weights=self.config.backbone_weights,
         )
         return PaSTeModule(
             network=network,

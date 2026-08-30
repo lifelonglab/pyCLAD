@@ -19,6 +19,7 @@ class PaSTeArchitecture(nn.Module):
         pretrained_student: bool,
         freeze_teacher: bool,
         input_size: tuple[int, int],
+        backbone_weights: Optional[str] = None,
     ):
         super().__init__()
 
@@ -35,6 +36,7 @@ class PaSTeArchitecture(nn.Module):
             freeze=freeze_teacher,
             bootstrap_layer=self.student_bootstrap_layer,
             is_teacher=True,
+            weights=backbone_weights,
         )
         self.student = PaSTeBackbone(
             backbone_name=backbone_name,
@@ -43,6 +45,7 @@ class PaSTeArchitecture(nn.Module):
             freeze=False,
             bootstrap_layer=self.student_bootstrap_layer,
             is_teacher=False,
+            weights=backbone_weights,
         )
 
     def train(self, mode: bool = True):

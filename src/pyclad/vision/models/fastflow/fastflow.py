@@ -27,6 +27,7 @@ class FastFlow(LightningVisionModel):
             conv3x3_only=self.config.conv3x3_only,
             hidden_ratio=self.config.hidden_ratio,
             affine_clamping=self.config.affine_clamping,
+            backbone_weights=self.config.backbone_weights,
         )
         return FastFlowModule(
             network=network,

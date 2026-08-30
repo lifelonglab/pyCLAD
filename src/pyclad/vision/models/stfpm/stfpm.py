@@ -23,6 +23,7 @@ class STFPM(LightningVisionModel):
             pretrained_teacher=self.config.pretrained_teacher,
             pretrained_student=self.config.pretrained_student,
             freeze_teacher=self.config.freeze_teacher,
+            backbone_weights=self.config.backbone_weights,
         )
         return STFPMModule(
             network=network,
