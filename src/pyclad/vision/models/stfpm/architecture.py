@@ -6,10 +6,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from pyclad.vision.models.stfpm.backbones import (
-    TorchvisionFeatureExtractor,
-    default_stfpm_return_nodes,
-)
+from pyclad.vision.models.stfpm.backbones import default_stfpm_return_nodes
+from pyclad.vision.models.utilities.backbones import TorchvisionFeatureExtractor
 
 
 class STFPMArchitecture(nn.Module):
@@ -22,6 +20,7 @@ class STFPMArchitecture(nn.Module):
         pretrained_teacher: bool,
         pretrained_student: bool,
         freeze_teacher: bool,
+        backbone_weights: Optional[str] = None,
     ):
         super().__init__()
 
@@ -37,12 +36,14 @@ class STFPMArchitecture(nn.Module):
             return_nodes=self.return_nodes,
             pretrained=pretrained_teacher,
             freeze=freeze_teacher,
+            weights=backbone_weights,
         )
         self.student = TorchvisionFeatureExtractor(
             backbone_name=backbone_name,
             return_nodes=self.return_nodes,
             pretrained=pretrained_student,
             freeze=False,
+            weights=backbone_weights,
         )
 
     def train(self, mode: bool = True):

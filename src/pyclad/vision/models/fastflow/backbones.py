@@ -1,17 +1,9 @@
 from __future__ import annotations
 
-from collections import OrderedDict
-from typing import Sequence
-
-import torch
-from torch import nn
-from torchvision.models.feature_extraction import create_feature_extractor
-
 from pyclad.vision.models.utilities.backbones import (
     EFFICIENTNET_BACKBONES,
     MOBILENET_BACKBONES,
     RESNET_BACKBONES,
-    create_torchvision_model,
 )
 
 _RESNET_RETURN_NODES = ["relu", "layer1", "layer2", "layer3", "layer4"]
@@ -52,36 +44,3 @@ def default_fastflow_return_nodes(backbone_name: str) -> tuple[str, ...]:
     if len(default_nodes) >= 1:
         return default_nodes
     raise ValueError(f"Backbone '{backbone_name}' did not expose any default feature nodes")
-
-
-class TorchvisionFeatureExtractor(nn.Module):
-    def __init__(
-        self,
-        backbone_name: str,
-        return_nodes: Sequence[str],
-        pretrained: bool,
-        freeze: bool,
-    ):
-        super().__init__()
-
-        self._nodes = tuple(return_nodes)
-        if len(self._nodes) == 0:
-            raise ValueError("return_nodes must contain at least one feature node")
-
-        backbone = create_torchvision_model(backbone_name, pretrained=pretrained)
-        self._extractor = create_feature_extractor(
-            model=backbone,
-            return_nodes=OrderedDict((node, node) for node in self._nodes),
-        )
-
-        if freeze:
-            for parameter in self._extractor.parameters():
-                parameter.requires_grad = False
-
-    @property
-    def return_nodes(self) -> tuple[str, ...]:
-        return self._nodes
-
-    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
-        features = self._extractor(x)
-        return [features[name] for name in self._nodes]
