@@ -47,6 +47,46 @@ cad_dataset = CadCicids2017Dataset(ordering='curriculum_asc')
 ```
 
 
+### Step Schedule (Grouping)
+
+By default every concept is its own training step. CDAD-style continual anomaly detection
+benchmarks instead merge consecutive concepts into larger training steps, while keeping
+evaluation per concept. `pyclad.data.grouping` implements this with a compact notation, where
+tokens are separated by `-` and `NxM` repeats `N` `M` times:
+
+| Spec | Parsed | Meaning (15 concepts) |
+|---|---|---|
+| `"14-1"` | `[14, 1]` | one large base step, then one new concept |
+| `"10-5"` | `[10, 5]` | two steps |
+| `"3x5"` | `[3, 3, 3, 3, 3]` | five steps of three concepts each |
+| `"10-1x5"` | `[10, 1, 1, 1, 1, 1]` | a base of 10, then five single-concept steps |
+
+```python
+from pyclad.data.grouping import apply_step_schedule
+
+scheduled = apply_step_schedule(dataset, schedule="14-1")
+
+scheduled.train_concepts()   # 2 grouped concepts: step_0, step_1
+scheduled.test_concepts()    # still 15 concepts, one per category
+scheduled.first_seen_step()  # {'bottle': 0, ..., 'wood': 0, 'zipper': 1}
+```
+
+The schedule must sum to the number of train concepts. Train concepts are always merged;
+merging preserves the concrete concept class, so a `VisionConcept` keeps its `masks` aligned
+with `data`. Test concepts stay per category unless `group_test=True`, which requires them to
+align 1:1 with the train concepts and describes a different experiment -- do not mix results
+from the two in one table.
+
+Because training now takes $T$ steps while evaluation still covers $N$ concepts, the resulting
+metric matrix is rectangular ($T \times N$, $T < N$). See [Metrics](metrics.md) for the metrics
+that can read such a matrix.
+
+
+Grouping merges *consecutive* concepts, so the dataset must already be in its final order:
+**ordering, then grouping, then first_seen_step**. The mapping from concept to the training
+step that first includes it is derived from the order *before* the merge, which is why the
+grouped dataset computes and carries it for you instead of leaving it to the caller.
+
 ### Continual Scenario Extraction
 
 We devised a simple algorithm to extract continual learning datasets in the format supported by pyCLAD, based on any

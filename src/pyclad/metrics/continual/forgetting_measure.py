@@ -3,6 +3,7 @@ import numpy as np
 from pyclad.metrics.continual.concepts_metric import (
     ConceptLevelMatrix,
     StepwiseConceptMetric,
+    validate_square_matrix,
 )
 
 
@@ -22,6 +23,8 @@ class ForgettingMeasure(StepwiseConceptMetric):
         Returns:
             Mean FM after learning each concepts.
         """
+        validate_square_matrix(metric_matrix, self.name())
+
         concepts_no = len(metric_matrix)
 
         if concepts_no == 0:

@@ -19,7 +19,7 @@ def test_empty_matrix():
 
 def test_raises_exception_when_matrix_not_square():
     metric = ContinualAverage()
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError, match="square"):
         metric.compute([[1, 1, 1], [1, 1, 1], [1, 1]])
 
 

@@ -3,11 +3,13 @@ import numpy as np
 from pyclad.metrics.continual.concepts_metric import (
     ConceptLevelMatrix,
     SummarizedMetric,
+    validate_square_matrix,
 )
 
 
 class BackwardTransfer(SummarizedMetric):
     def compute(self, metric_matrix: ConceptLevelMatrix) -> float:
+        validate_square_matrix(metric_matrix, self.name())
         concepts_no = len(metric_matrix)
 
         values = []

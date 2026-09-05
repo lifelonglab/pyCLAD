@@ -34,6 +34,63 @@ $\text{FWT} = \frac{\sum_{i<j}^{N} R_{i, j}}{\frac{N(N-1)}{2}}$
 
 
 
+### Rectangular matrices and step schedules
+
+When training steps group several concepts (see [Step Schedule](datasets.md)), the rows of $R$ are
+training steps and the columns are evaluated concepts, so $R$ becomes rectangular ($T \times N$
+with $T < N$) and the two axes no longer share names.
+
+The three metrics above walk the diagonal or the triangles of $R$, which is only meaningful when
+each training step corresponds to exactly one evaluated concept. Handed a rectangular matrix they
+raise `ValueError` instead of returning a number computed over cells that do not mean what the
+formula assumes.
+
+For rectangular matrices pyCLAD provides metrics that take one extra argument: $s_k$, the index of
+the training step at which evaluated concept $k$ first entered training. Rows above $s_k$ describe
+the model *before* it ever saw that concept, which is a different quantity from forgetting. Indices
+below are 0-based, so the final training step is $T-1$.
+
+- **Final Step Average** (FSA): the average across all evaluated concepts after the last training
+step. This is the `A-AUROC` figure reported by CDAD-style papers. It reads only the last row, so it
+works on square and rectangular matrices alike:
+
+$\text{FSA} = \frac{1}{N}\sum_{k=0}^{N-1} R_{T-1, k}$
+
+- **Schedule-Aware Forgetting Measure**: forgetting restricted to the rows in which a concept had
+already been trained. Concepts with $s_k \ge T-1$ are skipped, since a concept that enters training
+only at the final step cannot have been forgotten yet:
+
+$f_k = \max_{j \in [s_k,\, T-2]} R_{j, k} - R_{T-1, k}$
+
+- **Schedule-Aware Forward Transfer**: the model's performance on concepts it has not been trained
+on yet, averaged over the pre-training rows. Concepts with $s_k = 0$ are skipped, and so are
+individual cells where the base metric was undefined, so the mean is taken over the non-NaN
+pre-training rows rather than over all $s_k$ of them:
+
+$\text{fwt}_k = \underset{j \,\in\, [0,\, s_k - 1]}{\text{mean}} R_{j, k}$
+
+- **Schedule-Aware New Task Acquisition**: performance on a concept right after it first entered
+training, before any later step could interfere. Together with the forgetting measure it separates
+a plasticity problem (the concept was never learned) from a stability one (it was learned, then
+lost). On a square matrix with one concept per step this reads the diagonal:
+
+$\text{nta}_k = R_{s_k, k}$
+
+Wiring them up is one argument, because the grouped dataset carries the mapping:
+
+```python
+callback = ConceptMetricCallback(
+    base_metric=RocAuc(),
+    summarized_metrics=[FinalStepAverage()],
+    schedule_aware_metrics=[
+        ScheduleAwareForgettingMeasure(),
+        ScheduleAwareForwardTransfer(),
+        ScheduleAwareNewTaskAcquisition(),
+    ],
+    first_seen_step=scheduled_dataset.first_seen_step(),
+)
+```
+
 The evaluation protocol slightly differs based on the scenario. Specifically:
 
 - **Concept-aware** and **concept-incremental**: batches $T_i$ (training) and $E_i$ (evaluation) correspond to the single $i-$th concept.
