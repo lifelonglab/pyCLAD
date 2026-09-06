@@ -3,9 +3,10 @@ from typing import Any, Dict, Tuple
 import numpy as np
 import torch
 from torch import Tensor, nn
-from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.models.torch_backbone import TorchBackbone
+from pyclad.models.training.loaders import float_tensor_loader
+from pyclad.models.training.runners.runner import TorchRunner
 from pyclad.strategies.strategy import ConceptAwareStrategy, ConceptIncrementalStrategy
 
 
@@ -27,15 +28,15 @@ class EWCStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
     def __init__(
         self,
         model: TorchBackbone,
+        runner: TorchRunner,
         lambda_ewc: float = 1.0,
-        epochs: int = 20,
         batch_size: int = 32,
         fisher_batch_size: int = 1,
         online: bool = False,
     ):
         self._model = model
+        self._runner = runner
         self._lambda = lambda_ewc
-        self._epochs = epochs
         self._batch_size = batch_size
         self._fisher_batch_size = fisher_batch_size
         self._online = online
@@ -45,11 +46,15 @@ class EWCStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         self._reference_square_sum: Dict[str, Tensor] = {}
 
     def learn(self, data: np.ndarray, **kwargs) -> None:
-        dataset = TensorDataset(torch.tensor(data, dtype=torch.float32))
-        dataloader = DataLoader(dataset, batch_size=self._batch_size, shuffle=True)
-
-        self._model.fit_with_loss(dataloader, self._compute_loss, self._epochs)
-        self._update_fisher(data)
+        train, val = self._runner.split_train_test(data)
+        self._runner.run(
+            self._model,
+            float_tensor_loader(train, self._batch_size, shuffle=True),
+            self._compute_loss,
+            val_loader=float_tensor_loader(val, self._batch_size, shuffle=False) if val is not None else None,
+            val_loss_fn=lambda batch: self._model.compute_loss(batch[0]),
+        )
+        self._update_fisher(train)
 
     def predict(self, data: np.ndarray, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         return self._model.predict(data)
@@ -58,7 +63,7 @@ class EWCStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         return "EWC"
 
     def additional_info(self) -> Dict[str, Any]:
-        return {"lambda_ewc": self._lambda, "epochs": self._epochs, "online": self._online}
+        return {"lambda_ewc": self._lambda, "online": self._online, "runner": self._runner.info()}
 
     # ------------------------------------------------------------------
 
@@ -87,11 +92,7 @@ class EWCStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         module = self._model.get_module()
         module.eval()
 
-        loader = DataLoader(
-            TensorDataset(torch.tensor(data, dtype=torch.float32)),
-            batch_size=self._fisher_batch_size,
-            shuffle=False,
-        )
+        loader = float_tensor_loader(data, self._fisher_batch_size, shuffle=False)
 
         new_fisher = {name: torch.zeros_like(param) for name, param in module.named_parameters() if param.requires_grad}
         n_samples = 0

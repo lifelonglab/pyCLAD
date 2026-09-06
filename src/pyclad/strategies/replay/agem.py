@@ -1,9 +1,10 @@
 import numpy as np
 import torch
 from torch import Tensor, nn
-from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.models.torch_backbone import TorchBackbone
+from pyclad.models.training.loaders import float_tensor_loader
+from pyclad.models.training.runners.runner import TorchRunner
 from pyclad.strategies.replay.buffers.reservoir import ReservoirBuffer
 from pyclad.strategies.strategy import (
     ConceptAgnosticStrategy,
@@ -29,18 +30,18 @@ class AGEMStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgno
     def __init__(
         self,
         model: TorchBackbone,
+        runner: TorchRunner,
         buffer: ReservoirBuffer,
         batch_size: int = 32,
         replay_batch_size: int | None = None,
-        epochs: int = 20,
         projection_tolerance: float = 1e-6,
         device: str | torch.device = "cpu",
     ) -> None:
         self._model = model
+        self._runner = runner
         self._buffer = buffer
         self._batch_size = batch_size
         self._replay_batch_size = replay_batch_size
-        self._epochs = epochs
         self._projection_tolerance = projection_tolerance
         self._device = torch.device(device)
         self._current_batch_size = batch_size
@@ -50,9 +51,16 @@ class AGEMStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgno
         if len(current) == 0:
             return
 
-        loader = DataLoader(TensorDataset(torch.tensor(current, dtype=torch.float32)), self._batch_size, shuffle=True)
-        self._model.fit_with_loss(loader, self._compute_loss, self._epochs, grad_callback=self._project_gradient)
-        self._update_buffer(current)
+        train, val = self._runner.split_train_test(current)
+        self._runner.run(
+            self._model,
+            float_tensor_loader(train, self._batch_size, shuffle=True),
+            self._compute_loss,
+            grad_callback=self._project_gradient,
+            val_loader=float_tensor_loader(val, self._batch_size, shuffle=False) if val is not None else None,
+            val_loss_fn=lambda batch: self._model.compute_loss(batch[0].to(self._device)),
+        )
+        self._update_buffer(train)
 
     def _compute_loss(self, batch) -> Tensor:
         (x,) = batch
@@ -126,7 +134,7 @@ class AGEMStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgno
             "model": self._model.name(),
             "batch_size": self._batch_size,
             "replay_batch_size": self._replay_batch_size or self._batch_size,
-            "epochs": self._epochs,
+            "runner": self._runner.info(),
             "projection_tolerance": self._projection_tolerance,
             "device": str(self._device),
             "buffer": self._buffer.info(),

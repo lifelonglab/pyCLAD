@@ -1,9 +1,9 @@
 import numpy as np
-import torch
-from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.models.model import Model
 from pyclad.models.torch_backbone import TorchBackbone
+from pyclad.models.training.loaders import float_tensor_loader
+from pyclad.models.training.runners.runner import TorchRunner
 
 
 class TorchModelAdapter(Model):
@@ -11,24 +11,24 @@ class TorchModelAdapter(Model):
 
     Allows backbone-based models to be used with model-agnostic strategies
     (e.g. ReplayOnlyStrategy, ReplayEnhancedStrategy) that drive training
-    through Model.fit().
+    through Model.fit(). The supplied runner owns the training loop, so the
+    same adapter works with plain or early-stopping training.
     """
 
-    def __init__(self, backbone: TorchBackbone, epochs: int, batch_size: int):
+    def __init__(self, backbone: TorchBackbone, runner: TorchRunner, batch_size: int):
         self._backbone = backbone
-        self._epochs = epochs
+        self._runner = runner
         self._batch_size = batch_size
 
     def fit(self, data: np.ndarray) -> None:
-        loader = DataLoader(
-            TensorDataset(torch.tensor(data, dtype=torch.float32)),
-            batch_size=self._batch_size,
-            shuffle=True,
-        )
-        self._backbone.fit_with_loss(
-            loader,
-            lambda batch: self._backbone.compute_loss(batch[0]),
-            self._epochs,
+        train, val = self._runner.split_train_test(data)
+        loss_fn = lambda batch: self._backbone.compute_loss(batch[0])  # noqa: E731
+        self._runner.run(
+            self._backbone,
+            float_tensor_loader(train, self._batch_size, shuffle=True),
+            loss_fn,
+            val_loader=float_tensor_loader(val, self._batch_size, shuffle=False) if val is not None else None,
+            val_loss_fn=loss_fn,
         )
 
     def predict(self, data: np.ndarray):  # return type follows backbone
@@ -38,4 +38,4 @@ class TorchModelAdapter(Model):
         return self._backbone.name()
 
     def additional_info(self) -> dict:
-        return {**self._backbone.additional_info(), "epochs": self._epochs, "batch_size": self._batch_size}
+        return {**self._backbone.additional_info(), "batch_size": self._batch_size, "runner": self._runner.info()}

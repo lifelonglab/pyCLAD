@@ -15,6 +15,7 @@ from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forgetting_measure import ForgettingMeasure
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.autoencoder.autoencoder import Autoencoder
+from pyclad.models.training.runners.standard import StandardRunner
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_agnostic import ConceptAgnosticScenario
 from pyclad.strategies.regularization.der import DerPlusPlus
@@ -57,6 +58,7 @@ if __name__ == "__main__":
     buffer = ReservoirBuffer(max_capacity=200, device="cpu")
     strategy = DerPlusPlus(
         model=model,
+        runner=StandardRunner(max_epochs=20),
         buffer=buffer,
         alpha=0.5,
         beta=0.5,

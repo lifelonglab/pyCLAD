@@ -2,9 +2,10 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor
-from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.models.torch_backbone import TorchBackbone
+from pyclad.models.training.loaders import float_tensor_loader
+from pyclad.models.training.runners.runner import TorchRunner
 from pyclad.strategies.replay.buffers.reservoir import ReservoirBuffer
 from pyclad.strategies.strategy import ConceptAgnosticStrategy
 
@@ -26,39 +27,41 @@ class DerPlusPlus(ConceptAgnosticStrategy):
         self,
         *,
         model: TorchBackbone,
+        runner: TorchRunner,
         buffer: ReservoirBuffer,
         alpha: float = 0.5,
         beta: float = 0.5,
         batch_size: int = 32,
-        epochs: int = 20,
         device: str | torch.device = "cpu",
     ) -> None:
         """
         :param model: torch-backed model whose parameters are trained directly.
             The optimizer and learning rate are managed by the model.
+        :param runner: training-loop runner (plain or early-stopping).
         :param buffer: reservoir buffer storing past (input, output) pairs.
         :param alpha: weight of the output-consolidation term.
         :param beta: weight of the replay term. Setting beta=0
             reduces the strategy to plain DER.
         :param batch_size: training batch size.
-        :param epochs: number of training epochs per concept.
         :param device: device to move input batches to before training.
         """
         self._model = model
+        self._runner = runner
         self._buffer = buffer
         self._alpha = alpha
         self._beta = beta
         self._batch_size = batch_size
-        self._epochs = epochs
         self._device = torch.device(device)
 
     def learn(self, data: np.ndarray) -> None:
-        loader = DataLoader(
-            TensorDataset(torch.tensor(data, dtype=torch.float32)),
-            batch_size=self._batch_size,
-            shuffle=True,
+        train, val = self._runner.split_train_test(data)
+        self._runner.run(
+            self._model,
+            float_tensor_loader(train, self._batch_size, shuffle=True),
+            self._compute_loss,
+            val_loader=float_tensor_loader(val, self._batch_size, shuffle=False) if val is not None else None,
+            val_loss_fn=lambda batch: self._model.compute_loss(batch[0].to(self._device)),
         )
-        self._model.fit_with_loss(loader, self._compute_loss, self._epochs)
 
     def _compute_loss(self, batch) -> Tensor:
         (x,) = batch
@@ -90,7 +93,7 @@ class DerPlusPlus(ConceptAgnosticStrategy):
             "alpha": self._alpha,
             "beta": self._beta,
             "batch_size": self._batch_size,
-            "epochs": self._epochs,
+            "runner": self._runner.info(),
             "device": str(self._device),
             "buffer": self._buffer.info(),
         }
