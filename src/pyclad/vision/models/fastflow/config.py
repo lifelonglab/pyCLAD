@@ -14,6 +14,7 @@ class FastFlowConfig(LightningVisionConfig):
     backbone_return_nodes: Optional[tuple[str, ...]] = None
     pretrained_backbone: bool = True
     freeze_backbone: bool = True
+    backbone_weights: str = "IMAGENET1K_V1"
     normalize_features: bool = True
 
     adam_beta1: float = Field(default=0.9, ge=0.0, lt=1.0)

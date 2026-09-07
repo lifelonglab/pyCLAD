@@ -6,45 +6,43 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from pyclad.vision.models.paste.backbones import PaSTeBackbone, default_ad_layers
+from pyclad.vision.models.stfpm.backbones import default_stfpm_return_nodes
+from pyclad.vision.models.utilities.backbones import TorchvisionFeatureExtractor
 
 
-class PaSTeArchitecture(nn.Module):
+class STFPMArchitecture(nn.Module):
+
     def __init__(
         self,
+        input_size: tuple[int, int],
         backbone_name: str,
-        ad_layers: Optional[tuple[int, ...]],
-        student_bootstrap_layer: Optional[int],
+        backbone_return_nodes: Optional[tuple[str, ...]],
         pretrained_teacher: bool,
         pretrained_student: bool,
         freeze_teacher: bool,
-        input_size: tuple[int, int],
         backbone_weights: Optional[str] = None,
     ):
         super().__init__()
 
-        self.backbone_name = backbone_name
-        self.ad_layers = tuple(sorted(ad_layers if ad_layers is not None else default_ad_layers(backbone_name)))
-        self.student_bootstrap_layer = student_bootstrap_layer
+        if backbone_return_nodes is None:
+            backbone_return_nodes = tuple(default_stfpm_return_nodes(backbone_name))
+
         self.input_size = tuple(input_size)
         self.freeze_teacher = freeze_teacher
+        self.return_nodes = tuple(backbone_return_nodes)
 
-        self.teacher = PaSTeBackbone(
+        self.teacher = TorchvisionFeatureExtractor(
             backbone_name=backbone_name,
-            ad_layers=self.ad_layers,
+            return_nodes=self.return_nodes,
             pretrained=pretrained_teacher,
             freeze=freeze_teacher,
-            bootstrap_layer=self.student_bootstrap_layer,
-            is_teacher=True,
             weights=backbone_weights,
         )
-        self.student = PaSTeBackbone(
+        self.student = TorchvisionFeatureExtractor(
             backbone_name=backbone_name,
-            ad_layers=self.ad_layers,
+            return_nodes=self.return_nodes,
             pretrained=pretrained_student,
             freeze=False,
-            bootstrap_layer=self.student_bootstrap_layer,
-            is_teacher=False,
             weights=backbone_weights,
         )
 
@@ -61,31 +59,29 @@ class PaSTeArchitecture(nn.Module):
         if self.freeze_teacher:
             self.teacher.eval()
             with torch.no_grad():
-                teacher_features, bootstrap_feature = self.teacher(x)
+                teacher_features = self.teacher(x)
         else:
-            teacher_features, bootstrap_feature = self.teacher(x)
-
-        student_input = x if self.student_bootstrap_layer is None else bootstrap_feature
-        if student_input is None:
-            raise RuntimeError("PaSTe failed to produce the student bootstrap feature")
-        student_features, _ = self.student(student_input)
+            teacher_features = self.teacher(x)
+        student_features = self.student(x)
         return teacher_features, student_features
 
     def forward(self, x: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        """Returns ``(teacher_features, student_features)``. Use :meth:`inference` for post-processed maps."""
+        """Returns ``(teacher_features, student_features)``. Use :meth:`inference` for the map."""
         return self._feature_pairs(x)
 
-    def inference(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def inference(self, x: torch.Tensor) -> torch.Tensor:
         teacher_features, student_features = self._feature_pairs(x)
-        return self.post_process(teacher_features, student_features)
+        return self.anomaly_map(teacher_features, student_features)
 
-    def post_process(
+    def anomaly_map(
         self,
         teacher_features: list[torch.Tensor],
         student_features: list[torch.Tensor],
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        aggregated_map: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
+        if len(teacher_features) == 0 or len(student_features) == 0:
+            raise ValueError("STFPM anomaly map requires non-empty teacher and student feature lists")
 
+        aggregated_map: Optional[torch.Tensor] = None
         for teacher_feature, student_feature in zip(teacher_features, student_features):
             teacher_feature = F.normalize(teacher_feature, dim=1)
             student_feature = F.normalize(student_feature, dim=1)
@@ -98,17 +94,12 @@ class PaSTeArchitecture(nn.Module):
             )
             aggregated_map = distance_map if aggregated_map is None else aggregated_map * distance_map
 
-        if aggregated_map is None:
-            raise ValueError("PaSTe received empty feature lists during post-processing")
-
-        anomaly_map = aggregated_map[:, 0]
-        anomaly_scores = torch.max(anomaly_map.view(anomaly_map.size(0), -1), dim=1).values
-        return anomaly_map, anomaly_scores
+        return aggregated_map[:, 0]
 
     @staticmethod
     def feature_loss(teacher_features: list[torch.Tensor], student_features: list[torch.Tensor]) -> torch.Tensor:
         if len(teacher_features) == 0 or len(student_features) == 0:
-            raise ValueError("PaSTe feature loss requires non-empty teacher and student feature lists")
+            raise ValueError("STFPM feature loss requires non-empty teacher and student feature lists")
 
         loss: Optional[torch.Tensor] = None
         for teacher_feature, student_feature in zip(teacher_features, student_features):

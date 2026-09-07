@@ -6,11 +6,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from pyclad.vision.models.fastflow.backbones import (
-    TorchvisionFeatureExtractor,
-    default_fastflow_return_nodes,
-)
+from pyclad.vision.models.fastflow.backbones import default_fastflow_return_nodes
 from pyclad.vision.models.fastflow.flow import FastFlowSequence
+from pyclad.vision.models.utilities.backbones import TorchvisionFeatureExtractor
 
 
 class AnomalyMapGenerator(nn.Module):
@@ -47,6 +45,7 @@ class FastFlowArchitecture(nn.Module):
         conv3x3_only: bool,
         hidden_ratio: float,
         affine_clamping: float,
+        backbone_weights: Optional[str] = None,
     ):
         super().__init__()
 
@@ -61,6 +60,7 @@ class FastFlowArchitecture(nn.Module):
             return_nodes=self.return_nodes,
             pretrained=pretrained_backbone,
             freeze=freeze_backbone,
+            weights=backbone_weights,
         )
 
         self.feature_shapes = tuple(self._infer_feature_shapes(self.input_size))

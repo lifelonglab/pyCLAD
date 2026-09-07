@@ -6,33 +6,29 @@ import pytorch_lightning as pl
 import torch
 from pytorch_lightning.utilities.types import OptimizerLRScheduler
 
-from pyclad.vision.models.fastflow.architecture import FastFlowArchitecture
-from pyclad.vision.models.fastflow.config import FastFlowConfig
+from pyclad.vision.models.stfpm.architecture import STFPMArchitecture
+from pyclad.vision.models.stfpm.config import STFPMConfig
 from pyclad.vision.models.utilities.base_model import LightningVisionModel
 
 
-class FastFlow(LightningVisionModel):
-    def __init__(self, config: Optional[FastFlowConfig] = None):
-        super().__init__(config or FastFlowConfig())
+class STFPM(LightningVisionModel):
+    def __init__(self, config: Optional[STFPMConfig] = None):
+        super().__init__(config or STFPMConfig())
 
     def _build_module(self) -> pl.LightningModule:
-        network = FastFlowArchitecture(
+        network = STFPMArchitecture(
             input_size=self.config.input_size,
             backbone_name=self.config.backbone_name,
             backbone_return_nodes=self.config.backbone_return_nodes,
-            pretrained_backbone=self.config.pretrained_backbone,
-            freeze_backbone=self.config.freeze_backbone,
-            normalize_features=self.config.normalize_features,
-            flow_steps=self.config.flow_steps,
-            conv3x3_only=self.config.conv3x3_only,
-            hidden_ratio=self.config.hidden_ratio,
-            affine_clamping=self.config.affine_clamping,
+            pretrained_teacher=self.config.pretrained_teacher,
+            pretrained_student=self.config.pretrained_student,
+            freeze_teacher=self.config.freeze_teacher,
             backbone_weights=self.config.backbone_weights,
         )
-        return FastFlowModule(
+        return STFPMModule(
             network=network,
             learning_rate=self.config.learning_rate,
-            adam_betas=(self.config.adam_beta1, self.config.adam_beta2),
+            momentum=self.config.momentum,
             weight_decay=self.config.weight_decay,
         )
 
@@ -43,40 +39,44 @@ class FastFlow(LightningVisionModel):
         return {"backbone_return_nodes": self.module.network.return_nodes}
 
     def name(self) -> str:
-        return "FastFlow"
+        return "STFPM"
 
 
-class FastFlowModule(pl.LightningModule):
+class STFPMModule(pl.LightningModule):
     def __init__(
         self,
-        network: FastFlowArchitecture,
+        network: STFPMArchitecture,
         learning_rate: float,
-        adam_betas: tuple[float, float],
+        momentum: float,
         weight_decay: float,
     ):
         super().__init__()
         self.network = network
         self.learning_rate = learning_rate
-        self.adam_betas = adam_betas
+        self.momentum = momentum
         self.weight_decay = weight_decay
 
         self.save_hyperparameters(ignore=["network"])
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         return self.network(x)
 
     def training_step(self, batch, batch_idx):
         x = batch[0]
-        hidden_variables, log_jacobians = self.network(x)
-        loss = FastFlowArchitecture.fastflow_loss(hidden_variables, log_jacobians)
+        teacher_features, student_features = self.network(x)
+        loss = STFPMArchitecture.feature_loss(teacher_features, student_features)
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
-        parameters = [parameter for parameter in self.network.parameters() if parameter.requires_grad]
-        return torch.optim.Adam(
-            parameters,
+        # Canonical STFPM optimizes only the student; the teacher stays frozen.
+        if self.network.freeze_teacher:
+            params = self.network.student.parameters()
+        else:
+            params = self.network.parameters()
+        return torch.optim.SGD(
+            params,
             lr=self.learning_rate,
-            betas=self.adam_betas,
+            momentum=self.momentum,
             weight_decay=self.weight_decay,
         )

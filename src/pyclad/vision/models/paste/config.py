@@ -13,6 +13,7 @@ class PaSTeConfig(LightningVisionConfig):
     pretrained_teacher: bool = True
     pretrained_student: bool = False
     freeze_teacher: bool = True
+    backbone_weights: str = "IMAGENET1K_V1"
 
     learning_rate: float = Field(default=0.4, gt=0.0)
     momentum: float = Field(default=0.9, ge=0.0, lt=1.0)

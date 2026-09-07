@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from pyclad.vision.models.fastflow.config import FastFlowConfig
 from pyclad.vision.models.fastflow.fastflow import FastFlow
+from pyclad.vision.models.utilities.backbones import create_torchvision_model
 from pyclad.vision.prediction_results import VisionPredictionResults
 
 
@@ -174,3 +175,20 @@ def test_fastflow_config_rejects_half_specified_normalization():
 def test_fastflow_config_accepts_valid_normalization():
     FastFlowConfig(normalize_mean=None, normalize_std=None)  # both off
     FastFlowConfig(normalize_std=(0.2, 0.2, 0.2))  # both set (mean defaults)
+
+
+def test_fastflow_passes_pretrained_weights_to_the_backbone():
+    with patch(
+        "pyclad.vision.models.utilities.backbones.create_torchvision_model",
+        wraps=create_torchvision_model,
+    ) as create_backbone:
+        FastFlow(_config(backbone_weights="IMAGENET1K_V2"))
+
+    create_backbone.assert_called_once()
+    assert create_backbone.call_args.kwargs["weights"] == "IMAGENET1K_V2"
+
+
+def test_fastflow_config_defaults_to_the_pinned_weight_variant():
+    # Spelled out rather than left implicit so a serialised config records which weights
+    # produced a result, and keeps that meaning if the library ever moves its pin.
+    assert FastFlowConfig().backbone_weights == "IMAGENET1K_V1"

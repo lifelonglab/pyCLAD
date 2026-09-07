@@ -71,11 +71,12 @@ class PaSTeBackbone(nn.Module):
         freeze: bool,
         bootstrap_layer: Optional[int],
         is_teacher: bool,
+        weights: Optional[str] = None,
     ):
         super().__init__()
 
         spec = resolve_backbone_spec(backbone_name)
-        stages = spec.stage_builder(create_torchvision_model(backbone_name, pretrained=pretrained))
+        stages = spec.stage_builder(create_torchvision_model(backbone_name, pretrained=pretrained, weights=weights))
         max_layer = max(ad_layers)
 
         if max_layer >= len(stages):
