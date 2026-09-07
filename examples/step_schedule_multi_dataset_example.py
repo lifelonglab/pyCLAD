@@ -1,7 +1,9 @@
 import logging
 import pathlib
 
-from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
+from pyclad.callbacks.evaluation.concept_metric_evaluation import (
+    ScheduleAwareConceptMetricCallback,
+)
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.grouping import apply_step_schedule
 from pyclad.metrics.base.average_precision import AveragePrecision
@@ -20,7 +22,7 @@ from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
 from pyclad.strategies.baselines.naive import NaiveStrategy
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
-    VisionPixelConceptMetricCallback,
+    ScheduleAwareVisionPixelConceptMetricCallback,
 )
 from pyclad.vision.data.multi_dataset import (
     load_inclad_md,
@@ -102,26 +104,26 @@ if __name__ == "__main__":
 
     callbacks = [
         # Image-level
-        ConceptMetricCallback(
+        ScheduleAwareConceptMetricCallback(
             base_metric=RocAuc(),
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
             first_seen_step=first_seen_step,
         ),
-        ConceptMetricCallback(
+        ScheduleAwareConceptMetricCallback(
             base_metric=AveragePrecision(),
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
             first_seen_step=first_seen_step,
         ),
         # Pixel-level
-        VisionPixelConceptMetricCallback(
+        ScheduleAwareVisionPixelConceptMetricCallback(
             base_metric=PixelRocAuc(),
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
             first_seen_step=first_seen_step,
         ),
-        VisionPixelConceptMetricCallback(
+        ScheduleAwareVisionPixelConceptMetricCallback(
             base_metric=PixelAUPRO(),
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
