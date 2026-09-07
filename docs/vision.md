@@ -37,7 +37,8 @@ from a quantile of training scores, and routing reads only the learned keys.
 not change when the evaluated batch is regrouped or reordered, `predict()` must not mutate
 learned state, and the strategy must ignore the concept id it is handed.
 
-Which is why these numbers are *not* comparable to the paper's Tables 1–4, and are expected to be lower. In `run_ucad.py`, every
+These numbers are *not* comparable to the paper's Tables 1–4 and
+are expected to be lower, because the reference evaluation is not leak-free. In `run_ucad.py`, every
 epoch is evaluated on the test set and the prompt and knowledge bank are kept from the epoch
 with the best test AUROC (lines 262–264, with an early break at AUROC = 1); the reported score
 is a running ensemble accumulated across epochs (line 128 vs 149); scores are min-max
@@ -47,6 +48,26 @@ task is trained and cannot show forgetting; and the reported "FM" is the gap bet
 budgets, not forgetting in the sense of Chaudhry et al. There is no validation split
 (`train_val_split=1`), so honest epoch selection is impossible in that codebase — this port
 therefore trains a fixed 25 epochs and keeps the last one, with no selection criterion at all.
+
+#### Divergences from the reference
+
+`UCADConfig`'s defaults follow the [reference code](https://github.com/shirowalker/UCAD) rather
+than the paper prose wherever the two disagree. Every place this port departs from either is
+listed here.
+
+| What | Reference / paper | This port | Why |
+|---|---|---|---|
+| Epoch selection | Keeps the epoch with the best **test** AUROC (`run_ucad.py` lines 262–264) | Trains a fixed `epochs=25` and keeps the last | No test data may reach `fit()` — see [Data leakage](#data-leakage) above |
+| Score post-processing | Min-max normalises over the whole test set and ensembles scores across epochs | Raw nearest-neighbour distances from the final epoch | Same reason |
+| Backbone weights | The paper's text says ImageNet-21k; the code's `vit_base_patch16_224` + `pretrained=True` resolved (timm 0.6.7) to ImageNet-21k **finetuned on ImageNet-1k** | `backbone_name="vit_base_patch16_224.augreg_in21k_ft_in1k"` — the weights the reference actually loaded | Newer timm requires the tag to be explicit; pinning it keeps the port reproducible. Set `"vit_base_patch16_224.augreg_in21k"` for the paper's stated variant |
+| `prompt_depth` | Prompts all 12 blocks while reading features out after block index 5 | Defaults to `6`, matching `feature_layer` | Prompt slices past the read-out block receive no gradient and only cost storage. Larger values are still accepted and merely log an info message |
+| Coreset size | Samples a *percentage* of the feature pool | Samples an exact count (`key_size` / `knowledge_size`, both `196`) | A percentage of a varying pool can round down by one; UCAD specifies the banks as absolute sizes |
+
+Reproduced deliberately, quirks included: the SCL loss keeps the reference's diagonal self-pairs
+(a constant offset that does not change the gradient direction); patch-label downsampling
+reproduces `cv2.resize`'s bilinear-then-round behaviour (`mask_interpolation="bilinear"`);
+routing distances are squared to match the reference's faiss index; and the prompt is
+initialised `uniform(-1, 1)` as in EPrompt.
 
 ## Setup — extra libraries required
 

@@ -10,10 +10,11 @@ class UCADConfig(VisionConfig):
     """Configuration for UCAD.
 
     Defaults follow the reference implementation (https://github.com/shirowalker/UCAD),
-    not the paper prose, wherever the two disagree. Each divergence is recorded in
-    ``docs/vision.md``. Training fields live here rather than in ``LightningVisionConfig``
-    because UCAD optimises a single prompt tensor for a fixed number of epochs with no
-    validation split and no early stopping, so that base class's fields would be inert.
+    not the paper prose, wherever the two disagree. Each divergence is recorded under
+    "Divergences from the reference" in ``docs/vision.md``. Training fields live here rather
+    than in ``LightningVisionConfig`` because UCAD optimises a single prompt tensor for a fixed
+    number of epochs with no validation split and no early stopping, so that base class's
+    fields would be inert.
     """
 
     input_size: ImageSize = (224, 224)

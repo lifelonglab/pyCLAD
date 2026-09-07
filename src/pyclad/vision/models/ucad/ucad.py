@@ -13,12 +13,12 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from pyclad.vision.models.ucad.config import UCADConfig
-from pyclad.vision.models.ucad.coreset import (
+from pyclad.vision.models.ucad.structure import build_structure_mask_provider
+from pyclad.vision.models.utilities.base_model import VisionScoringBase
+from pyclad.vision.models.utilities.coreset import (
     ApproximateGreedyCoresetSampler,
     RescaleSegmentor,
 )
-from pyclad.vision.models.ucad.structure import build_structure_mask_provider
-from pyclad.vision.models.utilities.base_model import VisionScoringBase
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class UCAD(VisionScoringBase):
     No method accepts test data, test labels, or any statistic derived from them. The
     reference implementation selects its prompt and knowledge bank by test AUROC; this port
     trains for a fixed number of epochs and keeps the last one, so its scores are lower than
-    the paper's by construction. See ``docs/vision.md``.
+    the paper's by construction. See "Data leakage" in ``docs/vision.md``.
     """
 
     config: UCADConfig

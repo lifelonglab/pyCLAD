@@ -1,16 +1,18 @@
-"""UCAD's own copies of two PatchCore utilities.
+"""Coreset sampling and anomaly-map rescaling, shared by the patch-memory models.
 
-``RescaleSegmentor`` and ``ApproximateGreedyCoresetSampler`` originate in PatchCore
-(``pyclad.vision.models.patchcore.patchcore``), which is not yet on ``main`` -- it lives on
-another, still-unmerged feature branch. UCAD needs exactly these two helpers, so this module
-carries its own copies (trimmed to only what UCAD calls: ``convert_to_segmentation`` and
-``run_with_target_size``) instead of depending on that branch.
+These two helpers originate in PatchCore and are needed verbatim by every model that scores
+patches against a subsampled memory bank. They live here, in ``utilities``, rather than inside
+one model's package so that no model has to import from another -- the same layering rule that
+keeps models from importing strategy packages.
 
-When the PatchCore model lands on ``main``, this module should be reduced to imports from
-``pyclad.vision.models.patchcore.patchcore`` rather than carrying duplicate implementations.
+Two sizings are offered because the callers ask for different things: PatchCore keeps a
+fraction of its feature pool (``run``), UCAD keeps an exact count (``run_with_target_size``).
+Both go through the same greedy selection.
 """
 
 from __future__ import annotations
+
+from typing import Optional
 
 import numpy as np
 import torch
@@ -43,22 +45,25 @@ class RescaleSegmentor:
 
 
 class ApproximateGreedyCoresetSampler:
-    """Greedy coreset subsampling, restricted to the exact-count entry point UCAD uses.
+    """Greedy coreset subsampling: repeatedly keep the point farthest from what is already kept.
 
-    The original PatchCore utility also offers a percentage-based ``run()`` (and the
-    ``percentage`` constructor parameter that only it needs) plus a weighted-selection
-    variant of the private helper below, for the other model's needs. Neither is reachable
-    from UCAD, which only ever asks for an exact-size coreset, so both are left out here.
+    ``percentage`` is only read by ``run``; a caller that sizes its coreset absolutely uses
+    ``run_with_target_size`` and leaves it unset.
     """
 
     def __init__(
         self,
         device: torch.device,
+        percentage: Optional[float] = None,
         number_of_starting_points: int = 10,
         dimension_to_project_features_to: int = 128,
         random_seed: int = 0,
     ):
+        if percentage is not None and not 0.0 < percentage <= 1.0:
+            raise ValueError("percentage must be in (0, 1]")
+
         self.device = device
+        self.percentage = percentage
         self.number_of_starting_points = number_of_starting_points
         self.dimension_to_project_features_to = dimension_to_project_features_to
         self.random_seed = random_seed
@@ -112,6 +117,19 @@ class ApproximateGreedyCoresetSampler:
                 ).values.reshape(-1, 1)
 
         return np.array(coreset_indices)
+
+    def run(self, features: np.ndarray) -> np.ndarray:
+        """Keep ``percentage`` of ``features``, at least one point."""
+        if self.percentage is None:
+            raise ValueError("run() needs a percentage; pass one to the constructor or call run_with_target_size()")
+        if self.percentage == 1.0:
+            return features
+
+        feature_tensor = torch.from_numpy(features.astype(np.float32, copy=False))
+        reduced_features = self._reduce_features(feature_tensor)
+        num_samples = max(1, int(len(features) * self.percentage))
+        sample_indices = self._compute_greedy_coreset_indices(reduced_features, num_samples=num_samples)
+        return feature_tensor[sample_indices].cpu().numpy().astype(np.float32, copy=False)
 
     def run_with_target_size(self, features: np.ndarray, target_size: int) -> np.ndarray:
         """Select exactly ``target_size`` coreset points, or all of them when there are fewer.

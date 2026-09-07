@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     NOTE: results from this port are NOT comparable to the paper's Tables 1-4. The reference
     implementation selects the prompt and knowledge bank by the best test-set AUROC over 25
-    epochs and never runs its continual evaluation loop. See docs/vision.md.
+    epochs and never runs its continual evaluation loop. See "Data leakage" in docs/vision.md.
     """
     dataset = read_vision_dataset(
         root=pathlib.Path("../../resources/vision/BTech_Dataset_transformed"),
