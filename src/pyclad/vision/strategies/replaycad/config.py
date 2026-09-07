@@ -1,3 +1,10 @@
+"""ReplayCAD's configuration and the paper's per-benchmark presets.
+
+Comments below cite the authors' code by file and line (``personalized.py:218``
+and the like). Those files are not in this repository; they live in the authors' release,
+pinned to a commit under "ReplayCAD" in docs/vision.md.
+"""
+
 import logging
 from pathlib import Path
 from typing import Dict, Literal, Optional

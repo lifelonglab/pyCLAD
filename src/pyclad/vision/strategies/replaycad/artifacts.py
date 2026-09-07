@@ -14,7 +14,9 @@ from PIL import Image
 
 from pyclad.vision.strategies.replaycad.config import ReplayCADConfig
 
-MECHANISM_VERSION = 2
+# Bumped whenever a change makes previously written artifacts unreadable or wrong to reuse;
+# a mismatch invalidates the cache rather than silently loading a stale representation.
+MECHANISM_VERSION = 1
 
 _HASHED_FIELDS = (
     "model_id",

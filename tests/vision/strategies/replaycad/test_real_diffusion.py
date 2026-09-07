@@ -122,7 +122,7 @@ def _detector() -> RecordingPatchCore:
 @pytest.mark.longrun
 def test_replaycad_trains_generates_and_detects_on_a_real_diffusion_pipeline(tmp_path):
     config = _replaycad_config(tmp_path)
-    memory = ReplayCADMemory(config=config, backend=DiffusersBackend(config))
+    memory = ReplayCADMemory(config=config, backend=DiffusersBackend(config), benchmark="mvtec")
     detector = _detector()
     strategy = ReplayCADStrategy(detector, memory)
 

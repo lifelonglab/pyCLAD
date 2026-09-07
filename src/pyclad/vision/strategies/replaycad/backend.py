@@ -1,3 +1,10 @@
+"""Diffusion compression and generation -- the ``diffusers`` stand-in for the release's ``ldm/``.
+
+Docstrings below cite the authors' code by file and line (``embedding_manager.py:80``
+and the like). Those files are not in this repository; they live in the authors' release,
+pinned to a commit under "ReplayCAD" in docs/vision.md.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -169,7 +176,7 @@ class DiffusersBackend:
     def _pad_unconditional(uncond: torch.Tensor, target_tokens: int) -> torch.Tensor:
         """Left-pad the unconditional embedding with zero tokens to ``target_tokens``.
 
-        Matches ``ldm/models/diffusion/ddim.py:183-184``: the zero tokens participate in the
+        Matches ``textual_inversion-main/ldm/models/diffusion/ddim.py:183-184``: the zero tokens participate in the
         unconditional branch's cross-attention softmax, so dropping them changes the guidance
         signal, not just the shape. The pad goes in front, as it does there.
         """

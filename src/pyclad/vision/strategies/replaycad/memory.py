@@ -35,9 +35,16 @@ class ReplayCADMemory:
         self,
         config: ReplayCADConfig,
         backend: DiffusionBackend,
-        benchmark: str = "",
+        benchmark: str,
         mask_provider: Optional[MaskProvider] = None,
     ):
+        if not benchmark.strip():
+            raise ValueError(
+                "ReplayCADMemory needs a non-empty benchmark name: it separates artifact roots, and "
+                "config_hash does not cover benchmark identity, so two datasets sharing one "
+                "artifact_dir would otherwise collide on a common category name undetected."
+            )
+
         self.config = config
         self.backend = backend
         self.benchmark = benchmark
@@ -48,11 +55,12 @@ class ReplayCADMemory:
     def _root(self) -> Path:
         """Artifact root for this benchmark.
 
-        Concept ids carry no dataset prefix in a single-benchmark run, so without this, two
-        benchmarks sharing one artifact_dir could collide on a common category name -- undetected,
-        since config_hash doesn't cover benchmark identity.
+        Concept ids carry no dataset prefix in a single-benchmark run, so without this level two
+        benchmarks sharing one artifact_dir would collide on a common category name -- undetected,
+        since config_hash doesn't cover benchmark identity. ``__init__`` rejects an empty
+        benchmark, so this separation always holds.
         """
-        return Path(self.config.artifact_dir) / self.benchmark if self.benchmark else Path(self.config.artifact_dir)
+        return Path(self.config.artifact_dir) / self.benchmark
 
     def known_concepts(self) -> List[str]:
         return list(self._concepts)

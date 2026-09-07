@@ -147,3 +147,12 @@ def test_release_is_forwarded_to_the_backend(replaycad_config, stub_backend):
     ReplayCADMemory(config=config, backend=backend, benchmark="mvtec").release_device_memory()
 
     assert backend.release_calls == 1
+
+
+@pytest.mark.parametrize("benchmark", ["", "   "])
+def test_an_empty_benchmark_is_rejected(replaycad_config, stub_backend, benchmark):
+    """The artifact root is the only thing separating two datasets under one artifact_dir."""
+    config = replaycad_config()
+
+    with pytest.raises(ValueError, match="non-empty benchmark"):
+        ReplayCADMemory(config=config, backend=stub_backend(config), benchmark=benchmark)

@@ -1,3 +1,10 @@
+"""Mask providers, and the replay-time transforms reproduced from the release.
+
+Docstrings below cite the authors' code by file and line (``personalized.py:214-280``
+and the like). Those files are not in this repository; they live in the authors' release,
+pinned to a commit under "ReplayCAD" in docs/vision.md.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -280,7 +287,8 @@ def random_reset(mask: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     """Crop each connected component to its bounding box and re-place it at a random,
     non-overlapping position on an otherwise black canvas. Mirrors ``radomreset``; not reachable
     by any released class (see ``per_class.py``). A component that exhausts 100 placement
-    attempts is dropped rather than misplaced (see docs/vision.md's divergences list).
+    attempts is dropped rather than misplaced -- divergence 7 under "Differences from the
+    original" in docs/vision.md.
     """
     array = np.asarray(mask, dtype=np.uint8)
     height, width = array.shape[:2]

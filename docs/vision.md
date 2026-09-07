@@ -197,6 +197,11 @@ earlier concepts, it compresses each one into a small, frozen-diffusion-model co
 learned semantic embedding plus a mask-projection MLP) that can regenerate representative images
 on demand, and replays those alongside new data when refitting the detector.
 
+Line references to the authors' code in this package's docstrings — `personalized.py`,
+`embedding_manager.py`, `ddim.py`, `ddpm2.py` — point at
+[HULEI7/ReplayCAD](https://github.com/HULEI7/ReplayCAD) at commit `acc6195` (2026-08-16), where
+the vendored textual-inversion tree lives under `textual_inversion-main/`.
+
 `ReplayCADStrategy(model, memory)` is detector-agnostic — `model` is any pyCLAD vision model (e.g.
 PatchCore above, RD4AD, FastFlow, PaSTe). It needs the concept id on every call, so it runs under
 `ConceptAwareScenario` (`pyclad.scenarios.concept_aware`), not `ConceptIncrementalScenario`.
@@ -286,14 +291,6 @@ Installs `diffusers`, `transformers`, `accelerate`, `safetensors` and `segment-a
 the vision stack described in Setup above. They're imported lazily, so importing `pyclad` without
 the extra keeps working; a missing import raises a message naming the extra.
 
-### Differences from the original
-
-This follows the authors' released hyperparameters but is not a bit-for-bit port. It runs on
-`diffusers` instead of their vendored `ldm/`, trains a pyCLAD vision model instead of InvAD, and
-defaults to the paper's uniform per-dataset profile rather than their per-class tuning — which
-`per_class.py` records as a reference table. Several smaller behavioural differences exist in mask
-handling and scoring. Check them before reporting a run here as a reproduction of the paper.
-
 ### Running the example
 
 ```bash
@@ -306,3 +303,60 @@ Same pattern as the PatchCore example above — `read_vision_dataset`, the same 
 against the authors' `SAM.zip` extracted to `./SAM/data` (pass `mask_backend="sam"` with a
 `sam_checkpoint` instead if you don't have it) and `device="cuda"` (use `"cpu"` or `"mps"` if you
 don't have one; compression is slow either way, so shrink `compression_steps` for a smoke test).
+
+## Differences from the original
+
+Neither model here is a bit-for-bit port. PatchCore matches the reference implementation behind
+ReplayCAD's benchmark row (ADer's `model/patchcore.py`) constant-for-constant; ReplayCAD follows
+the authors' released hyperparameters. Where either departs from its source, it is listed below.
+Check this list before reporting a run here as a reproduction of the paper. The entries are
+numbered so that docstrings and the sections above can point at one of them ("divergence 6
+below"); keep the numbering stable, or fix the callouts with it.
+
+1. **Detector.** `ReplayCADStrategy` refits any pyCLAD vision model — PatchCore above, RD4AD,
+   FastFlow, PaSTe — while the authors train InvAD. Replay quality is therefore measured through a
+   different detector than the paper's tables, so absolute numbers are not comparable even where
+   the replay itself matches.
+
+2. **Per-class tuning is a reference table, not a runnable mode.** The default is the paper's
+   section 5.1 uniform per-dataset profile, built by `ReplayCADConfig.for_benchmark`.
+   `apply_per_class` returns the authors' released hand-tuned settings for one concept, for
+   inspection only: it varies `model_id`, `condition_dim` and `resolution` per class, while
+   `ReplayCADMemory` and `DiffusersBackend` each hold one config for the whole stream. A live run
+   driven through it would fail on a shape mismatch — VisA alone mixes the LDM-256 and SD1.5-512
+   families.
+
+3. **Diffusion stack.** Compression and generation run on `diffusers`, not the release's vendored
+   `ldm/` tree, and the learned semantic embedding is injected through a forward hook on the text
+   encoder's embedded output rather than trained in place.
+
+4. **VisA mask-projection width** is `(128, 192)`, not the paper's printed `(128, 196)`. The
+   derived token count `M` must divide evenly, and `128 * 196 / 768` is not an integer;
+   `ReplayCADConfig` rejects presets that cannot be reshaped rather than silently truncating.
+
+5. **Benchmarks without a published profile.** The authors publish configurations for MVTec and
+   VisA only. BTech, DAGM, MPDD and multidataset streams fall back to the LDM-256 preset with a
+   neutral initializer, and `for_benchmark` logs a warning when that happens. Those runs reproduce
+   nothing published — they are the method applied to a new dataset.
+
+6. **PatchCore's image-level score is taken before smoothing.** It is the maximum over raw patch
+   distances, while the returned segmentation map is those same distances bilinearly upsampled and
+   Gaussian-smoothed with `smoothing_sigma`. The image score is therefore generally larger than the
+   maximum of the map — which matters when comparing against ADer's published numbers.
+
+7. **`random_reset` drops a component rather than misplacing it.** Both implementations give each
+   connected component 100 attempts to find a non-overlapping position. When one exhausts them, the
+   release records no position for it and then pastes through `zip(objects, positions)`, which
+   shifts every later component onto another component's position and drops the last one; this port
+   drops only the component that failed. Not reachable by any released class configuration.
+
+8. **Connected components** are found with `scipy.ndimage.label` (4-connectivity) instead of the
+   release's `cv2.findContours(RETR_EXTERNAL)` (8-connectivity, filled contours), in the transform
+   mirroring `visa_candle`. Equivalent for the hole-free, non-diagonally-touching components the
+   affected VisA masks actually have.
+
+9. **Inconsistencies in the released scripts are recorded, not resolved.** Three of them:
+   generation checkpoints past their training config's `max_steps`, an `--init_word` phrase
+   truncated to its first word by a single-value argparse option, and two dead, mutually
+   contradictory `macaroni2` branches. The module docstring of
+   `pyclad.vision.strategies.replaycad.per_class` says which value this port takes, and why.

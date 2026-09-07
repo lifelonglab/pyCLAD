@@ -329,15 +329,7 @@ def test_compression_draws_an_independent_prompt_per_image(replaycad_config, mon
 
     captured_prompts: list[list[str]] = []
 
-    def fake_conditioning(pipeline, *args):
-        # Tolerates both the old call shape (prompt: str, batch_size: int) and the new one
-        # (prompts: list[str]), so this same test can run unmodified against either
-        # _run_compression_loop and let the diversity assertion below be the real signal.
-        if len(args) == 2:
-            prompt, batch_size = args
-            prompts = [prompt] * batch_size
-        else:
-            (prompts,) = args
+    def fake_conditioning(pipeline, prompts):
         captured_prompts.append(list(prompts))
         return torch.zeros(len(prompts), 1, config.condition_dim)
 

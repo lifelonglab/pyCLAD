@@ -38,7 +38,8 @@ if __name__ == "__main__":
 
     Requires the 'replaycad' extra (pip install -e ".[replaycad]") and either a SAM checkpoint
     (mask_backend="sam") or the authors' precomputed SAM.zip masks (mask_backend="precomputed",
-    used below). See docs/vision.md for mask backends and the divergences from the paper.
+    used below). See "Masks, augmentation and caching" in docs/vision.md for the backends, and
+    "Differences from the original" in docs/vision.md for how this port departs from the paper.
     """
     dataset = read_vision_dataset(
         root=pathlib.Path("../resources/vision/mvtec_ad"),
