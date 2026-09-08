@@ -55,6 +55,8 @@ replaycad = [
     "transformers>=4.44",
     "accelerate>=0.34",
     "safetensors>=0.4",
+ucad = [
+    "timm>=1.0",
     "segment-anything>=1.0",
 ]
 

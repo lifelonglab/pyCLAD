@@ -20,7 +20,7 @@ SUPPORTED_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff")
 
 class VisionBenchmarkReader(ABC):
     def __init__(self, root: Union[str, Path], name: str):
-        self.root = Path(root)
+        self.root = Path(root) if root is not None else None
         self.name = name
 
     def available_categories(self) -> List[str]:
