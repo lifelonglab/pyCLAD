@@ -10,16 +10,79 @@ Every model ships with a ready-to-run example under `examples/models/vision/`.
 |---|---|--|
 | **PaSTe** | Student–teacher distillation | `paste_torch_example.py` |
 | **FastFlow** | Normalizing flow on features | `fastflow_torch_example.py` |
+| **UCAD** | Continual key-prompt-knowledge memory over a frozen ViT | `ucad_torch_example.py` |
+
+### UCAD
+
+Liu et al., *Unsupervised Continual Anomaly Detection with Contrastively-learned Prompt*,
+AAAI 2024 ([reference code](https://github.com/shirowalker/UCAD)). Unlike the other two
+models, UCAD is itself the continual mechanism: each concept appends one entry to a memory
+that is never reset — a **key** coreset of frozen-ViT patch features, a **prompt** of learned
+attention prefixes, and a **knowledge** coreset scored against by nearest neighbour. At
+inference each image is routed to a task by its nearest key, so task identity is inferred
+from the data and never supplied by the caller. Use `UCADStrategy`, not a replay wrapper, and
+a `ConceptAwareScenario` — `learn()` needs the concept name to find its SAM structure masks,
+while `predict()` discards it.
+
+`structure_mode` defaults to `"none"`, which skips the contrastive prompt training (the
+paper's CPM-only ablation) and needs no extra data. For the full method, point
+`structure_mask_root` at the authors' precomputed SAM maps, laid out as
+`<root>/<category>/train/good/*.png`.
+
+#### Data leakage
+
+**In this port: none.** `fit()` accepts only the training array, the decision threshold comes
+from a quantile of training scores, and routing reads only the learned keys.
+`tests/vision/models/test_ucad_no_leakage.py` pins that as executable assertions — scores must
+not change when the evaluated batch is regrouped or reordered, `predict()` must not mutate
+learned state, and the strategy must ignore the concept id it is handed.
+
+These numbers are *not* comparable to the paper's Tables 1–4 and
+are expected to be lower, because the reference evaluation is not leak-free. In `run_ucad.py`, every
+epoch is evaluated on the test set and the prompt and knowledge bank are kept from the epoch
+with the best test AUROC (lines 262–264, with an early break at AUROC = 1); the reported score
+is a running ensemble accumulated across epochs (line 128 vs 149); scores are min-max
+normalised over the whole test set (lines 190–211); the continual evaluation loop is commented
+out entirely (lines 410–509), so the published per-task numbers are measured right after each
+task is trained and cannot show forgetting; and the reported "FM" is the gap between two memory
+budgets, not forgetting in the sense of Chaudhry et al. There is no validation split
+(`train_val_split=1`), so honest epoch selection is impossible in that codebase — this port
+therefore trains a fixed 25 epochs and keeps the last one, with no selection criterion at all.
+
+#### Divergences from the reference
+
+`UCADConfig`'s defaults follow the [reference code](https://github.com/shirowalker/UCAD) rather
+than the paper prose wherever the two disagree. Every place this port departs from either is
+listed here.
+
+| What | Reference / paper | This port | Why |
+|---|---|---|---|
+| Epoch selection | Keeps the epoch with the best **test** AUROC (`run_ucad.py` lines 262–264) | Trains a fixed `epochs=25` and keeps the last | No test data may reach `fit()` — see [Data leakage](#data-leakage) above |
+| Score post-processing | Min-max normalises over the whole test set and ensembles scores across epochs | Raw nearest-neighbour distances from the final epoch | Same reason |
+| Backbone weights | The paper's text says ImageNet-21k; the code's `vit_base_patch16_224` + `pretrained=True` resolved (timm 0.6.7) to ImageNet-21k **finetuned on ImageNet-1k** | `backbone_name="vit_base_patch16_224.augreg_in21k_ft_in1k"` — the weights the reference actually loaded | Newer timm requires the tag to be explicit; pinning it keeps the port reproducible. Set `"vit_base_patch16_224.augreg_in21k"` for the paper's stated variant |
+| `prompt_depth` | Prompts all 12 blocks while reading features out after block index 5 | Defaults to `6`, matching `feature_layer` | Prompt slices past the read-out block receive no gradient and only cost storage. Larger values are still accepted and merely log an info message |
+| Coreset size | Samples a *percentage* of the feature pool | Samples an exact count (`key_size` / `knowledge_size`, both `196`) | A percentage of a varying pool can round down by one; UCAD specifies the banks as absolute sizes |
+
+Reproduced deliberately, quirks included: the SCL loss keeps the reference's diagonal self-pairs
+(a constant offset that does not change the gradient direction); patch-label downsampling
+reproduces `cv2.resize`'s bilinear-then-round behaviour (`mask_interpolation="bilinear"`);
+routing distances are squared to match the reference's faiss index; and the prompt is
+initialised `uniform(-1, 1)` as in EPrompt.
 
 ## Setup — extra libraries required
 
-Beyond a normal pyCLAD install, the vision models need **exactly three additional packages** (the deep-learning stack):
+Beyond a normal pyCLAD install, the vision models need the deep-learning stack below. PaSTe and
+FastFlow need only the first three packages; UCAD additionally needs `timm`, and
+`segment-anything` if you use `structure_mode="sam"`. Install everything UCAD needs at once
+with `pip install -e '.[ucad]'`.
 
 | Package | Used for |
 |---|---|
 | `torch` | networks, tensors, training |
 | `torchvision` | pretrained backbones (ResNet / MobileNet / EfficientNet) + feature extraction |
 | `pytorch-lightning` | training loop (`pl.Trainer`, `LightningModule`) |
+| `timm` | UCAD's ViT backbone |
+| `segment-anything` | UCAD's `structure_mode="sam"` only |
 
 ## Datasets
 
