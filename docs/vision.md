@@ -484,7 +484,7 @@ more and give different numbers:
 
 ```python
 groups = dataset.group_by_concept()   # class -> task group
-summarized_metrics = [FinalStepAverage(), ForgettingMeasureStrict()]
+summarized_metrics = [FinalStepAverage(), FinalStepForgettingMeasure()]
 
 callbacks = [
     GroupedConceptMetricCallback(RocAuc(), groups, summarized_metrics),
