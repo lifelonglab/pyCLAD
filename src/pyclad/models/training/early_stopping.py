@@ -7,7 +7,9 @@ class EarlyStopping:
     """Stateful early-stopping monitor.
 
     Tracks the best validation loss seen so far and, optionally, a snapshot of the
-    module weights that produced it.
+    module weights that produced it. That state describes one training run: call
+    :meth:`reset` before reusing the monitor for another, otherwise the next run is judged
+    against (and restored to) the previous run's best.
 
     An epoch counts as an improvement when ``val_loss < best_loss - min_delta``.
     """
@@ -22,6 +24,10 @@ class EarlyStopping:
         self._min_delta = min_delta
         self._restore_best_weights = restore_best_weights
 
+        self.reset()
+
+    def reset(self) -> None:
+        """Forget everything recorded so far, so the monitor can track a new training run."""
         self.best_loss: float = float("inf")
         self._epochs_without_improvement = 0
         self._best_state: Optional[Dict[str, Tensor]] = None

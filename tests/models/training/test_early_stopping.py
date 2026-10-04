@@ -67,6 +67,22 @@ def test_restore_is_noop_when_disabled():
     assert module.weight.item() == pytest.approx(9.0)
 
 
+def test_reset_forgets_best_loss_counter_and_snapshot():
+    stopper = EarlyStopping(patience=0)
+    module = _module(1.0)
+    stopper.step(0.1, module)  # best snapshot taken at weight=1.0
+
+    stopper.reset()
+
+    assert stopper.best_loss == float("inf")
+    assert stopper.step(5.0, module) is False  # worse than the forgotten best, but a fresh baseline
+    with torch.no_grad():
+        module.weight.fill_(9.0)
+    stopper.reset()
+    stopper.restore(module)  # nothing recorded since the reset -> no-op
+    assert module.weight.item() == pytest.approx(9.0)
+
+
 @pytest.mark.parametrize("patience,min_delta", [(-1, 0.0), (0, -0.1)])
 def test_invalid_arguments_rejected(patience, min_delta):
     with pytest.raises(ValueError):

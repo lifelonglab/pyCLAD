@@ -43,6 +43,11 @@ class StandardRunner(TorchRunner):
                 self._max_epochs,
             )
 
+        if self._early_stopping is not None:
+            # Each run() trains on one concept; a best loss carried over from an earlier concept
+            # would stop this one early and restore the earlier concept's weights.
+            self._early_stopping.reset()
+
         epochs_run = 0
         stopped_early = False
         final_val_loss = None
