@@ -1,0 +1,2 @@
+class SupervisionRequiredError(Exception):
+    pass

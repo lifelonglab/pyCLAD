@@ -6,6 +6,8 @@ A model can be added to the library by implementing a model adapter class, subcl
 
 A Model class also inherits the abstract method <code>info</code> from <code>InfoProvider</code>, which allows for logging useful information pertaining to the model's configuration as a dictionary.
 
+Models that train on labelled data implement <code>SupervisedModel</code> instead, whose <code>fit</code> takes <code>data</code> and <code>labels</code>. It is a sibling of <code>Model</code> rather than a subclass: the two <code>fit</code> signatures are different contracts, so a supervised model cannot be used where an unsupervised one is expected.
+
 Although pyCLAD is not restricted to specific models, one-class learning models are the most common in practice.
 Models can be built, for instance, based on SkLearn, PyOD, or PyTorch base classes.  
 In this case, the <code>fit</code> and <code>predict</code> methods can be wrappers of the <code>fit</code> and <code>predict</code> methods in the respective base model classes.

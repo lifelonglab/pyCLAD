@@ -37,6 +37,8 @@ A concept-incremental scenario can fit the case of an industrial monitoring envi
 A concept-agnostic scenario can be adopted for fully unsupervised monitoring of human conditions over multiple heterogeneous activities, where information about the specific activity being performed as well as and the start and end time of each are completely unknown.   
 
 
+Each scenario speaks one strategy contract. **SupervisedConceptIncrementalScenario** is the concept-incremental scenario for strategies whose models train on labels: it is identical to `ConceptIncrementalScenario` except that it hands the whole concept to `learn`, so that labels and masks reach the model.
+
 ### Code example
     def concept_aware_scenario(data_loader: ConceptsDataset, strategy: ConceptAwareStrategy, callbacks: List[Callback]):
         callback_composite = CallbackComposite(callbacks)

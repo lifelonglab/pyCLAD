@@ -55,10 +55,12 @@ replaycad = [
     "transformers>=4.44",
     "accelerate>=0.34",
     "safetensors>=0.4",
+]
 ucad = [
     "timm>=1.0",
     "segment-anything>=1.0",
 ]
+vision = ["torch>=2.0", "torchvision>=0.15", "open_clip_torch>=2.24,<3.0"]
 
 [tool.black]
 line-length = 120

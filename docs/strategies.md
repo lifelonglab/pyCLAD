@@ -26,6 +26,8 @@ Strategies are of different types based on the scenario type (e.g. concept-incre
 ### Strategy types
 Strategies can be implemented referring to the three base classes pre-implemented in pyCLAD: **ConceptAwareStrategy**, **ConceptIncrementalStrategy**, and **ConceptAgnosticStrategy**.
 
+A fourth base class, **SupervisedStrategy**, covers strategies whose models train on labels. Its <code>learn</code> takes the whole <code>Concept</code> rather than a data array, because the labels — and, for vision, the masks — travel with the concept.
+
 Different strategy types can exploit different data assumptions and availability to maximize their effectiveness in different scenarios (see [Scenarios](scenarios.md)).  
 One of the key differences is that a **ConceptAwareStrategy** strategy can leverage information about the concept identifier during the prediction stage, which is not available in the other two strategy types.
 

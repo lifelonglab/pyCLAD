@@ -17,6 +17,7 @@ nav:
     - Models: 'models.md'
     - Scenarios: 'scenarios.md'
     - Strategies: 'strategies.md'
+    - Vision: 'vision.md'
   - How to contribute?: 'contribution.md'
 plugins:
   - search

@@ -4,12 +4,14 @@ import base64
 import io
 import json
 import zlib
+from functools import partial
 from pathlib import Path
 from typing import Optional, Sequence
 
 import numpy as np
 from PIL import Image, ImageDraw
 
+from pyclad.vision.data.parallel import map_in_threads
 from pyclad.vision.data.sample import VisionSample
 
 
@@ -37,7 +39,7 @@ def load_ground_truth_masks_for_samples(
     resize_to: Optional[tuple[int, int]] = None,
     skip_missing_anomaly_masks: bool = True,
 ) -> tuple[np.ndarray, np.ndarray]:
-    masks: list[np.ndarray] = []
+    kept_samples: list[VisionSample] = []
     kept_indices: list[int] = []
 
     for index, sample in enumerate(samples):
@@ -46,8 +48,10 @@ def load_ground_truth_masks_for_samples(
                 continue
             raise FileNotFoundError(f"Missing anomaly mask for sample: {sample.image_path}")
 
-        masks.append(load_ground_truth_mask(sample=sample, resize_to=resize_to))
+        kept_samples.append(sample)
         kept_indices.append(index)
+
+    masks = map_in_threads(partial(load_ground_truth_mask, resize_to=resize_to), kept_samples)
 
     if not masks:
         empty_shape = (0, *(resize_to if resize_to is not None else (0, 0)))

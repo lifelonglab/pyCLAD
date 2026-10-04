@@ -31,6 +31,8 @@ $\text{FWT} = \frac{\sum_{i<j}^{N} R_{i, j}}{\frac{N(N-1)}{2}}$
 
 [^3]: It can also be thought of as the zero-shot model performance on future concepts since it assesses model performance on unseen concepts. It partially depends on concept similarity (task similarity) and the model's knowledge transfer ability.
 
+`ForgettingMeasureStrict` is the single-value form of the measure above, used by the [Continual-MEGA](vision.md#continual-mega) benchmark: it drops the column of the last learned concept, since that concept has had no chance to be forgotten. On a square matrix it agrees with `ScheduleAwareForgettingMeasure` below, to which it delegates; `ForgettingMeasure` differs in being a `StepwiseConceptMetric` that reports forgetting after each concept.
+
 
 
 

@@ -11,6 +11,7 @@ Every model ships with a ready-to-run example under `examples/models/vision/`.
 | **PaSTe** | Student–teacher distillation | `paste_torch_example.py` |
 | **FastFlow** | Normalizing flow on features | `fastflow_torch_example.py` |
 | **UCAD** | Continual key-prompt-knowledge memory over a frozen ViT | `ucad_torch_example.py` |
+| **Continual-MEGA baseline** | CLIP with MoE adapters and learned prompts, supervised | `continual_mega_example.py` |
 
 ### UCAD
 
@@ -423,3 +424,110 @@ below"); keep the numbering stable, or fix the callouts with it.
    truncated to its first word by a single-value argparse option, and two dead, mutually
    contradictory `macaroni2` branches. The module docstring of
    `pyclad.vision.strategies.replaycad.per_class` says which value this port takes, and why.
+---
+
+# Continual-MEGA
+
+A continual anomaly-detection benchmark spanning seven datasets. Unlike the readers above it defines a
+whole protocol — which classes form the base task, how the rest are split into tasks, which datasets are
+held out for zero-shot — so it has its own reader instead of a `benchmark=` name.
+
+**1. Put the data here**, under the folder names the benchmark metadata expects:
+
+```
+examples/resources/vision/continual_mega/
+├── continual_ad/
+├── mvtec_anomaly_detection/
+├── VisA_20220922/
+├── VIADUCT/
+├── Real-IAD-512/
+├── MPDD/
+├── BTAD/
+└── meta_files/              # copied from the reference repository
+```
+
+**2. Where to get it**: ContinualAD and the `meta_files/` directory come from the benchmark
+[dataset page](https://huggingface.co/datasets/Continual-Mega/Continual-MEGA-Benchmark) and
+[reference repository](https://github.com/Continual-Mega/Continual-MEGA-Baseline); MVTec-AD, VisA, MPDD
+and BTAD are listed under [Datasets](#datasets) above; Real-IAD and VIADUCT come from their own sources.
+
+**3. Pick a scenario:**
+
+| Scenario | Base classes | New classes | Zero-shot |
+|---|---|---|---|
+| 1 | 85 (all datasets) | 60, split into 12 / 6 / 2 tasks | – |
+| 2 | 58 (no MVTec-AD, no VisA) | 60, split into 12 / 6 / 2 tasks | MVTec-AD, VisA |
+| 3 | 58 (also no ContinualAD) | 30, split into 6 / 3 / 1 tasks | MVTec-AD, VisA |
+
+```python
+from pyclad.vision.data.benchmarks.continual_mega import ContinualMegaBenchmarkReader
+
+reader = ContinualMegaBenchmarkReader(
+    data_root="../../resources/vision/continual_mega",
+    meta_dir="../../resources/vision/continual_mega/meta_files",
+    scenario=2,                # 1 | 2 | 3
+    task_size=30,              # classes per task: 5 | 10 | 30
+    zero_shot=True,            # also evaluate on the held-out datasets
+    train_samples="all",       # "all" = benchmark protocol, "normal" = one-class models only
+)
+dataset = reader.read_dataset()
+```
+
+Training concepts are the task groups (`base`, `task_1`, …) while test concepts are individual classes.
+
+## Grouped metrics
+
+One training concept covers many test concepts here, so the benchmark reports a score per task group
+rather than per class. The grouped callbacks average each group's classes into a single cell before the
+summarized metrics see the matrix; averaging over all classes instead would weight the larger groups
+more and give different numbers:
+
+```python
+groups = dataset.group_by_concept()   # class -> task group
+summarized_metrics = [FinalStepAverage(), ForgettingMeasureStrict()]
+
+callbacks = [
+    GroupedConceptMetricCallback(RocAuc(), groups, summarized_metrics),
+    GroupedVisionPixelConceptMetricCallback(PixelAveragePrecision(), groups, summarized_metrics),
+]
+```
+
+Held-out zero-shot groups are reported separately under `held_out_groups` and excluded from both metrics.
+
+For a per-class view, add the plain `ConceptMetricCallback` alongside them: its matrix has one column per
+class and one row per task group, which is the rectangular shape the
+[schedule-aware metrics](metrics.md) describe. `dataset.first_seen_step()` supplies the mapping they need
+and answers what the grouped metrics cannot — whether a class was learned at all, or was already that
+good before training:
+
+```python
+from pyclad.callbacks.evaluation.concept_metric_evaluation import ScheduleAwareConceptMetricCallback
+
+callback = ScheduleAwareConceptMetricCallback(
+    base_metric=RocAuc(),
+    summarized_metrics=[FinalStepAverage()],
+    schedule_aware_metrics=[ScheduleAwareForwardTransfer(), ScheduleAwareNewTaskAcquisition()],
+    first_seen_step=dataset.first_seen_step(),
+)
+```
+
+`first_seen_step()` requires `zero_shot=False`: held-out classes never enter training, so no training step
+describes them.
+
+## Supervised models
+
+`train_samples="all"` gives 10 normal and 10 anomalous images per class with pixel masks, so the model
+trains on supervision rather than on normal data alone. Vision models of this kind implement
+`SupervisedVisionModel`, which adds an optional `masks` argument to
+[`SupervisedModel.fit`](models.md); `NaiveSupervisedStrategy` passes a concept's masks through to it, and
+the stream runs under [`SupervisedConceptIncrementalScenario`](scenarios.md):
+
+```python
+from pyclad.vision.strategies.naive_supervised import NaiveSupervisedStrategy
+
+strategy = NaiveSupervisedStrategy(model)
+```
+
+`ContinualMegaBaseline` (`continual_mega_example.py`) is the benchmark's own model: CLIP with adapters
+and learned prompts. Set `train_samples="normal"` instead to run one-class models such as PaSTe or
+FastFlow on the same streams with the usual strategy and scenario.
