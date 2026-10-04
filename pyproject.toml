@@ -83,6 +83,15 @@ dev = [
     "pytest>=8.2.2",
 ]
 
+[tool.hatch.build.targets.sdist]
+# An explicit list, because hatch otherwise ships everything not matched by the repository's .gitignore,
+# including files that are only ignored through a global or local (.git/info/exclude) rule.
+include = [
+    "/src",
+    "/README.md",
+    "/LICENSE",
+]
+
 [tool.black]
 line-length = 120
 
