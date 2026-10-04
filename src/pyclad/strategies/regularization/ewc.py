@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 import numpy as np
 import torch
@@ -7,6 +7,7 @@ from torch import Tensor, nn
 from pyclad.models.torch_backbone import TorchBackbone
 from pyclad.models.training.loaders import float_tensor_loader
 from pyclad.models.training.runners.runner import TorchRunner
+from pyclad.output.prediction_results import PredictionResults
 from pyclad.strategies.strategy import ConceptAwareStrategy, ConceptIncrementalStrategy
 
 
@@ -56,7 +57,7 @@ class EWCStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
         )
         self._update_fisher(train)
 
-    def predict(self, data: np.ndarray, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def predict(self, data: np.ndarray, **kwargs) -> PredictionResults:
         return self._model.predict(data)
 
     def name(self) -> str:

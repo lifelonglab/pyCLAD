@@ -16,7 +16,7 @@ Please make sure that you:
 - Write a brief description of the changes in the pull request.
 - Make sure that the code passes all the static code analysis checks.
 - Make sure that the code passes all the unit tests.
-- Make sure that the code is compatible with Python 3.11 and above.
+- Make sure that the code is compatible with Python 3.10 and above.
 
 ## Static code analysis
 

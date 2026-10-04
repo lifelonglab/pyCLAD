@@ -16,8 +16,7 @@ classes.
 
 ### Installation
 
-pyCLAD is provided as a Pyton package available in `pypi`. Therefore, you can install it as a package using tools such
-as pip and conda, for example:
+pyCLAD is provided as a Python package available in `pypi`. Therefore, you can install it as a package using `pip`:
 
 `pip install pyclad`.
 

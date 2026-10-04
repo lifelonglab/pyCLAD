@@ -151,7 +151,7 @@ strategy, model, and metrics calculated by the callbacks.
   },
   "dataset": {
     "name": "GeneratedDataset",
-    "tran_concepts_no": 3,
+    "train_concepts_no": 3,
     "test_concepts_no": 3
   },
   "strategy": {

@@ -42,15 +42,7 @@ recommend [this open-access paper](https://ieeexplore.ieee.org/abstract/document
 ### How do I install pyCLAD?
 
 pyCLAD is available as a [Python package on PyPI](https://pypi.org/project/pyclad/). Therefore, it can be installed
-using tools such as pip and conda.
-
-#### Conda
-
-```
-conda install -c conda-forge pyclad
-```
-
-#### Pip
+using `pip`:
 
 ```
 pip install pyclad
