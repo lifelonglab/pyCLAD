@@ -8,7 +8,10 @@ description = "Python Library for Continual Lifelong Anomaly Detection"
 version = "0.3.0"
 dependencies = [
     "datasets>=3.5.0",
+    "huggingface_hub>=0.24.0",
+    "matplotlib>=3.8.0",
     "numpy>=2.0.0",
+    "pandas>=2.0.0",
     "scikit-learn>=1.5.0",
     "scipy>=1.13.0",
     "seaborn>=0.13.2",
@@ -49,18 +52,36 @@ classifiers = [
 #Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["black>=24.4", "flake8>=7.1.0", "isort>=5.13.0", "pytest>=8.2.2"]
+# Deep learning models (autoencoders, CARLA) and the strategies that train them (EWC, LwF, DER++, A-GEM).
+torch = ["torch>=2.0", "pytorch-lightning>=2.0"]
+# Everything under pyclad.vision except UCAD and ReplayCAD, which need their own extra on top.
+vision = [
+    "pyclad[torch]",
+    "torchvision>=0.15",
+    "pillow>=10.0",
+    "open_clip_torch>=2.24,<3.0",
+]
+ucad = [
+    "pyclad[vision]",
+    "timm>=1.0",
+    "segment-anything>=1.0",
+]
 replaycad = [
+    "pyclad[vision]",
     "diffusers>=0.31",
     "transformers>=4.44",
     "accelerate>=0.34",
     "safetensors>=0.4",
-]
-ucad = [
-    "timm>=1.0",
     "segment-anything>=1.0",
 ]
-vision = ["torch>=2.0", "torchvision>=0.15", "open_clip_torch>=2.24,<3.0"]
+all = ["pyclad[torch,vision,ucad,replaycad]"]
+dev = [
+    "pyclad[vision]",
+    "black>=24.4",
+    "flake8>=7.1.0",
+    "isort>=5.13.0",
+    "pytest>=8.2.2",
+]
 
 [tool.black]
 line-length = 120

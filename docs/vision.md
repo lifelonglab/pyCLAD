@@ -72,18 +72,25 @@ initialised `uniform(-1, 1)` as in EPrompt.
 
 ## Setup — extra libraries required
 
-Beyond a normal pyCLAD install, the vision models need the deep-learning stack below. PaSTe and
-FastFlow need only the first three packages; UCAD additionally needs `timm`, and
-`segment-anything` if you use `structure_mode="sam"`. Install everything UCAD needs at once
-with `pip install -e '.[ucad]'`.
+The vision models are not part of the default pyCLAD install. Install them with the `vision` extra:
 
-| Package | Used for |
-|---|---|
-| `torch` | networks, tensors, training |
-| `torchvision` | pretrained backbones (ResNet / MobileNet / EfficientNet) + feature extraction |
-| `pytorch-lightning` | training loop (`pl.Trainer`, `LightningModule`) |
-| `timm` | UCAD's ViT backbone |
-| `segment-anything` | UCAD's `structure_mode="sam"` only |
+```bash
+pip install "pyclad[vision]"
+```
+
+UCAD and ReplayCAD need a few more packages, which their own extras add on top of `vision`:
+`pip install "pyclad[ucad]"` and `pip install "pyclad[replaycad]"`. From a clone of the repository, use
+`pip install -e ".[vision]"` and so on.
+
+| Package | Extra | Used for |
+|---|---|---|
+| `torch` | `vision` | networks, tensors, training |
+| `pytorch-lightning` | `vision` | training loop (`pl.Trainer`, `LightningModule`) |
+| `torchvision` | `vision` | pretrained backbones (ResNet / MobileNet / EfficientNet) + feature extraction |
+| `pillow` | `vision` | image loading |
+| `open_clip_torch` | `vision` | the Continual-MEGA baseline's CLIP backbone |
+| `timm` | `ucad` | UCAD's ViT backbone |
+| `segment-anything` | `ucad`, `replaycad` | SAM masks: UCAD's `structure_mode="sam"` and ReplayCAD's SAM mask backend |
 
 ## Datasets
 
