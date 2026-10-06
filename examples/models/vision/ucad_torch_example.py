@@ -22,6 +22,8 @@ from pyclad.vision.models.ucad.config import UCADConfig
 from pyclad.vision.models.ucad.ucad import UCAD
 from pyclad.vision.strategies.ucad.strategy import UCADStrategy
 
+RESOURCES = pathlib.Path(__file__).resolve().parents[2] / "resources"
+
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
@@ -33,7 +35,7 @@ if __name__ == "__main__":
     epochs and never runs its continual evaluation loop. See "Data leakage" in docs/vision.md.
     """
     dataset = read_vision_dataset(
-        root=pathlib.Path("../../resources/vision/BTech_Dataset_transformed"),
+        root=RESOURCES / "vision/BTech_Dataset_transformed",
         benchmark="btech",
         resize_to=(224, 224),
         data_mode="numpy",

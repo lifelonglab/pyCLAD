@@ -29,6 +29,8 @@ from pyclad.vision.metrics.pixel_roc_auc import PixelRocAuc
 from pyclad.vision.models.rd4ad.config import RD4ADConfig
 from pyclad.vision.models.rd4ad.rd4ad import RD4AD
 
+RESOURCES = pathlib.Path(__file__).resolve().parents[2] / "resources"
+
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
@@ -36,7 +38,7 @@ if __name__ == "__main__":
     This example showcases how to use the RD4AD model for continual vision anomaly detection.
     """
     dataset = read_vision_dataset(
-        root=pathlib.Path("../../resources/vision/BTech_Dataset_transformed"),
+        root=RESOURCES / "vision/BTech_Dataset_transformed",
         benchmark="btech",
         resize_to=(256, 256),
         data_mode="numpy",

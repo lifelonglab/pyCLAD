@@ -30,6 +30,8 @@ from pyclad.vision.metrics.pixel_roc_auc import PixelRocAuc
 from pyclad.vision.models.rd4ad.config import RD4ADConfig
 from pyclad.vision.models.rd4ad.rd4ad import RD4AD
 
+RESOURCES = pathlib.Path(__file__).resolve().parent / "resources"
+
 logging.basicConfig(level=logging.INFO)
 
 STEP_SCHEDULE = "3x5"
@@ -48,7 +50,7 @@ if __name__ == "__main__":
     # 1. Read the benchmark. Concepts must already be in their final order before grouping,
     #    since grouping merges *consecutive* concepts: ordering -> grouping -> first_seen_step.
     dataset = read_vision_dataset(
-        root=pathlib.Path("resources/vision/mvtec_ad"),
+        root=RESOURCES / "vision/mvtec_ad",
         benchmark="mvtec",
         resize_to=(256, 256),
         data_mode="numpy",

@@ -26,7 +26,7 @@ from pyclad.vision.models.rd4ad.rd4ad import RD4AD
 
 logging.basicConfig(level=logging.INFO)
 
-RESOURCES = pathlib.Path("resources/vision")
+RESOURCES = pathlib.Path(__file__).resolve().parent / "resources" / "vision"
 ROOTS = {
     "btech": RESOURCES / "BTech_Dataset_transformed",
     "dagm": RESOURCES / "DAGM_KaggleUpload",

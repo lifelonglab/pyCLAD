@@ -27,12 +27,14 @@ from pyclad.vision.models.continual_mega_baseline.continual_mega_baseline import
 )
 from pyclad.vision.strategies.naive_supervised import NaiveSupervisedStrategy
 
+RESOURCES = pathlib.Path(__file__).resolve().parents[2] / "resources"
+
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
     reader = ContinualMegaBenchmarkReader(
-        data_root=pathlib.Path("../../resources/vision/continual_mega"),
-        meta_dir=pathlib.Path("../../resources/vision/continual_mega/meta_files"),
+        data_root=RESOURCES / "vision/continual_mega",
+        meta_dir=RESOURCES / "vision/continual_mega/meta_files",
         scenario=2,
         task_size=30,
         zero_shot=True,
@@ -42,7 +44,7 @@ if __name__ == "__main__":
 
     model = ContinualMegaBaseline(
         ContinualMegaBaselineConfig(
-            weights_path=pathlib.Path("../../resources/vision/clip/ViT-L-14-336px.pt"),
+            weights_path=RESOURCES / "vision/clip/ViT-L-14-336px.pt",
             epochs=50,
             train_batch_size=16,
             learning_rate=1e-4,
