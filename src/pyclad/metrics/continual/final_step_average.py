@@ -1,9 +1,7 @@
-import numpy as np
-
 from pyclad.metrics.continual.concepts_metric import (
     ConceptLevelMatrix,
     SummarizedMetric,
-    is_nan,
+    mean_or_nan,
 )
 
 
@@ -14,15 +12,14 @@ class FinalStepAverage(SummarizedMetric):
     papers: train through the whole sequence, then average across every test concept.
 
     Works on both square (``N x N``) and rectangular (``T x N``) matrices, since it only
-    reads the last row. ``NaN`` entries are ignored. Higher is better.
+    reads the last row. The result is ``NaN`` when any entry of that row is ``NaN``. Higher is better.
     """
 
     def compute(self, metric_matrix: ConceptLevelMatrix) -> float:
         if len(metric_matrix) == 0:
-            return 0.0
+            return mean_or_nan([])
 
-        final_row = [value for value in metric_matrix[-1] if not is_nan(value)]
-        return float(np.mean(final_row)) if final_row else 0.0
+        return mean_or_nan(metric_matrix[-1])
 
     def name(self) -> str:
         return "FinalStepAverage"

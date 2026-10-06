@@ -22,3 +22,20 @@ def test_plot_metric_heatmap_uses_mapped_concept_names_for_display():
         assert axes.collections[0].get_array().reshape(2, 2).tolist() == expected_values
     finally:
         plt.close(axes.figure)
+
+
+def test_plot_metric_heatmap_accepts_undefined_cells_read_back_as_none():
+    # A concept whose base metric was undefined is written to the output JSON as null in every row.
+    matrix = {
+        "concept1": {"concept1": 1.0, "concept2": None},
+        "concept2": {"concept1": 0.8, "concept2": None},
+    }
+
+    axes = scenario_heatmap.plot_metric_heatmap(matrix, ["concept1", "concept2"])
+
+    try:
+        values = axes.collections[0].get_array().reshape(2, 2)
+        assert values[:, 0].tolist() == [1.0, 0.8]
+        assert values.mask[:, 1].all()
+    finally:
+        plt.close(axes.figure)

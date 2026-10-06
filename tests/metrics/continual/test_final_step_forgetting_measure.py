@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from pyclad.metrics.continual.concepts_metric import ConceptLevelMatrix
@@ -7,8 +9,6 @@ from pyclad.metrics.continual.final_step_forgetting_measure import (
 from pyclad.metrics.continual.forgetting_measure import ForgettingMeasure
 
 parameters = [
-    # A single concept cannot be forgotten
-    ([[0.5]], 0.0),
     # Basic forgetting; the last learned concept is skipped
     ([[0.8, 0.6], [0.2, 0.6]], 0.6),
     # Negative forgetting (the earlier concept improved)
@@ -21,7 +21,12 @@ parameters = [
 
 
 def test_empty_matrix():
-    assert FinalStepForgettingMeasure().compute([]) == 0.0
+    assert math.isnan(FinalStepForgettingMeasure().compute([]))
+
+
+def test_single_concept_is_undefined():
+    # There is no earlier concept that could have been forgotten.
+    assert math.isnan(FinalStepForgettingMeasure().compute([[0.5]]))
 
 
 def test_name():
