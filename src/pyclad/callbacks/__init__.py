@@ -5,6 +5,7 @@ from pyclad.callbacks.composite_callback import CallbackComposite
 from pyclad.callbacks.evaluation.concept_metric_evaluation import (
     ConceptMetricCallback,
     ScheduleAwareConceptMetricCallback,
+    UndefinedMetricError,
 )
 from pyclad.callbacks.evaluation.energy_evaluation import (
     EnergyEvaluationCallback,
@@ -26,4 +27,5 @@ __all__ = [
     "OfflineEnergyEvaluationCallback",
     "ScheduleAwareConceptMetricCallback",
     "TimeEvaluationCallback",
+    "UndefinedMetricError",
 ]

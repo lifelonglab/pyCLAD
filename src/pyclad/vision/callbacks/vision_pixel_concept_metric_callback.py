@@ -10,7 +10,9 @@ from pyclad.callbacks.evaluation.concept_metric_evaluation import (
     FirstSeenStepSource,
     ScheduleAwareSupport,
     build_dense_matrix,
+    handle_undefined,
     resolve_column_order,
+    validate_on_undefined,
 )
 from pyclad.data.concept import Concept
 from pyclad.metrics.base.base_metric import BaseMetric
@@ -42,13 +44,19 @@ class VisionPixelConceptMetricCallback(Callback, InfoProvider):
     For step-scheduled training (see :mod:`pyclad.data.grouping`), where rows are grouped
     training steps and columns stay per category, use
     :class:`ScheduleAwareVisionPixelConceptMetricCallback`.
+
+    ``on_undefined`` behaves as in ``ConceptMetricCallback``: by default a concept whose pixel
+    metric cannot be computed (for example, its masks hold no anomalous pixel) stops the run.
     """
 
     def __init__(
         self,
         base_metric: BaseMetric,
         summarized_metrics: Iterable[SummarizedMetric] = (),
+        on_undefined: str = "raise",
     ):
+        self._on_undefined = validate_on_undefined(on_undefined)
+        self._undefined_concepts: List[str] = []
         self._base_metric = base_metric
         self._summarized_metrics: List[SummarizedMetric] = list(summarized_metrics)
         self._metric_matrix: Dict[str, Dict[str, float]] = defaultdict(dict)
@@ -72,14 +80,17 @@ class VisionPixelConceptMetricCallback(Callback, InfoProvider):
             return
 
         learned = self._learned_concepts[-1]
-        if evaluated_concept.name not in self._evaluated_concepts:
-            self._evaluated_concepts.append(evaluated_concept.name)
-
         value = self._base_metric.compute(
             anomaly_scores=score_maps,
             y_true=evaluated_concept.masks,
             y_pred=np.asarray([], dtype=np.uint8),
         )
+        if evaluated_concept.name not in self._undefined_concepts and handle_undefined(
+            value, self._base_metric.name(), evaluated_concept.name, self._on_undefined
+        ):
+            self._undefined_concepts.append(evaluated_concept.name)
+        if evaluated_concept.name not in self._evaluated_concepts:
+            self._evaluated_concepts.append(evaluated_concept.name)
         self._metric_matrix[learned][evaluated_concept.name] = value
 
     def column_order(self) -> List[str]:
@@ -101,6 +112,7 @@ class VisionPixelConceptMetricCallback(Callback, InfoProvider):
                 "concepts_order": self._learned_concepts,
                 "test_order": self.column_order(),
                 "metric_matrix": self._metric_matrix,
+                "undefined_concepts": list(self._undefined_concepts),
                 "evaluation_level": "pixel",
             }
         }
@@ -121,8 +133,9 @@ class ScheduleAwareVisionPixelConceptMetricCallback(VisionPixelConceptMetricCall
         summarized_metrics: Iterable[SummarizedMetric] = (),
         schedule_aware_metrics: Iterable[ScheduleAwareMetric] = (),
         first_seen_step: Optional[FirstSeenStepSource] = None,
+        on_undefined: str = "raise",
     ):
-        super().__init__(base_metric, summarized_metrics)
+        super().__init__(base_metric, summarized_metrics, on_undefined=on_undefined)
         self._schedule_aware = ScheduleAwareSupport(schedule_aware_metrics, first_seen_step)
 
     def info(self) -> Dict[str, Any]:

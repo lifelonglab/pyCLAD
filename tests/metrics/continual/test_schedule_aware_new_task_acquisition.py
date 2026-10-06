@@ -22,7 +22,7 @@ def test_name():
 
 
 def test_empty_matrix():
-    assert ScheduleAwareNewTaskAcquisition().compute([], []) == 0.0
+    assert np.isnan(ScheduleAwareNewTaskAcquisition().compute([], []))
 
 
 def test_reading_the_value_at_the_step_each_category_was_first_seen():
@@ -38,15 +38,13 @@ def test_identity_first_seen_reads_the_diagonal():
     assert result == pytest.approx((0.9 + 0.8 + 0.7) / 3)
 
 
-def test_ignoring_nan_entries():
+def test_nan_at_the_step_a_category_was_first_seen_makes_the_result_nan():
     matrix = [
         [np.nan, 0.8],
         [0.6, 0.4],
     ]
 
-    result = ScheduleAwareNewTaskAcquisition().compute(matrix, [0, 0])
-
-    assert result == pytest.approx(0.8)
+    assert np.isnan(ScheduleAwareNewTaskAcquisition().compute(matrix, [0, 0]))
 
 
 def test_rejecting_first_seen_steps_of_the_wrong_length():

@@ -62,12 +62,20 @@ if __name__ == "__main__":
 
     callbacks = [
         # Image-level
-        ConceptMetricCallback(base_metric=RocAuc(), summarized_metrics=summarized_metrics),
-        ConceptMetricCallback(base_metric=F1Score(), summarized_metrics=summarized_metrics),
-        ConceptMetricCallback(base_metric=AveragePrecision(), summarized_metrics=summarized_metrics),
-        VisionPixelConceptMetricCallback(base_metric=PixelRocAuc(), summarized_metrics=summarized_metrics),
-        VisionPixelConceptMetricCallback(base_metric=PixelAveragePrecision(), summarized_metrics=summarized_metrics),
-        VisionPixelConceptMetricCallback(base_metric=PixelAUPRO(), summarized_metrics=summarized_metrics),
+        ConceptMetricCallback(base_metric=RocAuc(), summarized_metrics=summarized_metrics, on_undefined="propagate"),
+        ConceptMetricCallback(base_metric=F1Score(), summarized_metrics=summarized_metrics, on_undefined="propagate"),
+        ConceptMetricCallback(
+            base_metric=AveragePrecision(), summarized_metrics=summarized_metrics, on_undefined="propagate"
+        ),
+        VisionPixelConceptMetricCallback(
+            base_metric=PixelRocAuc(), summarized_metrics=summarized_metrics, on_undefined="propagate"
+        ),
+        VisionPixelConceptMetricCallback(
+            base_metric=PixelAveragePrecision(), summarized_metrics=summarized_metrics, on_undefined="propagate"
+        ),
+        VisionPixelConceptMetricCallback(
+            base_metric=PixelAUPRO(), summarized_metrics=summarized_metrics, on_undefined="propagate"
+        ),
         TimeEvaluationCallback(),
     ]
 

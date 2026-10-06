@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from pyclad.metrics.continual.average_continual import ContinualAverage
@@ -14,7 +16,7 @@ parameters = [
 
 def test_empty_matrix():
     metric = ContinualAverage()
-    assert metric.compute([]) == 0
+    assert math.isnan(metric.compute([]))
 
 
 def test_raises_exception_when_matrix_not_square():
@@ -34,3 +36,12 @@ def test_metric_does_not_depend_on_upper_diagonal():
     matrix2 = [[1, 20, 30], [4, 5, 60], [7, 8, 9]]
     metric = ContinualAverage()
     assert metric.compute(matrix1) == metric.compute(matrix2)
+
+
+def test_nan_in_a_cell_it_reads_makes_the_result_nan():
+    assert math.isnan(ContinualAverage().compute([[0.8, 0.1], [math.nan, 0.9]]))
+
+
+def test_nan_in_a_cell_it_does_not_read_is_irrelevant():
+    # Continual average reads the lower triangle only.
+    assert ContinualAverage().compute([[0.8, math.nan], [0.6, 0.9]]) == pytest.approx((0.8 + 0.6 + 0.9) / 3)

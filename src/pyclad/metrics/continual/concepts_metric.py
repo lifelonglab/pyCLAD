@@ -1,5 +1,6 @@
 import abc
-from typing import List, Sequence, Tuple
+import math
+from typing import Iterable, List, Sequence, Tuple
 
 import numpy as np
 
@@ -105,3 +106,15 @@ def validate_first_seen_steps(
 def is_nan(value: float) -> bool:
     """True when ``value`` is NaN. Metric matrices carry NaN where a base metric was undefined."""
     return bool(np.isnan(value))
+
+
+def mean_or_nan(values: Iterable[float]) -> float:
+    """Mean of ``values``, or NaN when there are none.
+
+    Every continual metric averages through this function, so they share one rule. A NaN among the values
+    (a cell where the base metric was undefined) makes the result NaN: a metric never reports a number
+    that covers fewer cells than its definition reads. With nothing to average the result is also NaN
+    rather than 0, which would read as a real score.
+    """
+    values = [float(value) for value in values]
+    return float(np.mean(values)) if values else math.nan

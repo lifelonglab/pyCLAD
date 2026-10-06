@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
@@ -12,10 +13,14 @@ from pyclad.metrics.continual.concepts_metric import (
     ScheduleAwareMetric,
     StepwiseConceptMetric,
     SummarizedMetric,
+    is_nan,
 )
 from pyclad.output.output_writer import InfoProvider
 
+logger = logging.getLogger(__name__)
+
 FirstSeenStepSource = Union[Mapping[str, int], StepScheduledConceptsDataset]
+ON_UNDEFINED_MODES = ("raise", "propagate")
 
 
 class ConceptMetricCallback(Callback, InfoProvider):
@@ -29,6 +34,12 @@ class ConceptMetricCallback(Callback, InfoProvider):
     sharing names: rows are the grouped steps while columns stay per concept, so the matrix is
     rectangular. Metrics that need to know when each concept entered training live in
     :class:`ScheduleAwareConceptMetricCallback`.
+
+    :param on_undefined: what to do when the base metric cannot be computed for an evaluated concept (it
+        returns NaN, for example ROC-AUC on test data holding a single class). ``"raise"`` (the default)
+        stops the run with :class:`UndefinedMetricError`. ``"propagate"`` lets the run continue: the cell is
+        stored as NaN, the concept is logged once and listed under ``undefined_concepts`` in the output, and
+        every continual metric that reads the cell is NaN as well.
     """
 
     def __init__(
@@ -36,11 +47,14 @@ class ConceptMetricCallback(Callback, InfoProvider):
         base_metric: BaseMetric,
         summarized_metrics: Iterable[SummarizedMetric],
         stepwise_metrics: Iterable[StepwiseConceptMetric] = None,
+        on_undefined: str = "raise",
     ):
+        self._on_undefined = validate_on_undefined(on_undefined)
         self._base_metric: BaseMetric = base_metric
         self._metric_matrix: Dict[str, Dict[str, float]] = defaultdict(dict)
         self._learned_concepts: List[str] = []
         self._evaluated_concepts: List[str] = []
+        self._undefined_concepts: List[str] = []
         self._summarized_metrics = summarized_metrics
         self._stepwise_metrics = stepwise_metrics if stepwise_metrics is not None else []
 
@@ -61,6 +75,10 @@ class ConceptMetricCallback(Callback, InfoProvider):
         ), "The same concept should not be evaluated twice after the same learned concept"
 
         metric_value = self._base_metric.compute(anomaly_scores=anomaly_scores, y_true=y_true, y_pred=y_pred)
+        if evaluated_concept.name not in self._undefined_concepts and handle_undefined(
+            metric_value, self._base_metric.name(), evaluated_concept.name, self._on_undefined
+        ):
+            self._undefined_concepts.append(evaluated_concept.name)
         self._metric_matrix[self._learned_concepts[-1]][evaluated_concept.name] = metric_value
 
         if evaluated_concept.name not in self._evaluated_concepts:
@@ -83,6 +101,7 @@ class ConceptMetricCallback(Callback, InfoProvider):
                 "concepts_order": self._learned_concepts,
                 "test_order": self.column_order(),
                 "metric_matrix": self._metric_matrix,
+                "undefined_concepts": list(self._undefined_concepts),
             }
         }
 
@@ -99,6 +118,7 @@ class ScheduleAwareConceptMetricCallback(ConceptMetricCallback):
         whose mapping is then read at reporting time rather than copied at construction, or a
         plain ``{concept: step}`` mapping for a stream not built by
         :func:`~pyclad.data.grouping.apply_step_schedule`.
+    :param on_undefined: see :class:`ConceptMetricCallback`.
     """
 
     def __init__(
@@ -108,8 +128,9 @@ class ScheduleAwareConceptMetricCallback(ConceptMetricCallback):
         stepwise_metrics: Iterable[StepwiseConceptMetric] = None,
         schedule_aware_metrics: Iterable[ScheduleAwareMetric] = (),
         first_seen_step: Optional[FirstSeenStepSource] = None,
+        on_undefined: str = "raise",
     ):
-        super().__init__(base_metric, summarized_metrics, stepwise_metrics)
+        super().__init__(base_metric, summarized_metrics, stepwise_metrics, on_undefined=on_undefined)
         self._schedule_aware = ScheduleAwareSupport(schedule_aware_metrics, first_seen_step)
 
     def info(self) -> Dict[str, Any]:
@@ -159,6 +180,45 @@ class ScheduleAwareSupport:
                 metric.name(): metric.compute(metric_matrix, first_seen_steps) for metric in self._metrics
             },
         }
+
+
+class UndefinedMetricError(ValueError):
+    """Raised when a base metric cannot be computed for an evaluated concept."""
+
+
+def validate_on_undefined(on_undefined: str) -> str:
+    """Check the ``on_undefined`` option of a metric callback.
+
+    :raises ValueError: on anything other than ``"raise"`` or ``"propagate"``.
+    """
+    if on_undefined not in ON_UNDEFINED_MODES:
+        raise ValueError(f"on_undefined must be one of {ON_UNDEFINED_MODES}, got {on_undefined!r}.")
+    return on_undefined
+
+
+def handle_undefined(metric_value: float, base_metric_name: str, concept_name: str, on_undefined: str) -> bool:
+    """Apply a callback's ``on_undefined`` policy to one base metric value.
+
+    A base metric is undefined (NaN) when it cannot be computed for a concept, for example ROC-AUC on test
+    data that holds a single class. Continual metrics that read such a cell are NaN too.
+
+    :return: True when the value is undefined and the policy let it through.
+    :raises UndefinedMetricError: when the value is undefined and ``on_undefined`` is ``"raise"``.
+    """
+    if not is_nan(metric_value):
+        return False
+
+    problem = (
+        f"{base_metric_name} is undefined for concept {concept_name!r} "
+        "(for example, its test data holds a single class)."
+    )
+    if on_undefined == "raise":
+        raise UndefinedMetricError(
+            f"{problem} Fix the concept's test data or choose another base metric. To finish the run anyway, "
+            "with NaN in the affected results, pass on_undefined='propagate' to the callback."
+        )
+    logger.warning("%s Continual metrics that read this concept will be NaN.", problem)
+    return True
 
 
 def resolve_column_order(train_order: Sequence[str], test_order: Sequence[str]) -> List[str]:

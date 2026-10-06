@@ -16,8 +16,9 @@ class FinalStepForgettingMeasure(SummarizedMetric):
 
     ``f_j = max_{i in [j, N - 2]} M[i][j] - M[N - 1][j]``,  ``FM = mean_{j < N - 1} f_j``
 
-    The last learned concept is skipped, since it has had no chance to be forgotten. ``NaN`` entries are
-    ignored. Higher means more forgetting; values below 0 mean earlier concepts improved.
+    The last learned concept is skipped, since it has had no chance to be forgotten. The result is ``NaN``
+    when any value it reads is ``NaN``, or when there is no earlier concept to measure (a single-concept
+    scenario). Higher means more forgetting; values below 0 mean earlier concepts improved.
 
     Differs from :class:`~pyclad.metrics.continual.forgetting_measure.ForgettingMeasure` in two ways: it
     reports one value for the whole scenario instead of one per step, and the best performance is searched
