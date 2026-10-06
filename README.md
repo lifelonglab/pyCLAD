@@ -64,6 +64,18 @@ pyCLAD is built upon a few core concepts:
 ### Quick example
 
 ```python
+import pathlib
+
+import numpy as np
+
+from pyclad.callbacks import ConceptMetricCallback, TimeEvaluationCallback
+from pyclad.data import Concept, ConceptsDataset
+from pyclad.metrics import BackwardTransfer, ContinualAverage, ForwardTransfer, RocAuc
+from pyclad.models.adapters.pyod_adapters import OneClassSVMAdapter
+from pyclad.output.json_writer import JsonOutputWriter
+from pyclad.scenarios import ConceptAgnosticScenario
+from pyclad.strategies.baselines.cumulative import CumulativeStrategy
+
 # Prepare random data for 3 concepts
 concept1_train = Concept("concept1", data=np.random.rand(100, 10))
 concept1_test = Concept("concept1", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
@@ -86,7 +98,7 @@ strategy = CumulativeStrategy(model)
 callbacks = [
     ConceptMetricCallback(
         base_metric=RocAuc(),
-        metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
+        summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
     ),
     TimeEvaluationCallback(),
 ]
