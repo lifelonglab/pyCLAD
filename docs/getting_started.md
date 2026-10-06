@@ -25,8 +25,8 @@ If you want to learn more about each of these components, please refer to the sp
 ## How to run your first experiment?
 
 To get started, we describe a typical pyCLAD execution step-by-step.
-In the example below, we run experiments on the NSL-KDD dataset on a *Concept-aware scenario* considering a *Cumulative
-strategy* and an *Isolation Forest model*
+In the example below, we run an experiment on randomly generated data in a *Concept-agnostic scenario*, using a
+*Cumulative strategy* and a *One-Class SVM model*.
 
 ### Preparing a dataset
 
@@ -90,7 +90,7 @@ strategy = CumulativeStrategy(model)
 
 Callbacks allow to effectively log useful information in pyCLAD during key checkpoints (*before* and *after*) of the
 experimental workflow (see more in [Callbacks](callbacks.md)).
-In this example, we leverage the callbacks that monitor model performance (*MatrixMetricEvaluationCallback*) and
+In this example, we leverage the callbacks that monitor model performance (*ConceptMetricCallback*) and
 execution time (*TimeEvaluationCallback*).
 
 Let's start with defining time evaluation callback:
@@ -102,16 +102,22 @@ time_callback = TimeEvaluationCallback()
 Then, let's define a callback that logs model performance:
 
 ``` py
-metric_callback = ConceptMetricCallback(base_metric=RocAuc(),
-                                        metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()])
+metric_callback = ConceptMetricCallback(
+    base_metric=RocAuc(),
+    summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
+)
 ```
 
 *ConceptMetricCallback* takes as an input:
 
 - *base_metric*: a non-continual base metric that is used to evaluate the performance of single concept, for example
   ROC-AUC.
-- *metrics*: a list of continual learning metrics that should be calculated over the whole scenario with *base_metric*
-  as a base.
+- *summarized_metrics*: a list of continual learning metrics that summarize the whole scenario as a single value,
+  calculated with *base_metric* as a base.
+- *stepwise_metrics* (optional): a list of continual learning metrics that report one value after each learned
+  concept, such as `ForgettingMeasure`.
+
+See more in [Metrics](metrics.md).
 
 ### Running a scenario
 
@@ -151,13 +157,13 @@ strategy, model, and metrics calculated by the callbacks.
   },
   "dataset": {
     "name": "GeneratedDataset",
-    "tran_concepts_no": 3,
+    "train_concepts_no": 3,
     "test_concepts_no": 3
   },
   "strategy": {
     "name": "Cumulative",
     "model": "OneClassSVM",
-    "buffer_size": 3
+    "buffer_size": 300
   },
   "concept_metric_callback_ROC-AUC": {
     "base_metric_name": "ROC-AUC",
@@ -184,9 +190,22 @@ strategy, model, and metrics calculated by the callbacks.
 
 ## Full code example
 
-You can see this and more code examples in the [repository](https://github.com/lifelonglab/pyCLAD/tree/main/examples).
+The complete script, including the imports, is shown below. You can see this and more code examples in the
+[repository](https://github.com/lifelonglab/pyCLAD/tree/main/examples).
 
 ```python linenums="1"
+import pathlib
+
+import numpy as np
+
+from pyclad.callbacks import ConceptMetricCallback, TimeEvaluationCallback
+from pyclad.data import Concept, ConceptsDataset
+from pyclad.metrics import BackwardTransfer, ContinualAverage, ForwardTransfer, RocAuc
+from pyclad.models.adapters.pyod_adapters import OneClassSVMAdapter
+from pyclad.output.json_writer import JsonOutputWriter
+from pyclad.scenarios import ConceptAgnosticScenario
+from pyclad.strategies.baselines.cumulative import CumulativeStrategy
+
 # Prepare random data for 3 concepts
 concept1_train = Concept("concept1", data=np.random.rand(100, 10))
 concept1_test = Concept("concept1", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
@@ -208,8 +227,10 @@ model = OneClassSVMAdapter()
 strategy = CumulativeStrategy(model)
 
 time_callback = TimeEvaluationCallback()
-metric_callback = ConceptMetricCallback(base_metric=RocAuc(),
-                                        metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()])
+metric_callback = ConceptMetricCallback(
+    base_metric=RocAuc(),
+    summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
+)
 
 # Execute the concept agnostic scenario
 scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback])

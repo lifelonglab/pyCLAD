@@ -1,7 +1,5 @@
 from typing import Literal
 
-from datasets import load_dataset
-
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
 from pyclad.data.readers.concepts_readers import read_concepts_from_df
 
@@ -24,6 +22,9 @@ class EnergyPlantsDataset(ConceptsDataset):
         :param dataset_type: The type of the dataset (see this repository <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios> for more information).
         :param cache_dir: Directory to cache the dataset. If `None`, the default cache directory is used.
         """
+        # Imported here, not at module level: loading `datasets` is slow, and this module is imported with pyclad.data.
+        from datasets import load_dataset
+
         data = load_dataset(
             "lifelonglab/continual-energy-plants-anomaly-detection",
             data_dir=f"energy_{dataset_type}",
