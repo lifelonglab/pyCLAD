@@ -188,6 +188,24 @@ strategy, model, and metrics calculated by the callbacks.
 }
 ```
 
+### Making a run repeatable
+
+Strategies and models draw random numbers from Python's `random` module, from NumPy and from PyTorch. Call
+`set_seed` once at the start of a script to seed all three:
+
+``` py
+from pyclad.seed import set_seed
+
+seed = set_seed(42)
+```
+
+Components that take their own `seed` or `rng` argument keep using it; the ones given none follow this seed.
+`set_seed` returns an object you can pass to the output writer, so the seed is saved with the results:
+
+``` py
+output_writer.write([seed, model, dataset, strategy, metric_callback, time_callback])
+```
+
 ## Full code example
 
 The complete script, including the imports, is shown below. You can see this and more code examples in the

@@ -49,30 +49,33 @@ Besides reporting one value instead of one per step, it searches for the best pe
 ### Undefined values
 
 A base metric cannot always be computed: ROC-AUC and average precision are undefined for a test concept that
-holds a single class. pyCLAD applies one rule to every metric:
+holds a single class. pyCLAD never reports a number that covers fewer concepts than you evaluated:
 
 - A base metric that cannot be computed returns `NaN` for that cell of $R$.
-- Continual metrics leave `NaN` cells out, so a value is computed over the concepts where the base metric is
-  defined, instead of one undefined concept turning the whole summary into `NaN`.
-- A metric with nothing left to compute is itself `NaN`, never 0, which would read as a real score. This covers
-  an empty matrix and cases with nothing to measure, such as backward or forward transfer in a single-concept
+- Continual metrics do not work around it: a metric is `NaN` whenever a cell it reads is `NaN`.
+- A metric with nothing to compute is also `NaN`, never 0, which would read as a real score. This covers an
+  empty matrix and cases with nothing to measure, such as backward or forward transfer in a single-concept
   scenario. The one exception is the first value of the stepwise Forgetting Measure, which is 0 by convention.
 
-Because an undefined concept shrinks what a reported value covers, the metric callbacks do not let it pass
-unnoticed. Their `on_undefined` argument selects what happens when the base metric returns `NaN` for a concept:
+The metric callbacks decide whether a run continues when this happens, through their `on_undefined` argument:
 
 - `"raise"` (the default) stops the run with `UndefinedMetricError`, naming the metric and the concept. This
   happens at the first evaluation of that concept, so it surfaces early.
-- `"warn"` logs a warning naming the concept, lists it under `undefined_concepts` in the callback's output, and
-  lets the continual metrics leave it out as described above.
+- `"propagate"` lets the run finish. The cell is stored as `NaN`, the concept is logged and listed under
+  `undefined_concepts` in the callback's output, and the continual metrics that read it are `NaN`. The matrix
+  itself is complete, so the per-concept results of a long run are not lost.
 
 ```python
 callback = ConceptMetricCallback(
     base_metric=RocAuc(),
     summarized_metrics=[ContinualAverage()],
-    on_undefined="warn",
+    on_undefined="propagate",
 )
 ```
+
+The grouped callbacks (`GroupedConceptMetricCallback` and its pixel-level variant) report an average per group
+of concepts. With `"propagate"` they average a group over the concepts for which the metric is defined, and
+only a group with no defined concept is `NaN`.
 
 `JsonOutputWriter` writes `NaN` as `null`, since a bare `NaN` is not valid JSON.
 
@@ -105,9 +108,8 @@ only at the final step cannot have been forgotten yet:
 $f_k = \max_{j \in [s_k,\, T-2]} R_{j, k} - R_{T-1, k}$
 
 - **Schedule-Aware Forward Transfer**: the model's performance on concepts it has not been trained
-on yet, averaged over the pre-training rows. Concepts with $s_k = 0$ are skipped, and so are
-individual cells where the base metric was undefined, so the mean is taken over the non-NaN
-pre-training rows rather than over all $s_k$ of them:
+on yet, averaged over the pre-training rows. Concepts with $s_k = 0$ are skipped, since they have
+no pre-training rows:
 
 $\text{fwt}_k = \underset{j \,\in\, [0,\, s_k - 1]}{\text{mean}} R_{j, k}$
 

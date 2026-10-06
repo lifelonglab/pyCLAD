@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader, Dataset
 from pyclad.models.feature_extractor import FeatureExtractor
 from pyclad.models.model import Model
 from pyclad.output.prediction_results import PredictionResults
+from pyclad.seed import new_generator
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def _inject_anomaly(window: np.ndarray, rng: np.random.Generator | None = None) 
     :return: Anomaly-injected copy of the input window.
     """
     if rng is None:
-        rng = np.random.default_rng()
+        rng = new_generator()
 
     window_size, num_features = window.shape
     output_window = window.copy()
@@ -314,7 +315,7 @@ class Carla(Model):
         self._pretext_epochs = pretext_epochs
         self._classification_epochs = classification_epochs
         self._patience = patience
-        self._rng = np.random.default_rng(random_seed)
+        self._rng = new_generator(random_seed)
         self._device = torch.device(device)
 
         self._n_classes = n_classes
