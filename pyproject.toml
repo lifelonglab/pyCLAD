@@ -44,12 +44,11 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
-#[project.urls]
-#Homepage = "https://example.com"
-#Documentation = "https://readthedocs.org"
-#Repository = "https://github.com/me/spam.git"
-#Issues = "https://github.com/me/spam/issues"
-#Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+[project.urls]
+Homepage = "https://github.com/lifelonglab/pyCLAD"
+Documentation = "https://pyclad.readthedocs.io/en/latest/"
+Repository = "https://github.com/lifelonglab/pyCLAD"
+Issues = "https://github.com/lifelonglab/pyCLAD/issues"
 
 [project.optional-dependencies]
 # Deep learning models (autoencoders, CARLA) and the strategies that train them (EWC, LwF, DER++, A-GEM).
