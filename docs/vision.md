@@ -216,9 +216,9 @@ callbacks = [
 
 A metric can be undefined for a category: pixel-level metrics, for example, cannot be computed when a category's
 test masks hold no anomalous pixel. By default a metric callback stops the run when that happens. The vision
-example scripts pass `on_undefined="warn"` to every metric callback instead, so the category is logged, listed
-under `undefined_concepts` in the output and left out of the continual metrics. See
-[Undefined values](metrics.md#undefined-values).
+example scripts pass `on_undefined="propagate"` to every metric callback instead, so a long run always finishes:
+the category is logged and listed under `undefined_concepts` in the output, and the continual metrics that read
+it are `NaN`. See [Undefined values](metrics.md#undefined-values).
 
 ## PatchCore
 

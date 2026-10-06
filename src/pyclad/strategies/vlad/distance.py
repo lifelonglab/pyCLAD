@@ -6,6 +6,7 @@ from scipy.stats import wasserstein_distance as wasserstein_distance_1d
 from scipy.stats import wasserstein_distance_nd
 
 from pyclad.output.output_writer import InfoProvider
+from pyclad.seed import new_generator
 
 
 class WassersteinDistance(InfoProvider, abc.ABC):
@@ -81,7 +82,7 @@ class SlicedWassersteinDistance(WassersteinDistance):
 
     def __init__(self, n_projections: int = 50, rng: Optional[np.random.Generator] = None):
         self.n_projections = n_projections
-        self._rng = rng if rng is not None else np.random.default_rng()
+        self._rng = rng if rng is not None else new_generator()
 
     def __call__(self, a: np.ndarray, b: np.ndarray) -> float:
         a = np.atleast_2d(a)

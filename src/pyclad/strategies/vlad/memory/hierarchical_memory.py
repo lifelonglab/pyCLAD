@@ -5,6 +5,7 @@ from typing import Any, Dict, FrozenSet, Optional, Tuple
 import numpy as np
 
 from pyclad.output.output_writer import InfoProvider
+from pyclad.seed import new_generator
 from pyclad.strategies.vlad.distance import (
     ExactWassersteinDistance,
     SlicedWassersteinDistance,
@@ -101,10 +102,10 @@ class VladMemory(InfoProvider):
         self._wasserstein_distance = distance if distance is not None else ExactWassersteinDistance()
         if rng is None:
             logger.info(
-                "VladMemory: no `rng` was provided; results will not be reproducible across "
-                "runs. Pass rng=np.random.default_rng(seed) for reproducible experiments."
+                "VladMemory: no `rng` was provided; results are reproducible across runs only if "
+                "pyclad.seed.set_seed was called. Otherwise pass rng=np.random.default_rng(seed)."
             )
-        self._rng = rng if rng is not None else np.random.default_rng()
+        self._rng = rng if rng is not None else new_generator()
 
         self._nodes: Dict[str, ConceptNode] = {}
         self._next_id = 0
