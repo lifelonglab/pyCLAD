@@ -22,7 +22,7 @@ def test_name():
 
 
 def test_empty_matrix():
-    assert ScheduleAwareForwardTransfer().compute([], []) == 0.0
+    assert np.isnan(ScheduleAwareForwardTransfer().compute([], []))
 
 
 def test_forward_transfer_on_a_rectangular_matrix():
@@ -39,23 +39,31 @@ def test_forward_transfer_on_a_square_matrix():
     assert result == pytest.approx(0.325)
 
 
-def test_skipping_columns_trained_from_the_very_first_step():
+def test_undefined_when_every_column_is_trained_from_the_very_first_step():
     result = ScheduleAwareForwardTransfer().compute(RECTANGULAR, [0, 0, 0])
 
-    assert result == 0.0
+    assert np.isnan(result)
 
 
-def test_ignoring_nan_entries():
+def test_nan_in_a_pre_training_row_makes_the_result_nan():
     matrix = [
         [0.2, np.nan],
         [0.4, 0.6],
         [0.5, 0.5],
     ]
 
-    # col1: pre-training rows are [nan, 0.6] -> mean(0.6) = 0.6
-    result = ScheduleAwareForwardTransfer().compute(matrix, [0, 2])
+    assert np.isnan(ScheduleAwareForwardTransfer().compute(matrix, [0, 2]))
 
-    assert result == pytest.approx(0.6)
+
+def test_nan_after_a_category_was_first_seen_is_irrelevant():
+    matrix = [
+        [0.2, 0.6],
+        [0.4, np.nan],
+        [0.5, 0.5],
+    ]
+
+    # col1: the only pre-training row is the first one
+    assert ScheduleAwareForwardTransfer().compute(matrix, [0, 1]) == pytest.approx(0.6)
 
 
 def test_rejecting_first_seen_steps_of_the_wrong_length():

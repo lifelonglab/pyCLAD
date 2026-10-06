@@ -55,8 +55,10 @@ if __name__ == "__main__":
     groups = dataset.group_by_concept()
     summarized_metrics = [FinalStepAverage(), FinalStepForgettingMeasure()]
     callbacks = [
-        GroupedConceptMetricCallback(RocAuc(), groups, summarized_metrics),
-        GroupedVisionPixelConceptMetricCallback(PixelAveragePrecision(), groups, summarized_metrics),
+        GroupedConceptMetricCallback(RocAuc(), groups, summarized_metrics, on_undefined="propagate"),
+        GroupedVisionPixelConceptMetricCallback(
+            PixelAveragePrecision(), groups, summarized_metrics, on_undefined="propagate"
+        ),
         TimeEvaluationCallback(),
     ]
 

@@ -41,6 +41,7 @@ def plot_metric_heatmap(
         [[matrix[learned][evaluated] for evaluated in concepts_order] for learned in concepts_order],
         index=concepts_order,
         columns=concepts_order,
+        dtype=float,  # undefined cells are written as null and read back as None
     )
     if names_mapping is not None:
         df = df.rename(index=names_mapping, columns=names_mapping)
