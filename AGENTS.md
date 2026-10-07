@@ -30,6 +30,21 @@ new component gets a test that runs it through a scenario. Run the tests and lin
 work is done, and report failures as they are. If the run may take a lot of time (due to, for example, long scenario),
 ask first or identify a quicker run.
 
+**Do not leave maintenance traps.** A trap is code that works today and breaks quietly when someone
+changes something else. Before finishing, ask what the next person has to know to change your code
+safely, and remove the need to know it:
+
+- The same logic or fact in two places that must stay equal. Reuse the existing one; if you cannot,
+  say where the copy is.
+- Behaviour that depends on something implicit: argument or list order, a string that must match another
+  string, a default inherited from a third-party library, global state.
+- A failure that stays silent: a broad `except`, a fallback value, a skipped item, a dictionary key that
+  overwrites another. Fail loudly instead.
+- State that carries over between `learn()` calls without a clear decision whether it resets.
+- A rule that only a comment or a docstring enforces. If it matters, a test or a check enforces it.
+
+If a trap already exists where you work, or you cannot avoid adding one, say so in your summary.
+
 ## 2. Research integrity rules
 
 These are the rules an agent is most likely to break without noticing. Do not trade them for a better
@@ -127,3 +142,27 @@ pip install -r docs/requirements.txt && mkdocs serve   # preview the docs
 
 Commits are small and focused, with an imperative subject line (`Add reservoir replay buffer`). Do not
 commit `output.json`, `lightning_logs/`. If there are too many changes in the pull request, say so.
+
+## 8. Reviewing code
+
+When asked to review a change (yours or a contributor's), look for what could put a wrong number in a
+paper before anything else. In this order:
+
+1. **Section 2, rule by rule.** Trace where every array that reaches `fit()` / `learn()` comes from, and
+   what `predict()` reads and writes. Leakage rarely looks like leakage: a scaler fitted on the whole
+   dataset, a threshold from test scores, early stopping on the test concept, state updated in `predict()`.
+2. **Correctness of the method.** For a port, compare against the paper or the reference code and check
+   that every difference is listed in the docs. For a metric, recompute one small matrix by hand.
+3. **Contracts.** The right base class, the label and score conventions, `additional_info()` complete,
+   optional dependencies imported lazily.
+4. **Tests.** Would they fail if the implementation were wrong, or do they only check that it runs?
+5. **Maintenance traps** (see section 1). What else has to change when this code changes, and would
+   anything fail if it did not? Look for copies of existing logic, reliance on order or matching
+   strings, silent fallbacks, and state kept between concepts. Search for other callers and for
+   parallel implementations (the scenario classes, core and vision callbacks) before judging a change
+   local.
+6. **Scope and simplicity.** Changes the task did not need, abstractions with one use.
+
+Report findings ordered by severity, each with the file and line, a concrete case where it goes wrong,
+and whether you confirmed it by running something or only read the code. Say what you did not check.
+Leave formatting to `black`, `isort` and `flake8`. Do not fix things during a review unless asked.
