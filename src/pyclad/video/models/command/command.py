@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from bisect import bisect_right
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, Iterable, Mapping, Sequence, Tuple
@@ -41,13 +42,16 @@ class ReplayEntry:
 
 
 class ContTrainReplayBuffer:
-    """Deterministic, label/task/temporal-balanced complete-bag replay."""
+    """Balanced complete-bag retention with deterministic rotating replay."""
 
     def __init__(self, max_size: int = 1_000):
         if max_size <= 0:
             raise ValueError("max_size must be positive")
         self.max_size = int(max_size)
         self._entries: Dict[str, ReplayEntry] = {}
+        self._last_label: int | None = None
+        self._last_cell: Dict[int, tuple[str, int]] = {}
+        self._last_bag: Dict[tuple[int, str, int], str] = {}
 
     def __len__(self) -> int:
         return len(self._entries)
@@ -62,13 +66,50 @@ class ContTrainReplayBuffer:
         if len(self._entries) > self.max_size:
             retained = self._balanced_select(self.entries, self.max_size)
             self._entries = {entry.bag.bag_id: entry for entry in retained}
+        cells = {(entry.bag.weak_label, entry.bag.task_id, entry.peak_quartile) for entry in self._entries.values()}
+        self._last_bag = {cell: bag_id for cell, bag_id in self._last_bag.items() if cell in cells}
 
     def sample(self, count: int, *, exclude_bag_ids: Iterable[str] = ()) -> Tuple[VideoBag, ...]:
+        """Rotate labels, task/quartile cells, and bag IDs without duplicates.
+
+        ID successors keep rotation stable when scores change or an anchor is
+        excluded or evicted. Capacity selection retains its score priorities.
+        """
         if count <= 0:
             return ()
         excluded = set(exclude_bag_ids)
-        available = tuple(entry for entry in self.entries if entry.bag.bag_id not in excluded)
-        return tuple(entry.bag for entry in self._balanced_select(available, min(count, len(available))))
+        cells: Dict[int, Dict[tuple[str, int], Dict[str, ReplayEntry]]] = {}
+        available = 0
+        for entry in self.entries:
+            if entry.bag.bag_id not in excluded:
+                cells.setdefault(entry.bag.weak_label, {}).setdefault((entry.bag.task_id, entry.peak_quartile), {})[
+                    entry.bag.bag_id
+                ] = entry
+                available += 1
+        selected = []
+        for _ in range(min(count, available)):
+            labels = sorted(cells)
+            label_index = bisect_right(labels, self._last_label) % len(labels) if self._last_label is not None else 0
+            label = labels[label_index]
+            keys = sorted(cells[label])
+            previous_cell = self._last_cell.get(label)
+            cell_index = bisect_right(keys, previous_cell) % len(keys) if previous_cell is not None else 0
+            cell = keys[cell_index]
+            candidates = cells[label][cell]
+            bag_ids = sorted(candidates)
+            anchor = (label, *cell)
+            previous_bag = self._last_bag.get(anchor)
+            bag_index = bisect_right(bag_ids, previous_bag) % len(bag_ids) if previous_bag is not None else 0
+            bag_id = bag_ids[bag_index]
+            selected.append(candidates.pop(bag_id).bag)
+            self._last_label = label
+            self._last_cell[label] = cell
+            self._last_bag[anchor] = bag_id
+            if not candidates:
+                del cells[label][cell]
+                if not cells[label]:
+                    del cells[label]
+        return tuple(selected)
 
     @classmethod
     def _balanced_select(cls, entries: Sequence[ReplayEntry], count: int) -> Tuple[ReplayEntry, ...]:
@@ -118,6 +159,11 @@ class ContTrainReplayBuffer:
     def state_dict(self) -> Mapping[str, object]:
         return {
             "max_size": self.max_size,
+            "sampling": {
+                "last_label": self._last_label,
+                "last_cell": dict(self._last_cell),
+                "last_bag": dict(self._last_bag),
+            },
             "entries": [
                 {
                     "bag_id": entry.bag.bag_id,
@@ -143,6 +189,11 @@ class ContTrainReplayBuffer:
             )
             entry = ReplayEntry(bag=bag, score_curve=np.asarray(item["score_curve"], dtype=np.float32))
             self._entries[bag.bag_id] = entry
+        # Checkpoints predating rotating replay start a fresh deterministic cycle.
+        sampling = state.get("sampling", {})
+        self._last_label = sampling.get("last_label")
+        self._last_cell = dict(sampling.get("last_cell", {}))
+        self._last_bag = dict(sampling.get("last_bag", {}))
 
 
 @dataclass(frozen=True)
@@ -257,9 +308,9 @@ class CommandModel(Model):
         self.replay = ContTrainReplayBuffer(self.config.buffer_size)
         self._rng = np.random.default_rng(self.config.seed)
         self._global_epoch = 0
-        self._normal_score_history: list[np.ndarray] = []
         self._calibration_median = 0.0
         self._calibration_scale = 1.0
+        self._threshold = self.config.threshold
         self.optimizer = self._optimizer()
         self.scheduler = torch.optim.lr_scheduler.StepLR(
             self.optimizer,
@@ -281,8 +332,13 @@ class CommandModel(Model):
         result = self.predict_bags(bags)
         scores = result["anomaly_scores"]
         maxima = scores.max(axis=1) if bags else np.empty(0)
+        if bags and self._threshold is None:
+            raise RuntimeError(
+                "COMMAND: video threshold is not calibrated. Fit on normal bags or set config.threshold explicitly."
+            )
+        raw_maxima = result["raw_scores"].max(axis=1) if bags else np.empty(0)
         return VideoPredictionResults(
-            y_pred=(maxima >= 0.5).astype(np.int64),
+            y_pred=(raw_maxima > self._threshold).astype(np.int64) if bags else np.empty(0, dtype=np.int64),
             anomaly_scores=maxima,
             window_scores=scores.reshape(-1),
             classifier_scores=result["classifier_scores"].reshape(-1),
@@ -321,10 +377,12 @@ class CommandModel(Model):
     def fit_task(self, bags: Sequence[VideoBag], *, task_id: str | None = None) -> Dict[str, object]:
         if not bags:
             raise ValueError("fit_task requires at least one video bag")
+        if task_id is None and len({bag.task_id for bag in bags}) != 1:
+            raise ValueError("training data must contain exactly one task")
         prepared = tuple(
             VideoBag(
                 bag_id=bag.bag_id,
-                task_id=task_id or bag.task_id,
+                task_id=task_id if task_id is not None else bag.task_id,
                 features=bag.features,
                 weak_label=bag.weak_label,
                 windows=bag.windows,
@@ -401,10 +459,8 @@ class CommandModel(Model):
         for bag in prepared:
             curve = latest_scores[bag.bag_id]
             replay_entries.append(ReplayEntry(bag=bag, score_curve=curve))
-            if bag.weak_label == 0:
-                self._normal_score_history.append(curve.copy())
         self.replay.add(replay_entries)
-        self._update_calibration()
+        self._update_calibration(prepared)
         return {
             "task_id": task_id or prepared[0].task_id,
             "bags": len(prepared),
@@ -462,14 +518,40 @@ class CommandModel(Model):
             replaced.append(slot)
         return len(replaced)
 
-    def _update_calibration(self) -> None:
-        if not self._normal_score_history:
+    def _update_calibration(self, current_bags: Sequence[VideoBag] = ()) -> None:
+        """Calibrate fresh normal snippet scores and a separate raw video threshold.
+
+        Include current normals even if replay evicts them. Historical replay
+        curves were scored by older training-mode networks and are not reused.
+        """
+        normal_bags = {
+            bag.bag_id: bag
+            for bag in (*[entry.bag for entry in self.replay.entries], *current_bags)
+            if bag.weak_label == 0
+        }
+        self._threshold = self.config.threshold
+        if not normal_bags:
+            self._calibration_median = 0.0
+            self._calibration_scale = 1.0
             return
-        values = np.concatenate(self._normal_score_history).astype(np.float64)
+
+        # Replay-disabled tasks may have different temporal lengths.
+        by_length: Dict[int, list[VideoBag]] = {}
+        for bag in normal_bags.values():
+            by_length.setdefault(len(bag.features), []).append(bag)
+        curves = []
+        maxima = []
+        for bags in by_length.values():
+            raw = self.predict_bags(bags, batch_size=self.config.batch_size)["raw_scores"].astype(np.float64)
+            curves.append(raw.reshape(-1))
+            maxima.append(raw.max(axis=1))
+        values = np.concatenate(curves)
         median = float(np.median(values))
         mad = float(np.median(np.abs(values - median)))
         self._calibration_median = median
         self._calibration_scale = max(1e-8, 1.4826 * mad)
+        if self._threshold is None:
+            self._threshold = float(np.quantile(np.concatenate(maxima), self.config.threshold_quantile))
 
     def predict_bags(self, bags: Sequence[VideoBag], *, batch_size: int = 8) -> Dict[str, np.ndarray]:
         if batch_size <= 0:
@@ -513,9 +595,10 @@ class CommandModel(Model):
             "scheduler": self.scheduler.state_dict(),
             "replay": self.replay.state_dict(),
             "global_epoch": self._global_epoch,
-            "normal_score_history": self._normal_score_history,
             "calibration_median": self._calibration_median,
             "calibration_scale": self._calibration_scale,
+            "threshold": self._threshold,
+            "distance_mode": "direct_euclidean",
             "rng_state": self._rng.bit_generator.state,
             "torch_rng_state": torch.random.get_rng_state(),
             "torch_cuda_rng_state": torch.cuda.get_rng_state(self.device) if self.device.type == "cuda" else None,
@@ -524,6 +607,9 @@ class CommandModel(Model):
     def load_state_dict(self, state: Mapping[str, object]) -> None:
         saved_config = {key: value for key, value in state["config"].items() if key != "device"}
         current_config = {key: value for key, value in asdict(self.config).items() if key != "device"}
+        # Legacy checkpoints recorded no video decision policy; allow its new controls.
+        saved_config.setdefault("threshold", current_config["threshold"])
+        saved_config.setdefault("threshold_quantile", current_config["threshold_quantile"])
         if saved_config != current_config:
             raise ValueError("checkpoint configuration does not match trainer configuration")
         self.model.load_state_dict(state["model"])
@@ -531,9 +617,13 @@ class CommandModel(Model):
         self.scheduler.load_state_dict(state["scheduler"])
         self.replay.load_state_dict(state["replay"])
         self._global_epoch = int(state["global_epoch"])
-        self._normal_score_history = [np.asarray(values, dtype=np.float32) for values in state["normal_score_history"]]
         self._calibration_median = float(state["calibration_median"])
         self._calibration_scale = float(state["calibration_scale"])
+        self._threshold = state.get("threshold", self.config.threshold)
+        # Older distance math can change score ranks near memory prototypes.
+        # Recompute its calibration rather than retain a stale inferred threshold.
+        if "threshold" not in state or state.get("distance_mode") != "direct_euclidean":
+            self._update_calibration()
         self._rng.bit_generator.state = state["rng_state"]
         # Older checkpoints remain loadable, but lack exact dropout continuation.
         if "torch_rng_state" in state:
@@ -567,5 +657,9 @@ class CommandModel(Model):
             "loss": asdict(self.config.loss),
             "buffer_bags": len(self.replay),
             "global_epochs": self._global_epoch,
-            "calibration": {"median": self._calibration_median, "mad_scale": self._calibration_scale},
+            "calibration": {
+                "median": self._calibration_median,
+                "mad_scale": self._calibration_scale,
+                "threshold": self._threshold,
+            },
         }

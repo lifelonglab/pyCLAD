@@ -7,6 +7,7 @@ from typing import Literal
 
 import torch
 from torch import Tensor, nn
+from torch.utils.checkpoint import checkpoint
 
 from pyclad.video.models.command.config import CommandArchitectureConfig
 
@@ -267,8 +268,8 @@ class MemDualNet(nn.Module):
             raise ValueError(
                 f"MemDualNet input must have shape (batch, time, {self.feature_dim}), " f"got {tuple(features.shape)}"
             )
-        primary_distances = torch.cdist(features, self.primary_memory.unsqueeze(0))
-        secondary_distances = torch.cdist(features, self.secondary_memory.unsqueeze(0))
+        primary_distances = self._distances(features, self.primary_memory)
+        secondary_distances = self._distances(features, self.secondary_memory)
         primary_nearest_distance, primary_nearest_slot = primary_distances.min(dim=-1)
         secondary_nearest_distance, secondary_nearest_slot = secondary_distances.min(dim=-1)
         deviation = torch.minimum(primary_nearest_distance, secondary_nearest_distance)
@@ -284,6 +285,29 @@ class MemDualNet(nn.Module):
             primary_nearest_slot=primary_nearest_slot,
             secondary_nearest_slot=secondary_nearest_slot,
         )
+
+    @staticmethod
+    def _distances(features: Tensor, memory: Tensor) -> Tensor:
+        # The matrix identity ||x||^2 + ||m||^2 - 2 x.m loses small distances
+        # to cancellation, including exact matches inserted by novelty updates.
+        if features.device.type != "mps":
+            return torch.cdist(features, memory.unsqueeze(0), compute_mode="donot_use_mm_for_euclid_dist")
+
+        # MPS lacks the direct cdist backward. Direct norms have its zero
+        # subgradient, and checkpointing recomputes each chunk instead of
+        # retaining the full (batch * time, slots, feature_dim) difference.
+        def direct_norm(chunk: Tensor, bank: Tensor) -> Tensor:
+            return torch.linalg.vector_norm(chunk.unsqueeze(-2) - bank, dim=-1)
+
+        flattened = features.reshape(-1, features.shape[-1])
+        chunk_size = max(1, (64 * 1024 * 1024) // (memory.numel() * features.element_size()))
+        distances = []
+        for chunk in flattened.split(chunk_size):
+            if torch.is_grad_enabled() and (chunk.requires_grad or memory.requires_grad):
+                distances.append(checkpoint(direct_norm, chunk, memory, use_reentrant=False, preserve_rng_state=False))
+            else:
+                distances.append(direct_norm(chunk, memory))
+        return torch.cat(distances, dim=0).reshape(*features.shape[:-1], memory.shape[0])
 
     @torch.no_grad()
     def least_accessed_slot(self, bank: Literal["primary", "secondary"], *, exclude_slots: tuple[int, ...] = ()) -> int:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -286,6 +287,58 @@ class TestCommandTraining:
         assert model.scheduler.state_dict() == scheduler
         assert [group["lr"] for group in model.optimizer.param_groups] == learning_rates
 
+    def test_mixed_task_ids_are_rejected_before_any_training_state_changes(self):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(architecture=self._architecture(), epochs=1, batch_size=4, replay_batch_size=2)
+        )
+        model.fit_task(self._bags("T0"))
+        model.model.eval()
+        scheduler = deepcopy(model.scheduler.state_dict())
+        learning_rates = [group["lr"] for group in model.optimizer.param_groups]
+        rng = deepcopy(model._rng.bit_generator.state)
+        torch_rng = torch.random.get_rng_state().clone()
+        replay_ids = [entry.bag.bag_id for entry in model.replay.entries]
+        epochs = model._global_epoch
+        calibration = dict(model.info()["model"]["calibration"])
+        weights = {key: value.clone() for key, value in model.model.state_dict().items()}
+        mixed = (*self._bags("T1", 2), *self._bags("T2", 2))
+        with pytest.raises(ValueError, match="exactly one task"):
+            model.fit_task(mixed)
+        assert model.scheduler.state_dict() == scheduler
+        assert [group["lr"] for group in model.optimizer.param_groups] == learning_rates
+        assert model._rng.bit_generator.state == rng
+        torch.testing.assert_close(torch.random.get_rng_state(), torch_rng, rtol=0, atol=0)
+        assert [entry.bag.bag_id for entry in model.replay.entries] == replay_ids
+        assert model._global_epoch == epochs
+        assert model.info()["model"]["calibration"] == calibration
+        assert not model.model.training
+        for key, value in weights.items():
+            torch.testing.assert_close(model.model.state_dict()[key], value, rtol=0, atol=0)
+
+    def test_explicit_task_override_renames_every_bag(self):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(architecture=self._architecture(), epochs=1, batch_size=4, replay_batch_size=2)
+        )
+        result = model.fit_task((*self._bags("T1", 2), *self._bags("T2", 2)), task_id="joined")
+        assert result["task_id"] == "joined"
+        assert {entry.bag.task_id for entry in model.replay.entries} == {"joined"}
+
+    def test_empty_task_override_is_rejected_without_training(self):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(config=CommandTrainerConfig(architecture=self._architecture(), epochs=1))
+        with pytest.raises(ValueError, match="task_id must be non-empty"):
+            model.fit_task(self._bags("T1"), task_id="")
+        assert model._global_epoch == 0
+        assert len(model.replay) == 0
+
     def test_novelty_replacements_preserve_highest_scoring_candidates(self):
         from dataclasses import replace
 
@@ -359,6 +412,7 @@ class TestCommandTraining:
         torch.manual_seed(42)
         model = CommandModel(config=config)
         model.fit_task(self._bags("T1"))
+        model.replay.sample(3)
         checkpoint = tmp_path / "model.pt"
         model.save_checkpoint(checkpoint)
         model.fit_task(self._bags("T2"))
@@ -367,3 +421,392 @@ class TestCommandTraining:
         restored.fit_task(self._bags("T2"))
         for name, value in model.model.state_dict().items():
             torch.testing.assert_close(value, restored.model.state_dict()[name], rtol=0, atol=0)
+
+    @pytest.mark.parametrize("quantile, positives", [(0.99, 1), (0.5, 16)])
+    def test_normal_video_decisions_use_bag_maxima_instead_of_snippet_median(self, quantile, positives):
+        from dataclasses import replace
+
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(
+                architecture=self._architecture(),
+                epochs=1,
+                batch_size=8,
+                replay_batch_size=0,
+                learning_rate=1e-12,
+                secondary_memory_learning_rate=1e-12,
+                novelty_warmup_epochs=100,
+                threshold_quantile=quantile,
+            )
+        )
+        bags = tuple(
+            replace(bag, weak_label=0, features=np.random.default_rng(index).normal(size=(32, 8)))
+            for index, bag in enumerate(self._bags("T1", count=32))
+        )
+        model.fit_task(bags)
+        prediction = model.predict(np.asarray(bags, dtype=object))
+        assert prediction.y_pred.sum() == positives
+
+    def test_calibration_uses_final_eval_scores_after_each_task(self):
+        from dataclasses import replace
+
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(
+                architecture=replace(self._architecture(), dropout=0.25),
+                epochs=1,
+                batch_size=4,
+                replay_batch_size=2,
+                buffer_size=16,
+                learning_rate=0.01,
+                secondary_memory_learning_rate=0.005,
+            )
+        )
+        for task in ("T1", "T2"):
+            model.fit_task(self._bags(task))
+            normals = tuple(entry.bag for entry in model.replay.entries if entry.bag.weak_label == 0)
+            raw = model.predict_bags(normals, batch_size=4)["raw_scores"].astype(np.float64)
+            calibration = model.info()["model"]["calibration"]
+            assert calibration["median"] == float(np.median(raw))
+            assert calibration["threshold"] == float(np.quantile(raw.max(axis=1), 0.99))
+            assert model.model.training
+
+    def test_single_normal_bag_remains_normal_when_replay_evicts_it(self):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(
+                architecture=self._architecture(),
+                epochs=1,
+                batch_size=4,
+                replay_batch_size=0,
+                buffer_size=1,
+                learning_rate=1e-12,
+                secondary_memory_learning_rate=1e-12,
+            )
+        )
+        bags = self._bags("T1", count=2)
+        model.fit_task(bags)
+        assert all(entry.bag.weak_label == 1 for entry in model.replay.entries)
+        prediction = model.predict(np.asarray([bags[0]], dtype=object))
+        np.testing.assert_array_equal(prediction.y_pred, [0])
+
+    @pytest.mark.parametrize("threshold, expected", [(0.0, 1), (1000.0, 0)])
+    def test_explicit_raw_threshold_is_used_for_video_decisions(self, threshold, expected):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(
+                architecture=self._architecture(), epochs=1, threshold=threshold, batch_size=4, replay_batch_size=2
+            )
+        )
+        bags = self._bags("T1", count=2)
+        model.fit_task(bags)
+        np.testing.assert_array_equal(model.predict(np.asarray(bags, dtype=object)).y_pred, [expected, expected])
+
+    def test_anomaly_only_task_invalidates_calibration_without_nominal_replay(self):
+        from dataclasses import replace
+
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(
+                architecture=self._architecture(), epochs=1, batch_size=4, replay_batch_size=0, buffer_size=1
+            )
+        )
+        model.fit_task(self._bags("T1", count=2))
+        anomalies = tuple(replace(bag, weak_label=1) for bag in self._bags("T2", count=2))
+        model.fit_task(anomalies)
+        with pytest.raises(RuntimeError, match="threshold.*calibrat"):
+            model.predict(np.asarray(anomalies, dtype=object))
+        assert model.predict(np.empty(0, dtype=object)).y_pred.size == 0
+
+    def test_calibration_supports_changed_temporal_lengths_without_replay(self):
+        from dataclasses import replace
+
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        model = CommandModel(
+            config=CommandTrainerConfig(
+                architecture=self._architecture(), epochs=1, batch_size=4, replay_batch_size=0, buffer_size=16
+            )
+        )
+        model.fit_task(self._bags("T1"))
+        shorter = tuple(replace(bag, features=bag.features[:4]) for bag in self._bags("T2"))
+        model.fit_task(shorter)
+        assert np.isfinite(model.info()["model"]["calibration"]["threshold"])
+        assert model.predict(np.asarray(shorter, dtype=object)).y_pred.shape == (8,)
+
+    def test_legacy_checkpoint_recalibrates_from_nominal_replay(self, tmp_path):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        config = CommandTrainerConfig(architecture=self._architecture(), epochs=1, batch_size=4, replay_batch_size=2)
+        model = CommandModel(config=config)
+        model.fit_task(self._bags("T1"))
+        checkpoint = tmp_path / "legacy.pt"
+        state = dict(model.state_dict())
+        state.pop("threshold", None)
+        state["config"].pop("threshold", None)
+        state["config"].pop("threshold_quantile", None)
+        state["normal_score_history"] = [np.full(8, 1000.0)]
+        state["calibration_median"] = 1000.0
+        torch.save(state, checkpoint)
+        restored = CommandModel(config=config)
+        restored.load_checkpoint(checkpoint)
+        normals = tuple(entry.bag for entry in restored.replay.entries if entry.bag.weak_label == 0)
+        raw = restored.predict_bags(normals)["raw_scores"]
+        assert restored.info()["model"]["calibration"]["median"] == np.median(raw.astype(np.float64))
+        np.testing.assert_array_equal(
+            model.predict(np.asarray(self._bags("test"), dtype=object)).y_pred,
+            restored.predict(np.asarray(self._bags("test"), dtype=object)).y_pred,
+        )
+
+    def test_checkpoint_preserves_threshold_when_nominal_bags_are_not_in_replay(self, tmp_path):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        config = CommandTrainerConfig(
+            architecture=self._architecture(), epochs=1, batch_size=4, replay_batch_size=0, buffer_size=1
+        )
+        model = CommandModel(config=config)
+        bags = self._bags("T1", count=2)
+        model.fit_task(bags)
+        assert all(entry.bag.weak_label == 1 for entry in model.replay.entries)
+        checkpoint = tmp_path / "model.pt"
+        model.save_checkpoint(checkpoint)
+        restored = CommandModel(config=config)
+        restored.load_checkpoint(checkpoint)
+        assert restored.info()["model"]["calibration"]["threshold"] is not None
+        assert restored.info()["model"]["calibration"] == model.info()["model"]["calibration"]
+        np.testing.assert_array_equal(
+            model.predict(np.asarray(bags, dtype=object)).y_pred,
+            restored.predict(np.asarray(bags, dtype=object)).y_pred,
+        )
+
+    def test_legacy_checkpoint_without_nominal_replay_requires_a_threshold(self, tmp_path):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        config = CommandTrainerConfig(architecture=self._architecture(), epochs=1)
+        model = CommandModel(config=config)
+        state = dict(model.state_dict())
+        state.pop("threshold", None)
+        state["config"].pop("threshold", None)
+        state["config"].pop("threshold_quantile", None)
+        state["normal_score_history"] = [np.full(8, 1000.0)]
+        checkpoint = tmp_path / "legacy.pt"
+        torch.save(state, checkpoint)
+        restored = CommandModel(config=config)
+        restored.load_checkpoint(checkpoint)
+        with pytest.raises(RuntimeError, match="threshold.*calibrat"):
+            restored.predict(np.asarray(self._bags("test"), dtype=object))
+
+    def test_legacy_checkpoint_accepts_new_explicit_threshold_without_nominal_replay(self, tmp_path):
+        from dataclasses import replace
+
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        config = CommandTrainerConfig(architecture=self._architecture(), epochs=1)
+        state = dict(CommandModel(config=config).state_dict())
+        state.pop("threshold", None)
+        state["config"].pop("threshold", None)
+        state["config"].pop("threshold_quantile", None)
+        state["normal_score_history"] = []
+        checkpoint = tmp_path / "legacy.pt"
+        torch.save(state, checkpoint)
+        restored = CommandModel(config=replace(config, threshold=1000.0, threshold_quantile=0.95))
+        restored.load_checkpoint(checkpoint)
+        np.testing.assert_array_equal(
+            restored.predict(np.asarray(self._bags("test"), dtype=object)).y_pred, np.zeros(8)
+        )
+
+    def test_old_distance_checkpoint_recalibrates_even_if_it_saved_a_threshold(self):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        config = CommandTrainerConfig(architecture=self._architecture(), epochs=1)
+        model = CommandModel(config=config)
+        model.fit_task(self._bags("T1"))
+        state = deepcopy(model.state_dict())
+        state.pop("distance_mode", None)
+        state["calibration_median"] = 1000.0
+        state["calibration_scale"] = 100.0
+        state["threshold"] = 1001.0
+        restored = CommandModel(config=config)
+        restored.load_state_dict(state)
+        normals = [entry.bag for entry in restored.replay.entries if entry.bag.weak_label == 0]
+        raw = restored.predict_bags(normals)["raw_scores"].astype(np.float64)
+        calibration = restored.info()["model"]["calibration"]
+        assert calibration["median"] == float(np.median(raw))
+        assert calibration["threshold"] == float(np.quantile(raw.max(axis=1), config.threshold_quantile))
+
+    def test_old_distance_checkpoint_without_normals_requires_fresh_calibration(self):
+        from pyclad.video.models.command.command import CommandModel
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        config = CommandTrainerConfig(architecture=self._architecture(), epochs=1, buffer_size=1)
+        model = CommandModel(config=config)
+        model.fit_task(self._bags("T1"))
+        assert all(entry.bag.weak_label == 1 for entry in model.replay.entries)
+        state = deepcopy(model.state_dict())
+        state.pop("distance_mode", None)
+        restored = CommandModel(config=config)
+        restored.load_state_dict(state)
+        with pytest.raises(RuntimeError, match="threshold.*calibrat"):
+            restored.predict(np.asarray(self._bags("test"), dtype=object))
+
+    @pytest.mark.parametrize("threshold_quantile", [0.0, 1.0, float("nan")])
+    def test_invalid_threshold_quantile_is_rejected(self, threshold_quantile):
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        with pytest.raises(ValueError, match="threshold_quantile"):
+            CommandTrainerConfig(threshold_quantile=threshold_quantile)
+
+    @pytest.mark.parametrize("threshold", [-1.0, float("inf"), float("nan")])
+    def test_invalid_raw_threshold_is_rejected(self, threshold):
+        from pyclad.video.models.command.config import CommandTrainerConfig
+
+        with pytest.raises(ValueError, match="threshold"):
+            CommandTrainerConfig(threshold=threshold)
+
+
+class TestCommandReplayRotation:
+    @staticmethod
+    def _entries(tasks=3, per_cell=4, labels=(0, 1)):
+        from pyclad.video.data.sample import VideoBag
+        from pyclad.video.models.command.command import ReplayEntry
+
+        entries = []
+        for label in labels:
+            for task in range(tasks):
+                for quartile in range(4):
+                    for index in range(per_cell):
+                        bag = VideoBag(
+                            f"{label}-T{task}-{quartile}-{index}",
+                            f"T{task}",
+                            np.full((8, 8), index, dtype=np.float32),
+                            label,
+                        )
+                        curve = np.zeros(8, dtype=np.float32)
+                        curve[quartile * 2] = 100 * (index + 1)
+                        entries.append(ReplayEntry(bag, curve))
+        return entries
+
+    def test_small_odd_draws_cover_every_label_cell_and_bag(self):
+        from pyclad.video.models.command.command import ContTrainReplayBuffer
+
+        buffer = ContTrainReplayBuffer()
+        entries = self._entries()
+        buffer.add(entries)
+        seen = set()
+        for _ in range(20):
+            sample = buffer.sample(5)
+            assert len(sample) == len({bag.bag_id for bag in sample}) == 5
+            normal_count = sum(bag.weak_label == 0 for bag in sample)
+            assert normal_count in {2, 3}
+            seen.update(bag.bag_id for bag in sample)
+        assert seen == {entry.bag.bag_id for entry in entries}
+
+    def test_single_draws_alternate_labels(self):
+        from pyclad.video.models.command.command import ContTrainReplayBuffer
+
+        buffer = ContTrainReplayBuffer()
+        buffer.add(self._entries(tasks=1, per_cell=1))
+        labels = [buffer.sample(1)[0].weak_label for _ in range(8)]
+        assert labels == [0, 1] * 4
+
+    def test_scarce_label_and_exclusions_still_fill_unique_samples(self):
+        from pyclad.video.models.command.command import ContTrainReplayBuffer
+
+        buffer = ContTrainReplayBuffer()
+        entries = self._entries(tasks=1, per_cell=2, labels=(1,))
+        nominal = self._entries(tasks=1, per_cell=1, labels=(0,))[:2]
+        buffer.add([*entries, *nominal])
+        excluded = {entries[0].bag.bag_id, nominal[1].bag.bag_id}
+        seen = set()
+        for _ in range(4):
+            sample = buffer.sample(4, exclude_bag_ids=excluded)
+            ids = {bag.bag_id for bag in sample}
+            assert len(sample) == len(ids) == 4
+            assert not ids.intersection(excluded)
+            assert nominal[0].bag.bag_id in ids
+            seen.update(ids)
+        assert seen == {entry.bag.bag_id for entry in [*entries, *nominal]} - excluded
+
+    def test_checkpoint_restores_the_next_replay_draws(self):
+        from pyclad.video.models.command.command import ContTrainReplayBuffer
+
+        buffer = ContTrainReplayBuffer()
+        buffer.add(self._entries())
+        for count in (1, 3, 5):
+            buffer.sample(count)
+        state = deepcopy(buffer.state_dict())
+        restored = ContTrainReplayBuffer()
+        restored.load_state_dict(state)
+        for count in (5, 1, 8, 3):
+            assert [bag.bag_id for bag in buffer.sample(count)] == [bag.bag_id for bag in restored.sample(count)]
+
+    def test_legacy_checkpoint_resets_sampling_state(self):
+        from pyclad.video.models.command.command import ContTrainReplayBuffer
+
+        buffer = ContTrainReplayBuffer()
+        buffer.add(self._entries())
+        buffer.sample(7)
+        state = deepcopy(buffer.state_dict())
+        state.pop("sampling", None)
+        expected = ContTrainReplayBuffer()
+        expected.load_state_dict(state)
+        buffer.load_state_dict(state)
+        for count in (1, 5, 3):
+            assert [bag.bag_id for bag in buffer.sample(count)] == [bag.bag_id for bag in expected.sample(count)]
+
+    def test_eviction_rebucketing_and_new_ids_preserve_replay_coverage(self):
+        from dataclasses import replace
+
+        from pyclad.video.models.command.command import (
+            ContTrainReplayBuffer,
+            ReplayEntry,
+        )
+
+        buffer = ContTrainReplayBuffer(max_size=12)
+        entries = self._entries(tasks=1, per_cell=2)
+        buffer.add(entries)
+        buffer.sample(7)
+        survivor = buffer.entries[0]
+        curve = np.zeros(8, dtype=np.float32)
+        curve[-1] = 1000
+        additions = [
+            ReplayEntry(replace(survivor.bag, bag_id=prefix + survivor.bag.bag_id), curve)
+            for prefix in ("!new-", "znew-")
+        ]
+        buffer.add([ReplayEntry(survivor.bag, curve), *additions])
+        eligible = {entry.bag.bag_id for entry in buffer.entries}
+        seen = set()
+        for _ in range(24):
+            sample = buffer.sample(2)
+            ids = {bag.bag_id for bag in sample}
+            assert len(ids) == len(sample) == 2
+            assert ids <= eligible
+            seen.update(ids)
+        assert seen == eligible
+
+    def test_sampling_snapshot_does_not_change_when_draws_advance(self):
+        from pyclad.video.models.command.command import ContTrainReplayBuffer
+
+        buffer = ContTrainReplayBuffer()
+        buffer.add(self._entries())
+        buffer.sample(3)
+        state = buffer.state_dict()
+        before = deepcopy(state["sampling"])
+        buffer.sample(7)
+        assert state["sampling"] == before

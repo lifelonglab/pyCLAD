@@ -1,6 +1,7 @@
 """Architecture, loss, and training configuration for COMMAND."""
 
 from dataclasses import asdict, dataclass, field
+from math import isfinite
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,12 @@ class CommandLossConfig:
 
 @dataclass(frozen=True)
 class CommandTrainerConfig:
-    """Optimization, replay, and reproducibility settings for ContTrain++."""
+    """Optimization, replay, and reproducibility settings for ContTrain++.
+
+    ``threshold`` overrides the video decision threshold in raw dual-memory
+    deviation units. Otherwise, fit calibrates ``threshold_quantile`` of the
+    normal videos' maximum scores, separately from snippet score normalization.
+    """
 
     architecture: CommandArchitectureConfig = field(default_factory=CommandArchitectureConfig)
     loss: CommandLossConfig = field(default_factory=CommandLossConfig)
@@ -97,6 +103,8 @@ class CommandTrainerConfig:
     novelty_warmup_epochs: int = 1
     seed: int = 42
     device: str = "cpu"
+    threshold: float | None = None
+    threshold_quantile: float = 0.99
 
     def __post_init__(self) -> None:
         integer_fields = {
@@ -116,3 +124,7 @@ class CommandTrainerConfig:
             raise ValueError("gradient_clip and lr_gamma must be positive")
         if self.novelty_mad_scale < 0 or self.novelty_warmup_epochs < 0:
             raise ValueError("novelty controls must be non-negative")
+        if self.threshold is not None and (not isfinite(self.threshold) or self.threshold < 0):
+            raise ValueError("threshold must be finite and non-negative")
+        if not 0.0 < self.threshold_quantile < 1.0:
+            raise ValueError("threshold_quantile must be in (0, 1)")

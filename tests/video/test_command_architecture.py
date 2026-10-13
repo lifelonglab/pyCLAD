@@ -99,6 +99,122 @@ class TestCommandArchitecture:
         torch.testing.assert_close(output.secondary_nearest_distance, torch.tensor([[1.0]]))
         torch.testing.assert_close(output.dual_memory_deviation, torch.tensor([[1.0]]))
 
+    @pytest.mark.parametrize("device", ["cpu", "mps"])
+    def test_small_memdualnet_distances_and_gradients_match_euclidean_reference(self, device):
+        import torch
+
+        from pyclad.video.models.command.architecture import MemDualNet
+
+        if device == "mps" and not torch.backends.mps.is_available():
+            pytest.skip("MPS is unavailable")
+        features = torch.linspace(-1.0, 1.0, 128).reshape(2, 8, 8)
+        primary = torch.linspace(2.0, 3.0, 40).reshape(5, 8)
+        secondary = torch.linspace(-3.0, -2.0, 40).reshape(5, 8)
+        reference_features = features.clone().requires_grad_()
+        reference_primary = primary.clone().requires_grad_()
+        reference_secondary = secondary.clone().requires_grad_()
+        reference_distances = [
+            torch.linalg.vector_norm(reference_features.unsqueeze(-2) - bank, dim=-1)
+            for bank in (reference_primary, reference_secondary)
+        ]
+        sum(distances.sum() for distances in reference_distances).backward()
+
+        memory = MemDualNet(feature_dim=8, memory_size=5).to(device)
+        with torch.no_grad():
+            memory.primary_memory.copy_(primary.to(device))
+            memory.secondary_memory.copy_(secondary.to(device))
+        inputs = features.to(device).requires_grad_()
+        output = memory(inputs)
+        torch.testing.assert_close(output.primary_distances.cpu(), reference_distances[0])
+        torch.testing.assert_close(output.secondary_distances.cpu(), reference_distances[1])
+        (output.primary_distances.sum() + output.secondary_distances.sum()).backward()
+        for actual, reference in (
+            (inputs, reference_features),
+            (memory.primary_memory, reference_primary),
+            (memory.secondary_memory, reference_secondary),
+        ):
+            assert actual.grad is not None
+            assert torch.isfinite(actual.grad).all()
+            torch.testing.assert_close(actual.grad.cpu(), reference.grad, rtol=1e-5, atol=1e-5)
+
+    @pytest.mark.parametrize("device", ["cpu", "mps"])
+    def test_default_memdualnet_reports_zero_and_increasing_distance_from_temporal_prototype(self, device):
+        import numpy as np
+        import torch
+
+        from pyclad.video.models.command.architecture import CommandVideoNetwork
+        from pyclad.video.models.command.config import CommandArchitectureConfig
+
+        if device == "mps" and not torch.backends.mps.is_available():
+            pytest.skip("MPS is unavailable")
+        torch.manual_seed(42)
+        model = CommandVideoNetwork(CommandArchitectureConfig()).to(device).eval()
+        inputs = torch.as_tensor(np.random.default_rng(3).normal(size=(1, 32, 2048)).astype(np.float32), device=device)
+        with torch.no_grad():
+            prototype = model(inputs).temporal_features[0, 0]
+            memory = model.network.memory
+            primary_slot = memory.replace_least_accessed("primary", prototype)
+            secondary_slot = memory.replace_least_accessed("secondary", prototype)
+            scales = torch.tensor([0.0, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3], device=device)
+            features = prototype[None, None, :] + scales[None, :, None]
+            output = memory(features)
+        expected = [
+            torch.linalg.vector_norm(features.cpu().unsqueeze(-2) - bank.cpu(), dim=-1)
+            for bank in (memory.primary_memory, memory.secondary_memory)
+        ]
+        assert output.dual_memory_deviation[0, 0].item() == 0.0
+        assert torch.all(output.dual_memory_deviation[:, 1:] > output.dual_memory_deviation[:, :-1])
+        assert torch.all(output.primary_nearest_slot == primary_slot)
+        assert torch.all(output.secondary_nearest_slot == secondary_slot)
+        torch.testing.assert_close(output.primary_distances.cpu(), expected[0], rtol=1e-5, atol=1e-6)
+        torch.testing.assert_close(output.secondary_distances.cpu(), expected[1], rtol=1e-5, atol=1e-6)
+
+    @pytest.mark.parametrize("device", ["cpu", "mps"])
+    @pytest.mark.parametrize("feature_dim,memory_size,temporal_steps", [(8, 5, 4), (2048, 256, 40)])
+    def test_memdualnet_zero_and_near_prototype_gradients_match_direct_norm(
+        self, device, feature_dim, memory_size, temporal_steps
+    ):
+        import torch
+
+        from pyclad.video.models.command.architecture import MemDualNet
+
+        if device == "mps" and not torch.backends.mps.is_available():
+            pytest.skip("MPS is unavailable")
+        prototype = torch.linspace(-1.0, 1.0, feature_dim)
+        scales = torch.tensor([0.0, 1e-5, 1e-4, 1e-3]).repeat(temporal_steps // 4)
+        features = prototype[None, None, :] + scales[None, :, None]
+        primary = torch.linspace(2.0, 3.0, memory_size * feature_dim).reshape(memory_size, feature_dim)
+        secondary = -primary.clone()
+        primary[0] = prototype
+        secondary[1] = prototype
+        reference_features = features.clone().requires_grad_()
+        reference_primary = primary.clone().requires_grad_()
+        reference_secondary = secondary.clone().requires_grad_()
+        reference_distances = [
+            torch.linalg.vector_norm(reference_features.unsqueeze(-2) - bank, dim=-1)
+            for bank in (reference_primary, reference_secondary)
+        ]
+        weights = torch.linspace(0.1, 1.0, features.shape[1] * memory_size).reshape(1, features.shape[1], memory_size)
+        sum((distances * weights).sum() for distances in reference_distances).backward()
+
+        memory = MemDualNet(feature_dim, memory_size).to(device)
+        with torch.no_grad():
+            memory.primary_memory.copy_(primary.to(device))
+            memory.secondary_memory.copy_(secondary.to(device))
+        inputs = features.to(device).requires_grad_()
+        output = memory(inputs)
+        torch.testing.assert_close(output.primary_distances.cpu(), reference_distances[0], rtol=1e-5, atol=1e-6)
+        torch.testing.assert_close(output.secondary_distances.cpu(), reference_distances[1], rtol=1e-5, atol=1e-6)
+        ((output.primary_distances + output.secondary_distances) * weights.to(device)).sum().backward()
+        for actual, reference in (
+            (inputs, reference_features),
+            (memory.primary_memory, reference_primary),
+            (memory.secondary_memory, reference_secondary),
+        ):
+            assert actual.grad is not None
+            assert torch.isfinite(actual.grad).all()
+            torch.testing.assert_close(actual.grad.cpu(), reference.grad, rtol=1e-5, atol=1e-5)
+
     def test_frequency_aware_fifo_lru_replacement_is_deterministic(self):
         import torch
 

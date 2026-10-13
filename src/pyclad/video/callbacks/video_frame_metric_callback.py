@@ -29,6 +29,9 @@ class VideoFrameMetricCallback(ConceptMetricCallback):
     def after_evaluation(
         self,
         evaluated_concept: Concept,
+        y_true: Optional[np.ndarray] = None,
+        y_pred: Optional[np.ndarray] = None,
+        anomaly_scores: Optional[np.ndarray] = None,
         window_scores: Optional[np.ndarray] = None,
         windows: Optional[Sequence[VideoWindow]] = None,
         *args,

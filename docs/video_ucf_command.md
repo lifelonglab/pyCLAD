@@ -107,6 +107,9 @@ explicitly through `model.save_checkpoint(path)`. Load them with
 for dropout continuation on the same backend. Loading restores those process-wide
 RNG states; identical results across devices are not guaranteed. Older checkpoints
 remain loadable but cannot restore Torch RNG state that was never saved.
+Checkpoints using the older distance calculation recalibrate from retained
+normal bags. If no normal bags remain, an automatic threshold requires fitting
+normal bags again; an explicitly configured raw threshold remains usable.
 
 The configured seed controls network initialization and training-bag order.
 As with the vision models, constructing a network seeds the process-wide Torch
@@ -140,8 +143,10 @@ and score regularization. Dual-memory deviation supplies the anomaly scores.
 Training defaults are 100 epochs per task, batch size 32, replay batch size
 16, Adam at `1e-4`, secondary-memory learning rate `1e-5`, decay by 0.1 every
 10 epochs, and a 1,000-video replay buffer. Replay balances label, task, and
-anomaly-peak quartile. The task scheduler restarts while optimizer and replay
-state persist.
+anomaly-peak quartile. Sampling rotates through retained video IDs within each
+cell, and checkpoints preserve the rotation. Older checkpoints without these
+cursors start a fresh deterministic replay cycle. The task scheduler restarts
+while optimizer and replay state persist.
 
 The paper leaves temporal block count, CBAM settings, state/projection widths,
 dropout, differentiated memory rates, novelty threshold, and exact replacement

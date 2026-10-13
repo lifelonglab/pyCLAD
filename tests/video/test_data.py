@@ -51,6 +51,7 @@ def archive(tmp_path):
 
 
 def test_annotations_and_uneven_windows_align_on_frames(archive):
+    """Short videos retain 32 disjoint raw-frame bins and unchanged annotations."""
     concept = CommandUcfCrimeDataset(archive).read_dataset().test_concepts()[0]
     bag = concept.data[1]
     expected_labels = np.zeros(67, dtype=np.int64)
@@ -64,8 +65,43 @@ def test_annotations_and_uneven_windows_align_on_frames(archive):
     curves = window_scores_to_frame_scores(bag.windows, scores, {bag.bag_id: 67})
     widths = [2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2]
     np.testing.assert_array_equal(curves[bag.bag_id], np.repeat(scores, widths))
+    assert len(bag.windows) == len(bag.features) == 32
+    assert all(left.end_frame + 1 == right.start_frame for left, right in zip(bag.windows, bag.windows[1:]))
     assert bag.windows[0].start_frame == 0
     assert bag.windows[-1].end_frame == 66
+
+
+@pytest.mark.parametrize("frame_count, tail_frames", [(768, 0), (777, 9)])
+def test_clip_grid_preserves_window_scores_and_covers_residual_tail(archive, frame_count, tail_frames):
+    """The release's 777-frame case uses clip boundaries, including its nine-frame tail."""
+    (archive / "test_anomalyv2.txt").write_text(f"Abuse/test.mp4|{frame_count}|[105, 180]\n")
+    concept = CommandUcfCrimeDataset(archive).test_concepts()[0]
+    bag = concept.data[1]
+
+    assert [window.start_frame for window in bag.windows[:4]] == [0, 32, 48, 64]
+    assert len(bag.windows) == len(bag.features) == 32
+    assert all(left.end_frame + 1 == right.start_frame for left, right in zip(bag.windows, bag.windows[1:]))
+    assert bag.windows[-1].end_frame == frame_count - 1
+
+    # Hand-derived widths from 48 clips over 32 bins, with round-to-even ties.
+    widths = [32, 16, 16, 32] * 8
+    widths[-1] += tail_frames
+    scores = np.arange(32, dtype=np.float64)
+    curves = window_scores_to_frame_scores(bag.windows, scores, {bag.bag_id: frame_count})
+    np.testing.assert_array_equal(curves[bag.bag_id], np.repeat(scores, widths))
+    expected_labels = np.zeros(frame_count, dtype=np.int64)
+    expected_labels[104:180] = 1
+    np.testing.assert_array_equal(concept.frame_labels[bag.bag_id], expected_labels)
+
+
+@pytest.mark.parametrize("frame_count, last_width", [(512, 16), (527, 31)])
+def test_one_clip_per_window_starts_at_512_frames(archive, frame_count, last_width):
+    """At the clip-grid threshold, all 32 scores own nonempty disjoint windows."""
+    (archive / "test_normalv2.txt").write_text(f"Normal_Videos_event/test.mp4 {frame_count} -1\n")
+    bag = CommandUcfCrimeDataset(archive).test_concepts()[0].data[0]
+    scores = np.arange(32, dtype=np.float64)
+    curves = window_scores_to_frame_scores(bag.windows, scores, {bag.bag_id: frame_count})
+    np.testing.assert_array_equal(curves[bag.bag_id], np.repeat(scores, [16] * 31 + [last_width]))
 
 
 def test_limit_preserves_normal_task_allocation_and_test_split(archive):

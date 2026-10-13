@@ -197,9 +197,21 @@ class CommandUcfCrimeDataset(ConceptsDataset):
         record: CommandUcfCrimeRecord,
         window_count: int,
     ) -> Tuple[Tuple[int, int], ...]:
+        """Keep COMMAND's rounded 16-frame clip grid and score the residual tail.
+
+        The last window extends over any trailing incomplete clip, preserving
+        complete frame coverage. Videos shorter than ``window_count * 16``
+        frames use rounded raw-frame bins: the clip grid cannot provide one
+        nonempty window per feature row without overlaps for these videos.
+        """
         if record.frame_count is None:
             return tuple((index, index) for index in range(window_count))
-        edges = np.rint(np.linspace(0, record.frame_count, window_count + 1)).astype(np.int64)
+        clip_count = record.frame_count // 16
+        if clip_count >= window_count:
+            edges = np.rint(np.linspace(0, clip_count, window_count + 1)).astype(np.int64) * 16
+            edges[-1] = record.frame_count
+        else:
+            edges = np.rint(np.linspace(0, record.frame_count, window_count + 1)).astype(np.int64)
         return tuple(
             (int(edges[index]), max(int(edges[index]), int(edges[index + 1]) - 1)) for index in range(window_count)
         )
