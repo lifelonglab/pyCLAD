@@ -5,6 +5,7 @@ from torch import Tensor, nn
 from pyclad.models.torch_backbone import TorchBackbone
 from pyclad.models.training.loaders import float_tensor_loader
 from pyclad.models.training.runners.runner import TorchRunner
+from pyclad.output.prediction_results import PredictionResults
 from pyclad.strategies.replay.buffers.reservoir import ReservoirBuffer
 from pyclad.strategies.strategy import (
     ConceptAgnosticStrategy,
@@ -123,7 +124,7 @@ class AGEMStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy, ConceptAgno
             parameter.grad = gradient[offset : offset + numel].view_as(parameter).clone()
             offset += numel
 
-    def predict(self, data: np.ndarray, concept_id: str | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, data: np.ndarray, concept_id: str | None = None) -> PredictionResults:
         return self._model.predict(data)
 
     def name(self) -> str:

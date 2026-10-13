@@ -152,6 +152,31 @@ def test_stops_when_validation_stalls():
     assert result.final_val_loss == 0.8  # last epoch before the stop triggered
 
 
+def test_early_stopping_state_does_not_leak_between_runs():
+    # One runner trains every concept in a scenario. The second run's validation loss never
+    # reaches the first run's best, so a monitor that kept its state would stop the second run
+    # immediately and restore the first run's weights.
+    backbone = TinyBackbone()
+    runner = StandardRunner(max_epochs=5, validation_fraction=0.2, early_stopping=EarlyStopping(patience=0))
+
+    runner.run(backbone, _loader(), _loss_fn(backbone), val_loader=_loader(n=4), val_loss_fn=lambda _batch: 0.1)
+    weights_after_first_run = backbone.module.weight.detach().clone()
+
+    scripted = iter([5.0, 4.0, 3.0, 2.0, 1.0])  # keeps improving, but stays above the first run's 0.1
+    result = runner.run(
+        backbone,
+        _loader(),
+        _loss_fn(backbone),
+        val_loader=_loader(n=4),
+        val_loss_fn=lambda _batch: next(scripted),
+    )
+
+    assert result.stopped_early is False
+    assert result.epochs_run == 5
+    assert result.best_val_loss == 1.0
+    assert not torch.equal(backbone.module.weight, weights_after_first_run)
+
+
 def test_split_reflects_validation_fraction():
     data = np.arange(100).reshape(100, 1)
     assert StandardRunner(max_epochs=1).split_train_test(data)[1] is None  # no validation configured

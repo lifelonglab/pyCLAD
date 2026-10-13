@@ -16,15 +16,16 @@ Please make sure that you:
 - Write a brief description of the changes in the pull request.
 - Make sure that the code passes all the static code analysis checks.
 - Make sure that the code passes all the unit tests.
-- Make sure that the code is compatible with Python 3.11 and above.
+- Make sure that the code is compatible with Python 3.10 and above.
 
 ## Static code analysis
 
 To ensure the quality of the project, we leverage a few static code analysis tools listed below.
 Please make sure that your code passes these checks before submitting a pull request.
 
-You can install all these tools by running the following command:
-```pip install black flake8 isort```
+You can install all these tools, together with `pytest` and everything the tests need, by running the following
+command in the root directory of the project:
+```pip install -e ".[dev]"```
 
 ### Black
 
@@ -61,8 +62,7 @@ See more info about isort [here](https://pycqa.github.io/isort/)
 ## Unit tests
 
 Unit tests are essential tool to ensure the reliability of the software.
-This project leverages `pytest` for running unit tests. You can install it by running the following command:
-```pip install pytest```
+This project leverages `pytest` for running unit tests. It is installed by the `dev` extra described above.
 
 You can run the unit tests by executing the following command in the root directory of the project:
 ```pytest tests```

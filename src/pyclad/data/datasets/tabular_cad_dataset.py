@@ -1,9 +1,6 @@
 import json
 from typing import List
 
-from datasets import load_dataset
-from huggingface_hub import hf_hub_download
-
 from pyclad.data.concept import Concept
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
 from pyclad.data.readers.concepts_readers import read_concepts_from_df
@@ -47,6 +44,9 @@ class TabularCadDataset(ConceptsDataset):
             :meth:`available_orderings` to list the valid values.
         :param cache_dir: Directory to cache the dataset. If `None`, the default cache directory is used.
         """
+        # Imported here, not at module level: loading `datasets` is slow, and this module is imported with pyclad.data.
+        from datasets import load_dataset
+
         task_sequence = self._load_ordering(self._hf_repo, ordering, cache_dir)
 
         data = load_dataset(self._hf_repo, data_files=self._data_file, cache_dir=cache_dir)
@@ -77,6 +77,8 @@ class TabularCadDataset(ConceptsDataset):
 
     @staticmethod
     def _read_orderings(hf_repo: str, cache_dir: str) -> List[dict]:
+        from huggingface_hub import hf_hub_download
+
         path = hf_hub_download(repo_id=hf_repo, filename="orderings.json", repo_type="dataset", cache_dir=cache_dir)
         with open(path) as f:
             return json.load(f)["orderings"]

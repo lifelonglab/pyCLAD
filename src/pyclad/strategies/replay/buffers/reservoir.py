@@ -119,7 +119,7 @@ class ReservoirBuffer(InfoProvider):
         return samples.to(device), outputs.to(device), targets.to(device)
 
     def info(self) -> dict[str, Any]:
-        return {"name": "Reservoir-sampled memory bank."}
+        return {"name": "Reservoir-sampled memory bank.", **self.additional_info()}
 
     def additional_info(self) -> dict[str, Any]:
         return {

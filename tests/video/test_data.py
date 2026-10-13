@@ -235,7 +235,7 @@ def test_constructor_returns_ready_concepts_like_core_loaders(archive):
     assert [c.name for c in dataset.train_concepts()] == ["T1", "T2", "T3"]
     assert [len(c.data) for c in dataset.train_concepts()] == [4, 4, 4]
     assert len(dataset.test_concepts()[0].data) == 2
-    assert dataset.info() == {"dataset": {"name": "COMMAND-UCF-Crime", "tran_concepts_no": 3, "test_concepts_no": 1}}
+    assert dataset.info() == {"dataset": {"name": "COMMAND-UCF-Crime", "train_concepts_no": 3, "test_concepts_no": 1}}
     assert dataset.read_dataset() is dataset
 
 

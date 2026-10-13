@@ -17,3 +17,13 @@ def test_returning_correct_concepts():
 
     assert_array_equal(train_concepts, dataset.train_concepts())
     assert_array_equal(test_concepts, dataset.test_concepts())
+
+
+def test_info_reports_number_of_concepts():
+    dataset = ConceptsDataset(
+        name="test_dataset",
+        train_concepts=[Concept(name="concept1", data=[1, 2, 3]), Concept(name="concept2", data=[4, 5, 6])],
+        test_concepts=[Concept(name="concept1", data=[10, 20, 30], labels=[1, 1, 0])],
+    )
+
+    assert dataset.info() == {"dataset": {"name": "test_dataset", "train_concepts_no": 2, "test_concepts_no": 1}}

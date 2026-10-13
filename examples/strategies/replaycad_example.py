@@ -28,6 +28,8 @@ from pyclad.vision.strategies.replaycad.config import ReplayCADConfig
 from pyclad.vision.strategies.replaycad.memory import ReplayCADMemory
 from pyclad.vision.strategies.replaycad.strategy import ReplayCADStrategy
 
+RESOURCES = pathlib.Path(__file__).resolve().parents[1] / "resources"
+
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
@@ -42,7 +44,7 @@ if __name__ == "__main__":
     "Differences from the original" in docs/vision.md for how this port departs from the paper.
     """
     dataset = read_vision_dataset(
-        root=pathlib.Path("../resources/vision/mvtec_ad"),
+        root=RESOURCES / "vision/mvtec_ad",
         benchmark="mvtec",
         resize_to=(256, 256),
         data_mode="numpy",
