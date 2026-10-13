@@ -17,6 +17,8 @@ from pyclad.strategies.replay.buffers.adaptive_balanced import (
 from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
 from pyclad.strategies.replay.selection.random import RandomSelection
 
+RESOURCES = pathlib.Path(__file__).resolve().parent / "resources"
+
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
@@ -25,7 +27,7 @@ if __name__ == "__main__":
     This file is generated using the code from this repository <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
     """
     dataset = read_dataset_from_npy(
-        pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"
+        RESOURCES / "nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy", dataset_name="NSL-KDD-R"
     )
     model = IsolationForestAdapter()
     replay_buffer = AdaptiveBalancedReplayBuffer(selection_method=RandomSelection(), max_size=1000)

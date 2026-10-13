@@ -38,3 +38,12 @@ def test_returning_model_predictions(data):
     strategy = CumulativeStrategy(model)
     results = strategy.predict(np.array([[1, 1], [1, 1], [1, 1]]))
     assert_array_equal(results, data)
+
+
+def test_info_reports_buffer_size_before_and_after_learning():
+    strategy = CumulativeStrategy(MockModel())
+    assert strategy.info()["strategy"]["buffer_size"] == 0
+
+    strategy.learn(np.array([[1, 2], [3, 4]]))
+    strategy.learn(np.array([[5, 6]]))
+    assert strategy.info()["strategy"]["buffer_size"] == 3

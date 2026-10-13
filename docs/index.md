@@ -42,15 +42,7 @@ recommend [this open-access paper](https://ieeexplore.ieee.org/abstract/document
 ### How do I install pyCLAD?
 
 pyCLAD is available as a [Python package on PyPI](https://pypi.org/project/pyclad/). Therefore, it can be installed
-using tools such as pip and conda.
-
-#### Conda
-
-```
-conda install -c conda-forge pyclad
-```
-
-#### Pip
+using `pip`:
 
 ```
 pip install pyclad
@@ -58,11 +50,19 @@ pip install pyclad
 
 #### Optional dependencies
 
-Depending on the anomaly detection models you want to use, you may need to install additional packages,
-such as `tensorflow` and `pytorch`.
-We do not include them in default installation to avoid putting heavy dependencies for the core installation.
+The default installation covers the scenarios, metrics, callbacks, datasets, the baseline and replay strategies, and
+the pyOD-based models. Heavier dependencies are kept out of it and installed through extras:
+
+| Extra | Install with | Adds |
+|---|---|---|
+| `torch` | `pip install "pyclad[torch]"` | PyTorch models (autoencoders, CARLA) and the strategies that train them (EWC, LwF, DER++, A-GEM) |
+| `vision` | `pip install "pyclad[vision]"` | image anomaly detection models, datasets and pixel-level metrics (includes `torch`) |
+| `ucad` | `pip install "pyclad[ucad]"` | the UCAD model and strategy (includes `vision`) |
+| `replaycad` | `pip install "pyclad[replaycad]"` | the ReplayCAD strategy (includes `vision`) |
+| `all` | `pip install "pyclad[all]"` | everything above |
+
 pyCLAD supports the use of any model from pyOD library, some of which may require installation of additional packages (
-see [pyOD docs](https://pyod.readthedocs.io/en/latest/).
+see [pyOD docs](https://pyod.readthedocs.io/en/latest/)).
 
 ### Citing pyCLAD
 

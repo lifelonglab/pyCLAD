@@ -25,6 +25,8 @@ from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedR
 from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
 from pyclad.strategies.replay.selection.random import RandomSelection
 
+RESOURCES = pathlib.Path(__file__).resolve().parents[2] / "resources"
+
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
@@ -32,7 +34,7 @@ if __name__ == "__main__":
     This example showcases how to use the PaSTe model for continual vision anomaly detection.
     """
     dataset = read_vision_dataset(
-        root=pathlib.Path("../../resources/vision/BTech_Dataset_transformed"),
+        root=RESOURCES / "vision/BTech_Dataset_transformed",
         benchmark="btech",
         resize_to=(224, 224),
         data_mode="numpy",

@@ -22,6 +22,8 @@ from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
 from pyclad.strategies.baselines.naive import NaiveStrategy
 
+RESOURCES = pathlib.Path(__file__).resolve().parent / "resources"
+
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler()])
 
 if __name__ == "__main__":
@@ -35,7 +37,7 @@ if __name__ == "__main__":
     grouping merges *consecutive* concepts.
     """
     dataset = read_dataset_from_npy(
-        pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"
+        RESOURCES / "nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy", dataset_name="NSL-KDD-R"
     )
 
     scheduled_dataset = apply_step_schedule(dataset, schedule="3-2")

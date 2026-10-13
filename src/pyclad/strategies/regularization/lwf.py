@@ -8,6 +8,7 @@ from torch import Tensor
 from pyclad.models.torch_backbone import TorchBackbone
 from pyclad.models.training.loaders import float_tensor_loader
 from pyclad.models.training.runners.runner import TorchRunner
+from pyclad.output.prediction_results import PredictionResults
 from pyclad.strategies.strategy import (
     ConceptAgnosticStrategy,
     ConceptIncrementalStrategy,
@@ -77,7 +78,7 @@ class LwFStrategy(ConceptIncrementalStrategy, ConceptAgnosticStrategy):
             parameter.requires_grad = False
         return teacher
 
-    def predict(self, data: np.ndarray, *args, **kwargs) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, data: np.ndarray, *args, **kwargs) -> PredictionResults:
         del args, kwargs
         return self._model.predict(data)
 

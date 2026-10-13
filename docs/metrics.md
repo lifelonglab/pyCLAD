@@ -11,7 +11,7 @@ To this end, pyCLAD adopts an evaluation protocol that considers the performance
 The matrix $R$ can be used to directly compute continual learning metrics.
 
 ### Supported metrics
-pyCLAD supports three main metrics:
+pyCLAD supports the following main metrics:
 
 - **Continual Average** (CA): It assesses models' performance on all concepts after learning every new concept, instead of models' performance on just a single concept. 
 It is general, since it operates on the matrix $R$ and it can support any target metric of choice, such as F1-Score and ROC-AUC[^1]. It is defined as: 
@@ -31,7 +31,17 @@ $\text{FWT} = \frac{\sum_{i<j}^{N} R_{i, j}}{\frac{N(N-1)}{2}}$
 
 [^3]: It can also be thought of as the zero-shot model performance on future concepts since it assesses model performance on unseen concepts. It partially depends on concept similarity (task similarity) and the model's knowledge transfer ability.
 
-`ForgettingMeasureStrict` is the single-value form of the measure above, used by the [Continual-MEGA](vision.md#continual-mega) benchmark: it drops the column of the last learned concept, since that concept has had no chance to be forgotten. On a square matrix it agrees with `ScheduleAwareForgettingMeasure` below, to which it delegates; `ForgettingMeasure` differs in being a `StepwiseConceptMetric` that reports forgetting after each concept.
+- **Forgetting Measure** (FM): Measures how much performance on previously learned concepts has dropped from its best. It is a stepwise metric, reported after each learned concept $k$ (pass it as `stepwise_metrics`). The forgetting of an earlier concept $j < k$ is the gap between the best performance observed on it at any earlier step and its current performance, averaged over the earlier concepts:
+
+$f_{j,k} = \max_{i < k} R_{i,j} - R_{k,j}, \qquad \text{FM}_k = \frac{1}{k-1}\sum_{j=1}^{k-1} f_{j,k}$
+
+The concept just learned is not included, since it has had no chance to be forgotten; $\text{FM}_1 = 0$. Higher means more forgetting, and negative values mean earlier concepts improved.
+
+- **Final Step Forgetting Measure**: The same idea as a single value for the whole scenario, measured after the last concept $N$. It is the figure used by the [Continual-MEGA](vision.md#continual-mega) benchmark:
+
+$\text{FM} = \frac{1}{N-1}\sum_{j=1}^{N-1} \Big( \max_{i \in [j,\, N-1]} R_{i,j} - R_{N,j} \Big)$
+
+Besides reporting one value instead of one per step, it searches for the best performance only from the step at which the concept was learned ($i \ge j$), so a score the model had on a concept *before* training on it never counts as something to forget. The two agree at the last step unless a concept scored higher before it was learned than after. On a square matrix it equals `ScheduleAwareForgettingMeasure` below, to which it delegates.
 
 
 

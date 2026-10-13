@@ -16,8 +16,7 @@ classes.
 
 ### Installation
 
-pyCLAD is provided as a Pyton package available in `pypi`. Therefore, you can install it as a package using tools such
-as pip and conda, for example:
+pyCLAD is provided as a Python package available in `pypi`. Therefore, you can install it as a package using `pip`:
 
 `pip install pyclad`.
 
@@ -25,11 +24,19 @@ Moreover, the source code is available in [the GitHub repository](https://github
 
 #### Optional dependencies
 
-Depending on the anomaly detection models you want to use, you may need to install additional packages,
-such as `tensorflow` and `pytorch`.
-We do not include them in default installation to avoid putting heavy dependencies for the core installation.
+The default installation covers the scenarios, metrics, callbacks, datasets, the baseline and replay strategies, and
+the pyOD-based models. Heavier dependencies are kept out of it and installed through extras:
+
+| Extra | Install with | Adds |
+|---|---|---|
+| `torch` | `pip install "pyclad[torch]"` | PyTorch models (autoencoders, CARLA) and the strategies that train them (EWC, LwF, DER++, A-GEM) |
+| `vision` | `pip install "pyclad[vision]"` | image anomaly detection models, datasets and pixel-level metrics (includes `torch`) |
+| `ucad` | `pip install "pyclad[ucad]"` | the UCAD model and strategy (includes `vision`) |
+| `replaycad` | `pip install "pyclad[replaycad]"` | the ReplayCAD strategy (includes `vision`) |
+| `all` | `pip install "pyclad[all]"` | everything above |
+
 pyCLAD supports the use of any model from pyOD library, some of which may require installation of additional packages (
-see [pyOD docs](https://pyod.readthedocs.io/en/latest/).
+see [pyOD docs](https://pyod.readthedocs.io/en/latest/)).
 
 ### Getting started
 
@@ -57,6 +64,18 @@ pyCLAD is built upon a few core concepts:
 ### Quick example
 
 ```python
+import pathlib
+
+import numpy as np
+
+from pyclad.callbacks import ConceptMetricCallback, TimeEvaluationCallback
+from pyclad.data import Concept, ConceptsDataset
+from pyclad.metrics import BackwardTransfer, ContinualAverage, ForwardTransfer, RocAuc
+from pyclad.models.adapters.pyod_adapters import OneClassSVMAdapter
+from pyclad.output.json_writer import JsonOutputWriter
+from pyclad.scenarios import ConceptAgnosticScenario
+from pyclad.strategies.baselines.cumulative import CumulativeStrategy
+
 # Prepare random data for 3 concepts
 concept1_train = Concept("concept1", data=np.random.rand(100, 10))
 concept1_test = Concept("concept1", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
@@ -79,7 +98,7 @@ strategy = CumulativeStrategy(model)
 callbacks = [
     ConceptMetricCallback(
         base_metric=RocAuc(),
-        metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
+        summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
     ),
     TimeEvaluationCallback(),
 ]

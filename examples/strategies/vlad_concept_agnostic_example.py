@@ -18,6 +18,8 @@ from pyclad.scenarios.concept_agnostic import ConceptAgnosticScenario
 from pyclad.strategies.vlad.memory.hierarchical_memory import VladMemory
 from pyclad.strategies.vlad.vlad_strategy import VladConceptAgnosticStrategy
 
+RESOURCES = pathlib.Path(__file__).resolve().parents[1] / "resources"
+
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
@@ -26,7 +28,7 @@ if __name__ == "__main__":
     WassersteinChangePointDetector discovers them online (this is VLAD as published).
     """
     dataset = read_dataset_from_npy(
-        pathlib.Path("resources/nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy"), dataset_name="NSL-KDD-R"
+        RESOURCES / "nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy", dataset_name="NSL-KDD-R"
     )
     dataset_input_features = 41
     hidden_dim = 8
