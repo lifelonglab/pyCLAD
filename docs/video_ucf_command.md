@@ -1,7 +1,7 @@
 # UCF-Crime and COMMAND
 
 `pyclad.video` implements a clean-room COMMAND recreation using precomputed
-RGB/flow features. It uses the same `Model`, `ConceptsDataset`,
+RGB/flow features. It uses the same `TorchBackbone`, `ConceptsDataset`,
 `ConceptIncrementalScenario`, `BaseMetric`, and output-writer contracts as
 other pyCLAD modalities.
 
@@ -12,16 +12,20 @@ as `pyclad.vision`:
 
 - `data/command_ucf_crime.py` contains the dataset and archive reader;
   `data/video_bag_concept.py` and `data/sample.py` hold the video data contracts.
-- `models/command/config.py` holds architecture, loss, and training settings;
-  `architecture.py` holds the neural networks; `command.py` holds the model,
-  composite loss, and complete-bag training/replay implementation.
-- `strategies/cont_train.py` connects the model to the core scenario.
+- `models/command/config.py` holds architecture, loss, and model settings;
+  `architecture.py` holds the neural networks; `loss.py` holds the supervised
+  base objective; `command.py` holds the backbone and prediction calibration.
+- `strategies/cont_train.py` owns ContTrain++ training and resumable state;
+  `strategies/config.py` holds its policy settings and
+  `strategies/buffers/cont_train.py` holds complete-bag replay.
 - `callbacks/video_frame_metric_callback.py` handles frame evaluation, using
   `metrics/frame_score_utils.py` and the individual frame metric modules.
 - `prediction_results.py` holds the modality-specific prediction result.
 
 Import `CommandModel` from `pyclad.video.models.command.command` and its
-configuration classes from `pyclad.video.models.command.config`.
+configuration classes from `pyclad.video.models.command.config`. Import
+`ContTrainPlusPlusStrategy` from `pyclad.video.strategies.cont_train` and
+`ContTrainPlusPlusConfig` from `pyclad.video.strategies.config`.
 
 ## Run the example
 
@@ -48,16 +52,16 @@ To require a previously downloaded Hugging Face cache, use:
 dataset = CommandUcfCrimeDataset(local_files_only=True)
 ```
 
-The script sets 20 epochs per task; `CommandTrainerConfig` defaults to 100.
-It selects CUDA when available, then MPS, then CPU. Edit `epochs` and `device`
-in the script to choose other settings.
+The script sets 20 epochs per task; `ContTrainPlusPlusConfig` defaults to 100.
+It selects CUDA when available, then MPS, then CPU. Edit `epochs` in the strategy
+configuration and `device` in the model configuration to choose other settings.
 
 Results are written to `output.json` in the working directory, including
 video-level and frame-level ROC-AUC/AP matrices, final-step averages, timing,
-and run metadata. To save a model checkpoint, add this after `scenario.run()`:
+and run metadata. To save a resumable training checkpoint, add this after `scenario.run()`:
 
 ```python
-model.save_checkpoint(pathlib.Path("command-results.pt"))
+strategy.save_checkpoint(pathlib.Path("command-results.pt"))
 ```
 
 A local archive must have this layout:
@@ -95,29 +99,44 @@ rows. `read_dataset(max_videos_per_class=1)` limits training for smoke runs;
 the complete test split stays fixed after every task.
 
 `VideoBagConcept` keeps each video as one object-array row. Its frame labels
-remain outside the feature tensors. `CommandModel.fit()` performs ContTrain++
-training, retaining optimizer state and complete-bag replay across tasks;
-`ContTrainPlusPlusStrategy` connects it to the core scenario. Prediction
+remain outside the feature tensors. `CommandModel` is a `TorchBackbone`: it
+owns the network, supervised loss, optimizer factory, prediction calibration,
+and inference. It does not own replay, a training loop, or task history.
+`ContTrainPlusPlusStrategy.learn()` performs continual training, retaining its
+optimizer state and complete-bag replay across tasks. Prediction
 returns bag maxima plus window scores. `VideoFrameMetricCallback` expands
 those scores to frames and reuses the core metric-matrix reporting, rejecting
 predictions that leave any video's frames uncovered. Checkpoints are saved
-explicitly through `model.save_checkpoint(path)`. Load them with
-`model.load_checkpoint(path)` using the same configuration; the destination
-`device` may differ. New checkpoints restore CPU and CUDA random-generator state
-for dropout continuation on the same backend. Loading restores those process-wide
+explicitly through `strategy.save_checkpoint(path)`. Load them with
+`strategy.load_checkpoint(path)` using the same model and strategy configurations;
+the destination model `device` may differ. New checkpoints restore CPU, CUDA,
+and MPS random-generator state for dropout continuation on the same backend.
+Loading restores those process-wide
 RNG states; identical results across devices are not guaranteed. Older checkpoints
-remain loadable but cannot restore Torch RNG state that was never saved.
+remain loadable through the strategy but cannot restore RNG state that was never saved.
 Checkpoints using the older distance calculation recalibrate from retained
 normal bags. If no normal bags remain, an automatic threshold requires fitting
 normal bags again; an explicitly configured raw threshold remains usable.
 
-The configured seed controls network initialization and training-bag order.
+The model seed controls network initialization; the strategy seed controls
+training-bag order.
 As with the vision models, constructing a network seeds the process-wide Torch
 generator. Passing a prebuilt network preserves its existing weights.
 
-The weakly supervised COMMAND objective and replay operate on complete temporal
-bags. Existing tabular strategies such as A-GEM, EWC, and LwF are unchanged;
-they are not adapters for this bag-based model.
+The COMMAND base objective requires features and one weak label per video:
+`model.compute_loss(features, weak_labels)` returns a differentiable scalar.
+`model.forward(features)` returns raw snippet scores; `get_module()` and
+`get_optimizer()` expose the standard backbone interfaces. ContTrain++ consumes
+complete temporal bags and supplies their labels. Existing tabular strategies
+such as A-GEM, EWC, and LwF use unlabelled row loaders and are not adapters for
+this supervised bag input. They are unchanged.
+
+`CommandConfig` owns architecture, loss, optimizer-factory rates, seed/device,
+and scoring controls. `ContTrainPlusPlusConfig` owns epochs, batch/replay sizes,
+scheduling, novelty replacement, and shuffle seed. Model metadata reports model
+and calibration settings; strategy metadata reports training settings and history.
+The former combined `CommandTrainerConfig` and model-owned training/checkpoint
+methods are replaced by these separate interfaces.
 
 The example composes the public classes directly; no video-specific CLI or
 experiment runner is required. Use `JsonOutputWriter` to serialize the model,
@@ -151,6 +170,6 @@ while optimizer and replay state persist.
 The paper leaves temporal block count, CBAM settings, state/projection widths,
 dropout, differentiated memory rates, novelty threshold, and exact replacement
 rules incompletely specified. `CommandArchitectureConfig`, `CommandLossConfig`,
-and `CommandTrainerConfig` expose these assumptions; model metadata and
-checkpoints retain their values. Tests establish implementation behavior,
-not agreement with published benchmark numbers.
+`CommandConfig`, and `ContTrainPlusPlusConfig` expose these assumptions; model
+and strategy metadata and checkpoints retain their values. Tests establish
+implementation behavior, not agreement with published benchmark numbers.

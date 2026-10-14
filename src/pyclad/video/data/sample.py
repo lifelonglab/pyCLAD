@@ -1,7 +1,7 @@
 """Complete video bags and their temporal annotation coordinates."""
 
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Sequence, Tuple
 
 import numpy as np
 
@@ -43,3 +43,11 @@ class VideoBag:
             raise ValueError("windows and bag features must have the same temporal length")
         object.__setattr__(self, "features", features)
         object.__setattr__(self, "windows", tuple(self.windows))
+
+
+def as_video_bags(data: np.ndarray | Sequence[VideoBag]) -> Tuple[VideoBag, ...]:
+    """Validate the object-array rows shared by video models and strategies."""
+    values = np.asarray(data, dtype=object)
+    if values.ndim != 1 or any(not isinstance(bag, VideoBag) for bag in values):
+        raise ValueError("COMMAND requires a one-dimensional array of VideoBag objects")
+    return tuple(values)

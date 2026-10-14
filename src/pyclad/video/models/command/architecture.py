@@ -296,18 +296,22 @@ class MemDualNet(nn.Module):
         # MPS lacks the direct cdist backward. Direct norms have its zero
         # subgradient, and checkpointing recomputes each chunk instead of
         # retaining the full (batch * time, slots, feature_dim) difference.
-        def direct_norm(chunk: Tensor, bank: Tensor) -> Tensor:
-            return torch.linalg.vector_norm(chunk.unsqueeze(-2) - bank, dim=-1)
-
         flattened = features.reshape(-1, features.shape[-1])
         chunk_size = max(1, (64 * 1024 * 1024) // (memory.numel() * features.element_size()))
         distances = []
         for chunk in flattened.split(chunk_size):
             if torch.is_grad_enabled() and (chunk.requires_grad or memory.requires_grad):
-                distances.append(checkpoint(direct_norm, chunk, memory, use_reentrant=False, preserve_rng_state=False))
+                distances.append(
+                    checkpoint(MemDualNet._direct_norm, chunk, memory, use_reentrant=False, preserve_rng_state=False)
+                )
             else:
-                distances.append(direct_norm(chunk, memory))
+                distances.append(MemDualNet._direct_norm(chunk, memory))
         return torch.cat(distances, dim=0).reshape(*features.shape[:-1], memory.shape[0])
+
+    @staticmethod
+    def _direct_norm(chunk: Tensor, bank: Tensor) -> Tensor:
+        """Compute exact Euclidean distances for one bounded feature chunk."""
+        return torch.linalg.vector_norm(chunk.unsqueeze(-2) - bank, dim=-1)
 
     @torch.no_grad()
     def least_accessed_slot(self, bank: Literal["primary", "secondary"], *, exclude_slots: tuple[int, ...] = ()) -> int:

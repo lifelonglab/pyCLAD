@@ -13,8 +13,10 @@ from pyclad.video.data.command_ucf_crime import (
 from pyclad.video.models.command.command import CommandModel
 from pyclad.video.models.command.config import (
     CommandArchitectureConfig,
-    CommandTrainerConfig,
+    CommandConfig,
 )
+from pyclad.video.strategies.config import ContTrainPlusPlusConfig
+from pyclad.video.strategies.cont_train import ContTrainPlusPlusStrategy
 
 
 @pytest.fixture
@@ -41,7 +43,7 @@ def test_three_tasks_use_core_model_scenario_metrics_and_writer(archive):
         ConceptMetricCallback,
     )
     from pyclad.metrics.base.roc_auc import RocAuc
-    from pyclad.models.model import Model
+    from pyclad.models.torch_backbone import TorchBackbone
     from pyclad.output.json_writer import JsonOutputWriter
     from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
     from pyclad.video.callbacks.video_frame_metric_callback import (
@@ -55,22 +57,21 @@ def test_three_tasks_use_core_model_scenario_metrics_and_writer(archive):
     architecture = CommandArchitectureConfig(
         hidden_dim=8, state_dim=3, mamba_blocks=1, memory_size=5, projection_dim=6, dropout=0.0
     )
-    config = CommandTrainerConfig(
-        architecture=architecture, epochs=1, batch_size=4, replay_batch_size=2, buffer_size=6, device="cpu"
-    )
+    config = CommandConfig(architecture=architecture, device="cpu")
+    strategy_config = ContTrainPlusPlusConfig(epochs=1, batch_size=4, replay_batch_size=2, buffer_size=6)
     model = CommandModel(config=config)
-    assert isinstance(model, Model)
+    assert isinstance(model, TorchBackbone)
     dataset = CommandUcfCrimeDataset(archive)
     assert [c.name for c in dataset.train_concepts()] == ["T1", "T2", "T3"]
     assert [len(c.data) for c in dataset.train_concepts()] == [8, 8, 10]
-    strategy = ContTrainPlusPlusStrategy(model)
+    strategy = ContTrainPlusPlusStrategy(model, config=strategy_config)
     callbacks = [
         VideoFrameMetricCallback(FrameRocAuc()),
         VideoFrameMetricCallback(FrameAveragePrecision()),
         ConceptMetricCallback(RocAuc(), []),
     ]
     ConceptIncrementalScenario(dataset, strategy, callbacks).run()
-    assert len(model.replay) == 6
+    assert len(strategy.replay) == 6
     for callback in callbacks:
         info = next(iter(callback.info().values()))
         assert list(info["metric_matrix"]) == ["T1", "T2", "T3"]
@@ -80,14 +81,15 @@ def test_three_tasks_use_core_model_scenario_metrics_and_writer(archive):
     saved = json.loads(output.read_text())
     assert saved["model"]["name"] == "COMMAND"
     assert saved["concept_metric_callback_Frame-AP"]["test_order"] == ["test"]
-    model.save_checkpoint(archive / "model.pt")
+    strategy.save_checkpoint(archive / "strategy.pt")
     restored = CommandModel(config=config)
-    restored.load_checkpoint(archive / "model.pt")
+    restored_strategy = ContTrainPlusPlusStrategy(restored, config=strategy_config)
+    restored_strategy.load_checkpoint(archive / "strategy.pt")
     test_data = dataset.test_concepts()[0].data
     for training in (True, False):
-        model.model.train(training)
+        model.get_module().train(training)
         prediction = model.predict(test_data)
-        assert model.model.training is training
+        assert model.get_module().training is training
         np.testing.assert_array_equal(prediction.window_scores, restored.predict(test_data).window_scores)
 
 
@@ -100,27 +102,35 @@ def test_example_runs_core_callbacks_and_writes_summaries(archive, monkeypatch):
 
     from pyclad.video.data import command_ucf_crime
     from pyclad.video.models.command import config
+    from pyclad.video.strategies import config as strategy_config
     from tests.video.test_data import write_feature_zip
 
-    trainer_config = config.CommandTrainerConfig
+    model_config = config.CommandConfig
+    trainer_config = strategy_config.ContTrainPlusPlusConfig
+
+    def small_model_config(**kwargs):
+        return replace(
+            model_config(**kwargs),
+            architecture=CommandArchitectureConfig(
+                hidden_dim=8, state_dim=3, mamba_blocks=1, memory_size=5, projection_dim=6, dropout=0.0
+            ),
+            device="cpu",
+        )
 
     def small_config(**kwargs):
         return replace(
             trainer_config(**kwargs),
-            architecture=CommandArchitectureConfig(
-                hidden_dim=8, state_dim=3, mamba_blocks=1, memory_size=5, projection_dim=6, dropout=0.0
-            ),
             epochs=1,
             batch_size=4,
             replay_batch_size=2,
             buffer_size=6,
-            device="cpu",
         )
 
     example = Path(__file__).resolve().parents[2] / "examples/models/video/command_example.py"
     feature_zip = write_feature_zip(archive, archive / "snapshot/ucf-crime-rgb-flow.zip")
     monkeypatch.setattr(command_ucf_crime, "hf_hub_download", lambda **kwargs: str(feature_zip))
-    monkeypatch.setattr(config, "CommandTrainerConfig", small_config)
+    monkeypatch.setattr(config, "CommandConfig", small_model_config)
+    monkeypatch.setattr(strategy_config, "ContTrainPlusPlusConfig", small_config)
     monkeypatch.setattr(sys, "argv", [str(example)])
     monkeypatch.chdir(archive)
     runpy.run_path(str(example), run_name="__main__")
@@ -136,8 +146,9 @@ def test_example_runs_core_callbacks_and_writes_summaries(archive, monkeypatch):
     timing = saved["time_evaluation_callback"]
     assert timing["train_time_total"] > 0 and timing["eval_time_total"] > 0
     assert all(timing["time_by_concept"][task]["train_time"] > 0 for task in ("T1", "T2", "T3"))
-    assert saved["model"]["global_epochs"] == 3
-    assert saved["model"]["buffer_bags"] == 6
+    assert saved["strategy"]["global_epochs"] == 3
+    assert saved["strategy"]["buffer_bags"] == 6
+    assert "training" not in saved["model"]
 
 
 def test_duplicate_training_rows_keep_distinct_bags(archive):
@@ -168,10 +179,9 @@ def test_reader_rejects_invalid_archive(archive, fault):
 
 def test_training_rejects_mixed_tasks_and_row_matrices(archive):
     dataset = CommandUcfCrimeDataset(archive).read_dataset()
-    model = CommandModel(
-        config=CommandTrainerConfig(architecture=CommandArchitectureConfig(hidden_dim=8, memory_size=5), epochs=1)
-    )
+    model = CommandModel(config=CommandConfig(architecture=CommandArchitectureConfig(hidden_dim=8, memory_size=5)))
+    strategy = ContTrainPlusPlusStrategy(model, config=ContTrainPlusPlusConfig(epochs=1))
     with pytest.raises(ValueError, match="exactly one task"):
-        model.fit(np.concatenate([c.data for c in dataset.train_concepts()]))
+        strategy.learn(np.concatenate([c.data for c in dataset.train_concepts()]))
     with pytest.raises(ValueError, match="VideoBag"):
-        model.fit(np.zeros((3, 2048)))
+        strategy.learn(np.zeros((3, 2048)))
