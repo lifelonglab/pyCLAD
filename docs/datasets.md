@@ -6,6 +6,9 @@ As for now, pyCLAD supports continual anomaly detection datasets built as a sequ
 
 A **Concept** is described by a *name*, *data*, and *labels*.
 
+Labels follow one convention across pyCLAD: `0` marks a normal sample and `1` an anomaly. Predictions use the
+same convention, and anomaly scores are higher for more anomalous samples.
+
 ### Built-in Datasets
 
 There are multiple datasets already available in the pyCLAD library. They are stored
