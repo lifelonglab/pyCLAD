@@ -74,11 +74,14 @@ replaycad = [
     "segment-anything>=1.0",
 ]
 all = ["pyclad[torch,vision,ucad,replaycad]"]
+# Capped at the major version, because a new black major (each January) restyles code and would fail CI on its own.
+lint = [
+    "black>=26.1,<27",
+    "flake8>=7.1.0,<8",
+    "isort>=8.0,<10",
+]
 dev = [
-    "pyclad[vision]",
-    "black>=24.4",
-    "flake8>=7.1.0",
-    "isort>=5.13.0",
+    "pyclad[vision,lint]",
     "pytest>=8.2.2",
 ]
 
