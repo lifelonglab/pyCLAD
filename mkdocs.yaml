@@ -18,6 +18,7 @@ nav:
     - Scenarios: 'scenarios.md'
     - Strategies: 'strategies.md'
     - Vision: 'vision.md'
+  - Video anomaly detection: 'video_ucf_command.md'
   - How to contribute?: 'contribution.md'
 plugins:
   - search

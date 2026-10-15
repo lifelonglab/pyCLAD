@@ -1,0 +1,1 @@
+"""COMMAND video anomaly detection."""

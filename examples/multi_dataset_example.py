@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     To define your own stream instead, build a MultiDatasetSpec out of DatasetBlocks and pass
     it to read_multi_dataset(); a spec round-trips through JSON, so a stream is reproducible
-    from a file. See docs/datasets.md.
+    from a file.
     """
     print("InCLAD-MD concepts:", len(INCLAD_MD_SPEC.category_order()))
     print("Stream:", INCLAD_MD_SPEC.category_order())

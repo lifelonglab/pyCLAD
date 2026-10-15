@@ -38,6 +38,12 @@ the pyOD-based models. Heavier dependencies are kept out of it and installed thr
 pyCLAD supports the use of any model from pyOD library, some of which may require installation of additional packages (
 see [pyOD docs](https://pyod.readthedocs.io/en/latest/)).
 
+#### Video anomaly detection
+
+From a source checkout, install `pip install -e '.[video]'` for the UCF-Crime COMMAND recreation.
+See the [video guide](docs/video_ucf_command.md) and
+[example](examples/models/video/command_example.py) for the 4/4/5 workflow.
+
 ### Getting started
 
 There are a few valuable resources supporting getting started with pyCLAD:
