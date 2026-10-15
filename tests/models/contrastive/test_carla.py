@@ -10,7 +10,6 @@ import pytest
 from pyclad.models.backbones.resnet import ResNet1D, ResNetBlockConfig
 from pyclad.models.contrastive.carla import Carla
 
-
 _WINDOW_SIZE = 20
 _NUM_FEATURES = 3
 _N_WINDOWS = 32
@@ -20,15 +19,8 @@ _N_WINDOWS = 32
 def windows() -> np.ndarray:
     rng = np.random.default_rng(0)
     t = np.linspace(0, 2 * np.pi, _WINDOW_SIZE, dtype=np.float32)
-    base = np.sin(t)[None, :, None] * np.ones(
-        (_N_WINDOWS, _WINDOW_SIZE, _NUM_FEATURES), dtype=np.float32
-    )
-    noise = (
-        rng.standard_normal((_N_WINDOWS, _WINDOW_SIZE, _NUM_FEATURES)).astype(
-            np.float32
-        )
-        * 0.05
-    )
+    base = np.sin(t)[None, :, None] * np.ones((_N_WINDOWS, _WINDOW_SIZE, _NUM_FEATURES), dtype=np.float32)
+    noise = rng.standard_normal((_N_WINDOWS, _WINDOW_SIZE, _NUM_FEATURES)).astype(np.float32) * 0.05
     return base + noise
 
 
@@ -71,9 +63,7 @@ def test_predict_labels_are_binary(trained_model: Carla, windows: np.ndarray) ->
     assert set(np.unique(result.y_pred)).issubset({0, 1})
 
 
-def test_predict_scores_are_finite_probabilities(
-    trained_model: Carla, windows: np.ndarray
-) -> None:
+def test_predict_scores_are_finite_probabilities(trained_model: Carla, windows: np.ndarray) -> None:
     result = trained_model.predict(windows)
     assert np.all(np.isfinite(result.anomaly_scores))
     assert np.all(result.anomaly_scores >= 0.0)

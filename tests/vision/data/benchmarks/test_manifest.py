@@ -2,7 +2,6 @@ import csv
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
 
 from pyclad.vision.data.benchmarks.manifest import (
     VISION_BENCHMARK_MANIFEST_FIELDNAMES,
@@ -14,9 +13,8 @@ from pyclad.vision.data.benchmarks.manifest import (
     read_vision_benchmark_manifest_dataset,
     write_vision_benchmark_manifest,
 )
-
-
-from tests.vision._helpers import write_mask as _write_helper_mask, write_rgb_image as _write_helper_rgb
+from tests.vision._helpers import write_mask as _write_helper_mask
+from tests.vision._helpers import write_rgb_image as _write_helper_rgb
 
 
 def _write_rgb_image(path: Path, color: tuple[int, int, int]):

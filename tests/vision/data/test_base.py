@@ -5,7 +5,8 @@ import pytest
 
 from pyclad.vision.data.base import VisionSample, build_concepts_dataset_from_samples
 from pyclad.vision.data.vision_concept import VisionConcept
-from tests.vision._helpers import write_mask as _write_mask, write_rgb_image as _write_rgb_image
+from tests.vision._helpers import write_mask as _write_mask
+from tests.vision._helpers import write_rgb_image as _write_rgb_image
 
 
 def test_vision_concept_rejects_masks_misaligned_with_data():

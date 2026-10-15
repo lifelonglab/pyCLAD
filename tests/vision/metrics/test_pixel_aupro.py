@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pyclad.vision.metrics.pixel_aupro import PixelAUPRO, _compute_pro_fpr_curve, _integrate_pro_curve
+from pyclad.vision.metrics.pixel_aupro import PixelAUPRO, _compute_pro_fpr_curve
 
 
 def test_aupro_perfect_localization():

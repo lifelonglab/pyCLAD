@@ -9,7 +9,8 @@ from pyclad.vision.data.readers.vision_reader import (
     index_vision_dataset,
     read_vision_dataset,
 )
-from tests.vision._helpers import write_rgb_image as _write_rgb_image, write_mask as _write_mask
+from tests.vision._helpers import write_mask as _write_mask
+from tests.vision._helpers import write_rgb_image as _write_rgb_image
 
 
 def test_build_vision_reader_dispatches_to_generic_reader_with_auto_layout(tmp_path: Path):
@@ -25,8 +26,7 @@ def test_build_vision_reader_dispatches_to_generic_reader_with_auto_layout(tmp_p
     samples = index_vision_dataset(root=tmp_path, name="mydata")
     assert len(samples) == 3
     assert any(
-        sample.mask_path == tmp_path / "bottle" / "ground_truth" / "crack" / "011_mask.png"
-        for sample in samples
+        sample.mask_path == tmp_path / "bottle" / "ground_truth" / "crack" / "011_mask.png" for sample in samples
     )
 
     dataset = read_vision_dataset(root=tmp_path, name="mydata", data_mode="paths")

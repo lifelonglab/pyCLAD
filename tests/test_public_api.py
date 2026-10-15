@@ -25,14 +25,10 @@ def test_every_exported_name_is_importable(package_name):
 
 def test_short_imports_name_the_same_objects_as_the_full_paths():
     from pyclad.callbacks import ConceptMetricCallback
-    from pyclad.callbacks.evaluation.concept_metric_evaluation import (
-        ConceptMetricCallback as FullPathCallback,
-    )
+    from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback as FullPathCallback
     from pyclad.data import ConceptsDataset
     from pyclad.data.datasets import ConceptsDataset as DatasetsConceptsDataset
-    from pyclad.data.datasets.concepts_dataset import (
-        ConceptsDataset as FullPathConceptsDataset,
-    )
+    from pyclad.data.datasets.concepts_dataset import ConceptsDataset as FullPathConceptsDataset
 
     assert ConceptMetricCallback is FullPathCallback
     assert ConceptsDataset is DatasetsConceptsDataset is FullPathConceptsDataset

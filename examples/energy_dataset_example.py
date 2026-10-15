@@ -7,18 +7,14 @@ from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricC
 from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.datasets.energy_plants_dataset import EnergyPlantsDataset
-from pyclad.data.timeseries import convert_dataset_to_overlapping_windows
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
-from pyclad.models.adapters.pyod_adapters import LocalOutlierFactorAdapter
-from pyclad.models.adapters.temporal_adapter import FlattenTimeSeriesAdapter
 from pyclad.models.autoencoder.autoencoder import Autoencoder
 from pyclad.models.training.runners.standard import StandardRunner
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
-from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 from pyclad.strategies.regularization.ewc import EWCStrategy
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
