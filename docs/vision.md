@@ -214,6 +214,12 @@ callbacks = [
 ]
 ```
 
+A metric can be undefined for a category: pixel-level metrics, for example, cannot be computed when a category's
+test masks hold no anomalous pixel. By default a metric callback stops the run when that happens. The vision
+example scripts pass `on_undefined="warn"` to every metric callback instead, so the category is logged, listed
+under `undefined_concepts` in the output and left out of the continual metrics. See
+[Undefined values](metrics.md#undefined-values).
+
 ## PatchCore
 
 PatchCore is a memory-bank detector: a frozen, pretrained backbone extracts mid-level patch

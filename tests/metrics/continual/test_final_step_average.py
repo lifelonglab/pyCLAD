@@ -16,11 +16,11 @@ parameters = [
 
 
 def test_empty_matrix():
-    assert FinalStepAverage().compute([]) == 0.0
+    assert np.isnan(FinalStepAverage().compute([]))
 
 
 def test_matrix_without_columns():
-    assert FinalStepAverage().compute([[]]) == 0.0
+    assert np.isnan(FinalStepAverage().compute([[]]))
 
 
 def test_name():
@@ -32,5 +32,9 @@ def test_averaging_the_final_row(matrix, expected):
     assert FinalStepAverage().compute(matrix) == pytest.approx(expected)
 
 
-def test_ignoring_nan_entries():
-    assert FinalStepAverage().compute([[0.1, 0.2], [0.4, np.nan]]) == pytest.approx(0.4)
+def test_nan_in_the_final_row_makes_the_result_nan():
+    assert np.isnan(FinalStepAverage().compute([[0.1, 0.2], [0.4, np.nan]]))
+
+
+def test_nan_in_an_earlier_row_is_irrelevant():
+    assert FinalStepAverage().compute([[np.nan, 0.2], [0.4, 0.6]]) == pytest.approx(0.5)

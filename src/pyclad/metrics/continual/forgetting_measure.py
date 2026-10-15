@@ -3,6 +3,7 @@ import numpy as np
 from pyclad.metrics.continual.concepts_metric import (
     ConceptLevelMatrix,
     StepwiseConceptMetric,
+    mean_or_nan,
     validate_square_matrix,
 )
 
@@ -18,6 +19,8 @@ class ForgettingMeasure(StepwiseConceptMetric):
     The concept just learned is not included: it has had no chance to be forgotten, and its "earlier" performance
     was measured before the model was trained on it. Nothing can be forgotten after the first concept, so the
     first value is always 0.
+
+    A step reports ``NaN`` when any value it reads is ``NaN`` (the base metric was undefined there).
 
     FM is between [-1, 1], where a higher value indicates more forgetting, while values below 0 indicate improvement in
     performance on previously learned concepts after learning new ones.
@@ -46,10 +49,11 @@ class ForgettingMeasure(StepwiseConceptMetric):
                 continue
             forgetting_after_learning_task = []
             for evaluated_task in range(learned_task):
-                previous_max = max(metric_matrix[t][evaluated_task] for t in range(learned_task))
+                # np.max, unlike the builtin, returns NaN whenever one of the values is NaN.
+                previous_max = np.max([metric_matrix[t][evaluated_task] for t in range(learned_task)])
                 current_value = metric_matrix[learned_task][evaluated_task]
                 forgetting_after_learning_task.append(previous_max - current_value)
-            results.append(float(np.mean(forgetting_after_learning_task)))
+            results.append(mean_or_nan(forgetting_after_learning_task))
 
         return results
 

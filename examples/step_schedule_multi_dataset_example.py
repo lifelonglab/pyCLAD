@@ -109,12 +109,14 @@ if __name__ == "__main__":
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
             first_seen_step=first_seen_step,
+            on_undefined="propagate",
         ),
         ScheduleAwareConceptMetricCallback(
             base_metric=AveragePrecision(),
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
             first_seen_step=first_seen_step,
+            on_undefined="propagate",
         ),
         # Pixel-level
         ScheduleAwareVisionPixelConceptMetricCallback(
@@ -122,12 +124,14 @@ if __name__ == "__main__":
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
             first_seen_step=first_seen_step,
+            on_undefined="propagate",
         ),
         ScheduleAwareVisionPixelConceptMetricCallback(
             base_metric=PixelAUPRO(),
             summarized_metrics=summarized_metrics,
             schedule_aware_metrics=schedule_aware_metrics,
             first_seen_step=first_seen_step,
+            on_undefined="propagate",
         ),
         TimeEvaluationCallback(),
     ]

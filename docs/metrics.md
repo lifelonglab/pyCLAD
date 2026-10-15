@@ -46,6 +46,36 @@ Besides reporting one value instead of one per step, it searches for the best pe
 
 
 
+### Undefined values
+
+A base metric cannot always be computed: ROC-AUC and average precision are undefined for a test concept that
+holds a single class. pyCLAD applies one rule to every metric:
+
+- A base metric that cannot be computed returns `NaN` for that cell of $R$.
+- Continual metrics leave `NaN` cells out, so a value is computed over the concepts where the base metric is
+  defined, instead of one undefined concept turning the whole summary into `NaN`.
+- A metric with nothing left to compute is itself `NaN`, never 0, which would read as a real score. This covers
+  an empty matrix and cases with nothing to measure, such as backward or forward transfer in a single-concept
+  scenario. The one exception is the first value of the stepwise Forgetting Measure, which is 0 by convention.
+
+Because an undefined concept shrinks what a reported value covers, the metric callbacks do not let it pass
+unnoticed. Their `on_undefined` argument selects what happens when the base metric returns `NaN` for a concept:
+
+- `"raise"` (the default) stops the run with `UndefinedMetricError`, naming the metric and the concept. This
+  happens at the first evaluation of that concept, so it surfaces early.
+- `"warn"` logs a warning naming the concept, lists it under `undefined_concepts` in the callback's output, and
+  lets the continual metrics leave it out as described above.
+
+```python
+callback = ConceptMetricCallback(
+    base_metric=RocAuc(),
+    summarized_metrics=[ContinualAverage()],
+    on_undefined="warn",
+)
+```
+
+`JsonOutputWriter` writes `NaN` as `null`, since a bare `NaN` is not valid JSON.
+
 ### Rectangular matrices and step schedules
 
 When training steps group several concepts (see [Step Schedule](datasets.md)), the rows of $R$ are
