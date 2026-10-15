@@ -30,6 +30,7 @@ def test_learning_only_with_current_data(data):
 
 def test_returning_model_predictions():
     from pyclad.output.prediction_results import PredictionResults
+
     expected = PredictionResults(y_pred=np.array([0, 1]), anomaly_scores=np.array([0.1, 0.9]))
     model = MockModel()
     model.predict = MagicMock(return_value=expected)

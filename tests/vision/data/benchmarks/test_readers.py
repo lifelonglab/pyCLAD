@@ -8,15 +8,16 @@ from pyclad.vision.data.benchmarks.readers import (
     CsvBenchmarkSpec,
     DAGMBenchmarkReader,
     FolderBenchmarkSpec,
-    MVTecBenchmarkReader,
     MPDDBenchmarkReader,
+    MVTecBenchmarkReader,
     VisABenchmarkReader,
     available_vision_benchmarks,
     build_vision_benchmark_reader,
     index_vision_benchmark,
     read_vision_benchmark_dataset,
 )
-from tests.vision._helpers import write_mask as _write_helper_mask, write_rgb_image as _write_helper_rgb
+from tests.vision._helpers import write_mask as _write_helper_mask
+from tests.vision._helpers import write_rgb_image as _write_helper_rgb
 
 
 def _write_rgb_image(path: Path, color: tuple[int, int, int]):
@@ -136,7 +137,9 @@ def test_read_vision_benchmark_dataset_supports_custom_csv_spec(tmp_path: Path):
     with (root / "splits.csv").open("w", newline="") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=["group", "phase", "target", "img", "seg"])
         writer.writeheader()
-        writer.writerow({"group": "part", "phase": "train", "target": "ok", "img": "part/normal/train_0.png", "seg": ""})
+        writer.writerow(
+            {"group": "part", "phase": "train", "target": "ok", "img": "part/normal/train_0.png", "seg": ""}
+        )
         writer.writerow({"group": "part", "phase": "test", "target": "ok", "img": "part/normal/test_0.png", "seg": ""})
         writer.writerow(
             {

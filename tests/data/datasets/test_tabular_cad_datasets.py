@@ -41,14 +41,94 @@ def test_downloading_tabular_cad_dataset(dataset_cls, concepts_no):
 @pytest.mark.parametrize(
     "dataset_cls, expected_orderings",
     [
-        (CadCicids2017Dataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
-        (CadCicids2018Dataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
-        (CadCicunswDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
-        (CadTcmDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
-        (CadMiniBooNeDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
-        (CadScaniaDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
-        (McadCic3x1Dataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
-        (McadCic3xNDataset, {"curriculum_asc", "curriculum_desc", "generalization_asc", "generalization_desc", "smooth_drift", "abrupt_drift"}),
+        (
+            CadCicids2017Dataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
+        (
+            CadCicids2018Dataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
+        (
+            CadCicunswDataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
+        (
+            CadTcmDataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
+        (
+            CadMiniBooNeDataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
+        (
+            CadScaniaDataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
+        (
+            McadCic3x1Dataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
+        (
+            McadCic3xNDataset,
+            {
+                "curriculum_asc",
+                "curriculum_desc",
+                "generalization_asc",
+                "generalization_desc",
+                "smooth_drift",
+                "abrupt_drift",
+            },
+        ),
     ],
 )
 def test_available_orderings(dataset_cls, expected_orderings):

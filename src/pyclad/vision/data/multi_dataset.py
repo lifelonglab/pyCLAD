@@ -291,6 +291,7 @@ def split_multi_dataset_concept_name(concept_name: str, separator: str = DEFAULT
     source, category = concept_name.split(separator, 1)
     return source, category
 
+
 INCLAD_MD_SOURCE_DATASETS = ("btech", "dagm", "mpdd", "mvtec", "visa")
 INCLAD_MD_ORDERINGS = ("easy_to_hard", "hard_to_easy")
 

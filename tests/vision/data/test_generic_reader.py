@@ -8,7 +8,8 @@ from pyclad.vision.data.readers.generic_reader import (
     FolderLayout,
     GenericFolderReader,
 )
-from tests.vision._helpers import write_rgb_image as _write_rgb_image, write_mask as _write_mask
+from tests.vision._helpers import write_mask as _write_mask
+from tests.vision._helpers import write_rgb_image as _write_rgb_image
 
 
 class TestCategorySplitLabel:
@@ -177,7 +178,8 @@ class TestSplitLabel:
     def test_available_categories_single(self, tmp_path: Path):
         self._build_tree(tmp_path)
         reader = GenericFolderReader(
-            root=tmp_path, layout=FolderLayout.SPLIT_LABEL,
+            root=tmp_path,
+            layout=FolderLayout.SPLIT_LABEL,
             single_category_name="my_product",
         )
         assert reader.available_categories() == ["my_product"]

@@ -3,15 +3,19 @@ import pathlib
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
-from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
-from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import VisionPixelConceptMetricCallback
-from pyclad.vision.data.readers.vision_reader import read_vision_dataset
 from pyclad.metrics.base.average_precision import AveragePrecision
 from pyclad.metrics.base.f1_score import F1Score
 from pyclad.metrics.base.roc_auc import RocAuc
 from pyclad.metrics.continual.average_continual import ContinualAverage
 from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
+from pyclad.output.json_writer import JsonOutputWriter
+from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
+from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
+from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
+from pyclad.strategies.replay.selection.random import RandomSelection
+from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import VisionPixelConceptMetricCallback
+from pyclad.vision.data.readers.vision_reader import read_vision_dataset
 from pyclad.vision.metrics.pixel_aupro import PixelAUPRO
 from pyclad.vision.metrics.pixel_average_precision import PixelAveragePrecision
 from pyclad.vision.metrics.pixel_dice_score import PixelDiceScore
@@ -20,10 +24,6 @@ from pyclad.vision.metrics.pixel_iou import PixelIoU
 from pyclad.vision.metrics.pixel_roc_auc import PixelRocAuc
 from pyclad.vision.models.fastflow.config import FastFlowConfig
 from pyclad.vision.models.fastflow.fastflow import FastFlow
-from pyclad.output.json_writer import JsonOutputWriter
-from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
-from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
-from pyclad.strategies.replay.selection.random import RandomSelection
 
 RESOURCES = pathlib.Path(__file__).resolve().parents[2] / "resources"
 

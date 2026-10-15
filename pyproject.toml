@@ -93,9 +93,12 @@ include = [
 
 [tool.black]
 line-length = 120
+# Keep in sync with requires-python above.
+target-version = ["py310"]
 
 [tool.isort]
 profile = "black"
+line_length = 120
 
 [tool.pytest.ini_options]
 pythonpath = [

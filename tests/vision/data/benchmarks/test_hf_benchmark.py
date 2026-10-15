@@ -8,7 +8,8 @@ from pyclad.vision.data.benchmarks.hf_benchmark import (
     InCLADBenchDataset,
     load_inclad_bench,
 )
-from tests.vision._helpers import write_mask as _write_helper_mask, write_rgb_image as _write_helper_rgb
+from tests.vision._helpers import write_mask as _write_helper_mask
+from tests.vision._helpers import write_rgb_image as _write_helper_rgb
 
 
 def _write_rgb_image(path: Path, color: tuple[int, int, int] = (10, 20, 30)):

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from pyclad.vision.data.readers.vision_reader import build_vision_reader, read_vision_dataset
 from pyclad.vision.data.readers.generic_reader import GenericFolderReader
+from pyclad.vision.data.readers.vision_reader import build_vision_reader, read_vision_dataset
 from tests.vision._helpers import write_rgb_image as _write_rgb_image
 
 
