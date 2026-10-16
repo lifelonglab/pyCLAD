@@ -15,6 +15,7 @@ from pyclad.models.autoencoder.autoencoder import VariationalAutoencoder
 from pyclad.models.training.runners.standard import StandardRunner
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.vlad.memory.hierarchical_memory import VladMemory
 from pyclad.strategies.vlad.vlad_strategy import VladConceptIncrementalStrategy
 
@@ -28,6 +29,7 @@ if __name__ == "__main__":
     driver (one learn() call per concept), so BoundaryChangePointDetector skips online drift
     scanning, but still classifies each concept as new vs. recurring against memory.
     """
+    seed_info = set_seed(42)
     dataset = read_dataset_from_npy(
         RESOURCES / "nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy", dataset_name="NSL-KDD-R"
     )
@@ -77,4 +79,4 @@ if __name__ == "__main__":
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

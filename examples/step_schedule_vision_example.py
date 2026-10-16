@@ -20,6 +20,7 @@ from pyclad.metrics.continual.schedule_aware_new_task_acquisition import (
 )
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.naive import NaiveStrategy
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
     ScheduleAwareVisionPixelConceptMetricCallback,
@@ -47,6 +48,7 @@ if __name__ == "__main__":
     Other schedules on MVTec's 15 categories: "14-1", "10-5", "10-1x5". On VisA's 12
     categories, "8-1x4". The schedule must sum to the number of train concepts.
     """
+    seed_info = set_seed(42)
     # 1. Read the benchmark. Concepts must already be in their final order before grouping,
     #    since grouping merges *consecutive* concepts: ordering -> grouping -> first_seen_step.
     dataset = read_vision_dataset(
@@ -138,4 +140,4 @@ if __name__ == "__main__":
     # The grouped dataset reports the schedule, the train steps and first_seen_step in its
     # own info(), so the output JSON is self-describing without assembling metadata by hand.
     output_writer = JsonOutputWriter(pathlib.Path(f"output_step_schedule_mvtec_{STEP_SCHEDULE}.json"))
-    output_writer.write([model, scheduled_dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, scheduled_dataset, strategy, *callbacks])

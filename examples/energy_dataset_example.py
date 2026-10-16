@@ -4,7 +4,6 @@ import pathlib
 import torch.nn as nn
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
-from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.datasets.energy_plants_dataset import EnergyPlantsDataset
 from pyclad.metrics.base.roc_auc import RocAuc
@@ -15,6 +14,7 @@ from pyclad.models.autoencoder.autoencoder import Autoencoder
 from pyclad.models.training.runners.standard import StandardRunner
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.regularization.ewc import EWCStrategy
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
@@ -24,6 +24,7 @@ if __name__ == "__main__":
     This example showcase how to run a concept aware scenario using the Energy dataset adopted to continual anomaly
     detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
     """
+    seed_info = set_seed(42)
     dataset = EnergyPlantsDataset(dataset_type="random_anomalies")
     input_features = 14
 
@@ -49,10 +50,9 @@ if __name__ == "__main__":
             summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
         TimeEvaluationCallback(),
-        MemoryUsageCallback(),
     ]
     scenario = ConceptAwareScenario(dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output-energy.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

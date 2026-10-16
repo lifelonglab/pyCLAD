@@ -8,8 +8,8 @@ from pyclad.models.feature_extractor import FeatureExtractor
 class ResNetBlockConfig(BaseModel):
     """Configuration for a single residual block for _ResNetBlock class.
 
-    :param out_channels: Channel count produced by every conv layer in this block.
-    :param kernel_sizes: Temporal kernel widths applied sequentially within the
+    :ivar out_channels: Channel count produced by every conv layer in this block.
+    :ivar kernel_sizes: Temporal kernel widths applied sequentially within the
         block. Defaults to ``[8, 5, 3]``, matching the reference CARLA repo.
     """
 

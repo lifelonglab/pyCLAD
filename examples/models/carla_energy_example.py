@@ -4,7 +4,6 @@ import pathlib
 import torch
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
-from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.datasets.energy_plants_dataset import EnergyPlantsDataset
 from pyclad.data.timeseries import convert_dataset_to_overlapping_windows
@@ -18,11 +17,13 @@ from pyclad.models.backbones.resnet import ResNet1D
 from pyclad.models.contrastive.carla import Carla
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.naive import NaiveStrategy
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
+    seed_info = set_seed(42)
     dataset = EnergyPlantsDataset(dataset_type="random_anomalies")
     dataset._train_concepts = dataset._train_concepts[:3]
     dataset._test_concepts = dataset._test_concepts[:3]
@@ -55,10 +56,9 @@ if __name__ == "__main__":
     callbacks = [
         *metric_callbacks,
         TimeEvaluationCallback(),
-        MemoryUsageCallback(),
     ]
     scenario = ConceptAwareScenario(dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output-energy-carla.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

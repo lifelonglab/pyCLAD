@@ -20,6 +20,7 @@ from pyclad.metrics.continual.schedule_aware_new_task_acquisition import (
 )
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.naive import NaiveStrategy
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
     ScheduleAwareVisionPixelConceptMetricCallback,
@@ -62,6 +63,7 @@ if __name__ == "__main__":
 
     Other schedules over 27 categories: "26-1", "9x3", "21-1x6", "15-6-6".
     """
+    seed_info = set_seed(42)
     dataset = load_inclad_md(
         roots=ROOTS,
         ordering=ORDERING,
@@ -140,4 +142,4 @@ if __name__ == "__main__":
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path(f"output_inclad_md_{ORDERING}_{STEP_SCHEDULE}.json"))
-    output_writer.write([model, scheduled_dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, scheduled_dataset, strategy, *callbacks])

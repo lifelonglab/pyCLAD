@@ -10,6 +10,7 @@ from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.naive import NaiveStrategy
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
     VisionPixelConceptMetricCallback,
@@ -49,8 +50,9 @@ if __name__ == "__main__":
 
     To define your own stream instead, build a MultiDatasetSpec out of DatasetBlocks and pass
     it to read_multi_dataset(); a spec round-trips through JSON, so a stream is reproducible
-    from a file. See the docstrings in pyclad/vision/data/multi_dataset.py.
+    from a file. See "Multi-dataset streams" in docs/guides/vision.md.
     """
+    seed_info = set_seed(42)
     print("InCLAD-MD concepts:", len(INCLAD_MD_SPEC.category_order()))
     print("Stream:", INCLAD_MD_SPEC.category_order())
 
@@ -105,4 +107,4 @@ if __name__ == "__main__":
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path(f"output_inclad_md_{ORDERING}.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

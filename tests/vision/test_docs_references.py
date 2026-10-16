@@ -10,7 +10,7 @@ import pathlib
 import re
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-SCANNED_TREES = ("src/pyclad", "examples")
+SCANNED_TREES = ("src/pyclad", "examples", "docs/snippets")
 
 # A pointer that names its section: `"Some heading" in docs/whatever.md`, with optional
 # reST/Markdown backticks around the path. Whitespace is normalised first, so the phrase is

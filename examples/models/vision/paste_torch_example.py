@@ -11,6 +11,7 @@ from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.replay.buffers.adaptive_balanced import AdaptiveBalancedReplayBuffer
 from pyclad.strategies.replay.replay import ReplayEnhancedStrategy
 from pyclad.strategies.replay.selection.random import RandomSelection
@@ -33,6 +34,7 @@ if __name__ == "__main__":
     """
     This example showcases how to use the PaSTe model for continual vision anomaly detection.
     """
+    seed_info = set_seed(42)
     dataset = read_vision_dataset(
         root=RESOURCES / "vision/BTech_Dataset_transformed",
         benchmark="btech",
@@ -95,4 +97,4 @@ if __name__ == "__main__":
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

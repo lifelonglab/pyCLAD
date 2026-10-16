@@ -11,6 +11,7 @@ from pyclad.metrics.continual.backward_transfer import BackwardTransfer
 from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
+from pyclad.seed import set_seed
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
     VisionPixelConceptMetricCallback,
 )
@@ -43,6 +44,7 @@ if __name__ == "__main__":
     used below). See "Masks, augmentation and caching" in docs/vision.md for the backends, and
     "Differences from the original" in docs/vision.md for how this port departs from the paper.
     """
+    seed_info = set_seed(42)
     dataset = read_vision_dataset(
         root=RESOURCES / "vision/mvtec_ad",
         benchmark="mvtec",
@@ -117,4 +119,4 @@ if __name__ == "__main__":
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

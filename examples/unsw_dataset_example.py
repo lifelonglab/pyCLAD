@@ -4,7 +4,6 @@ import pathlib
 from pyod.models.vae import VAE
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
-from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.datasets.unsw_dataset import UnswDataset
 from pyclad.metrics.base.roc_auc import RocAuc
@@ -14,6 +13,7 @@ from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.pyod_adapters import PyODAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.replay.buffers.adaptive_balanced import (
     AdaptiveBalancedReplayBuffer,
 )
@@ -27,6 +27,7 @@ if __name__ == "__main__":
     This example showcase how to run a concept aware scenario using the UNSW dataset adopted to continual anomaly
     detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
     """
+    seed_info = set_seed(42)
     dataset = UnswDataset(dataset_type="random_anomalies")
     model = PyODAdapter(
         VAE(
@@ -46,10 +47,9 @@ if __name__ == "__main__":
             summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
         TimeEvaluationCallback(),
-        MemoryUsageCallback(),
     ]
     scenario = ConceptAwareScenario(dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output-unsw.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

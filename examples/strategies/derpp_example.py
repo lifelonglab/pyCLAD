@@ -5,7 +5,6 @@ import numpy as np
 from torch import nn
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
-from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.concept import Concept
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
@@ -18,12 +17,14 @@ from pyclad.models.autoencoder.autoencoder import Autoencoder
 from pyclad.models.training.runners.standard import StandardRunner
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_agnostic import ConceptAgnosticScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.regularization.der import DerPlusPlus
 from pyclad.strategies.replay.buffers.reservoir import ReservoirBuffer
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
+    seed_info = set_seed(42)
     feature_dim = 10
 
     concept1_train = Concept("concept1", data=np.random.rand(100, feature_dim))
@@ -71,12 +72,9 @@ if __name__ == "__main__":
         summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         stepwise_metrics=[ForgettingMeasure()],
     )
-    memory_callback = MemoryUsageCallback()
 
-    scenario = ConceptAgnosticScenario(
-        dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback, memory_callback]
-    )
+    scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback])
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, metric_callback, time_callback, memory_callback])
+    output_writer.write([seed_info, model, dataset, strategy, metric_callback, time_callback])

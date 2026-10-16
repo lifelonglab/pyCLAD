@@ -66,9 +66,8 @@ score or a simpler diff. If one had to be bent, state it plainly in your summary
 - **Randomness goes through `pyclad.seed`.** A component takes a `seed` or `rng` argument and, given
   none, uses `new_generator()`. Never create a generator from fresh entropy (a bare
   `np.random.default_rng()`). Only `set_seed` seeds Python's `random` and NumPy globally. A component
-  with its own seed may seed torch with it, as `vision/models/utilities/base_model.py` does. New example
-  scripts call `set_seed(...)` once and pass the returned object to the output writer; the existing
-  examples do not do this yet.
+  with its own seed may seed torch with it, as `vision/models/utilities/base_model.py` does. Example
+  scripts call `set_seed(...)` once and pass the returned object to the output writer.
 - **Everything that shapes a result is reported.** Hyperparameters, buffer sizes, backbone names and
   seeds go into `additional_info()`, so the JSON output is enough to tell two runs apart.
 - **Ports of published methods are honest about differences.** Cite the paper in the class docstring.
@@ -106,8 +105,11 @@ calls `strategy.predict(...)` on every test concept. `ConceptMetricCallback` fil
 ## 4. Adding things
 
 Read the closest existing implementation first and follow it. Every addition needs: the class, a test
-under the mirrored path in `tests/`, an example script in `examples/`, and an entry in the matching
-`docs/*.md` page. Paths below are relative to `src/pyclad/`.
+under the mirrored path in `tests/`, an example script in `examples/`, an entry in the matching reference
+page (`docs/strategies.md`, `docs/models.md`, `docs/datasets.md`, `docs/metrics.md`, `docs/callbacks.md`,
+or `docs/vision.md` for image components), and a line in `docs/examples.md`. The API reference under
+`docs/reference/api/` is generated from docstrings, so a public class only needs a docstring to appear
+there. How-to pages for contributors are in `docs/guides/`. Paths below are relative to `src/pyclad/`.
 
 | To add | Subclass | Copy from | Remember |
 |---|---|---|---|
@@ -146,7 +148,10 @@ Checked by tests:
   `tests/test_public_api.py`.
 - **`__all__` is sorted** and lists only names the package defines.
 - **Pointers to docs name a section**: write `"Data leakage" in docs/vision.md`, not just
-  `docs/vision.md`, in source and examples. Checked by `tests/vision/test_docs_references.py`.
+  `docs/vision.md`, in source, examples and doc snippets. Checked by `tests/vision/test_docs_references.py`.
+- **Code in the docs comes from `docs/snippets/`**, included with `--8<--`, and every snippet runs. A
+  Python block written directly in a page may be at most 3 lines. Checked by `tests/docs/test_snippets.py`;
+  `mkdocs build --strict` (a CI job) checks links, anchors and snippet paths.
 
 Not checked, so check them yourself:
 
@@ -163,7 +168,7 @@ Use the project's virtual environment (`.venv/` if it exists). Do not install in
 
 ```bash
 pip install -e ".[dev]"            # the dev tools plus the torch and vision extras
-pytest tests                       # under a minute; longrun tests are skipped
+pytest tests                       # longrun tests are skipped; no single test should take more than a minute
 pytest -m longrun --longrun        # downloads datasets; only when you touched one
 black src && isort src && flake8 src
 pip install -r docs/requirements.txt && mkdocs serve   # preview the docs

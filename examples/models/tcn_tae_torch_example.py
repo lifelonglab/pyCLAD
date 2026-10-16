@@ -23,10 +23,12 @@ from pyclad.models.autoencoder.variational.tcn import (
     TCNVariationalDecoder,
     TCNVariationalEncoder,
 )
+from pyclad.seed import set_seed
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
 
 if __name__ == "__main__":
+    seed_info = set_seed(42)
     use_variational_ae = False  # Set to True if you want to use Variational Autoencoder
 
     batch_size, seq_len = 32, 10

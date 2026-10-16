@@ -4,7 +4,6 @@ import pathlib
 import numpy as np
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
-from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.concept import Concept
 from pyclad.data.datasets.concepts_dataset import ConceptsDataset
@@ -17,6 +16,7 @@ from pyclad.models.adapters.pyod_adapters import OneClassSVMAdapter
 from pyclad.models.adapters.temporal_adapter import FlattenTimeSeriesAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_agnostic import ConceptAgnosticScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
 logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
@@ -24,19 +24,25 @@ logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("debug.lo
 if __name__ == "__main__":
     """
     This example show how to create a simple dataset with 3 concepts and carry out a concept agnostic scenario with
-    CumulativeStrategy and OneCLassSVM model in a timeseries-oriented manner.
-    Please note that the anomaly detection results will be random (0.5), as we generate random data and random labels
+    CumulativeStrategy and the One-Class SVM model in a timeseries-oriented manner.
     """
+    seed_info = set_seed(42)
     window_size = 10  # Define the window size for overlapping windows
 
-    # Prepare random data for 3 concepts
+    # Three concepts centred at 0, 5 and 10. In each test series the last 20 steps are shifted away from the centre and
+    # labelled as anomalies; a window takes the label of its last step, so every window that reaches into the shifted
+    # segment is labelled 1.
     train_concepts = []
     test_concepts = []
 
-    for i in range(3):
-        train_data, _ = convert_to_overlapping_windows(window_size=window_size, data=np.random.rand(100, 10))
+    for i, center in enumerate([0.0, 5.0, 10.0]):
+        train_data, _ = convert_to_overlapping_windows(
+            window_size=window_size, data=np.random.normal(center, 1.0, size=(100, 10))
+        )
+        test_series = np.random.normal(center, 1.0, size=(100, 10))
+        test_series[80:] += 3.0
         test_data, test_labels = convert_to_overlapping_windows(
-            window_size=window_size, data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100)
+            window_size=window_size, data=test_series, labels=np.array([0] * 80 + [1] * 20)
         )
 
         train_concepts.append(Concept(f"concept{i + 1}", data=train_data))
@@ -56,14 +62,11 @@ if __name__ == "__main__":
     metric_callback = ConceptMetricCallback(
         base_metric=RocAuc(), summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()]
     )
-    memory_callback = MemoryUsageCallback()
 
     # Execute the concept agnostic scenario
-    scenario = ConceptAgnosticScenario(
-        dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback, memory_callback]
-    )
+    scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback])
     scenario.run()
 
     # Save the results
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, metric_callback, time_callback, memory_callback])
+    output_writer.write([seed_info, model, dataset, strategy, metric_callback, time_callback])

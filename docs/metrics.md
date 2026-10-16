@@ -1,17 +1,32 @@
-# Metrics 
+# Metrics
 
 ### Overview
-Continual learning scenarios require a continuous evaluation across all concepts.
-To this end, pyCLAD adopts an evaluation protocol that considers the performance across all concepts in each scenario: 
 
-- Initializes a matrix $R$ to accommodate anomaly detection results for specific tasks
-- Iterates over training sets for all concepts 
-- For each concept, trains/updates the model and evaluates it on all testing sets for all concepts, i.e. previous, current, and future concepts.
-- Yields the resulting matrix  $R$, where entries $R_{i, j}$ define the performance of the model evaluated on concept $j$ after learning concept $i$. 
-The matrix $R$ can be used to directly compute continual learning metrics.
+After each training step, the scenario evaluates the strategy on every test concept: earlier, current and future
+ones. The results form a matrix $R$, where $R_{i,j}$ is the score on concept $j$ after learning concept $i$ (see
+"The evaluation protocol" in [Core concepts](learn/concepts.md#the-evaluation-protocol)). A **base metric** fills
+each cell; **continual metrics** summarize the matrix.
 
-### Supported metrics
-pyCLAD supports the following main metrics:
+The protocol is the same in every scenario. In the concept-agnostic scenario the strategy learns in batches without
+boundaries, but it is still evaluated after each whole train concept, so $R$ has one row per train concept there too.
+
+### Base metrics
+
+A base metric scores one evaluated concept and fills one cell of $R$. All of them are in `pyclad.metrics`:
+
+| Class | Name in output | Reads | Undefined when |
+|---|---|---|---|
+| `RocAuc` | `ROC-AUC` | `anomaly_scores` | the test concept holds a single class (returns `NaN`) |
+| `AveragePrecision` | `AP` | `anomaly_scores` | the test concept holds a single class (returns `NaN`) |
+| `F1Score` | `F1-Score` | `y_pred` | the test concept holds no anomaly and none is predicted (returns `NaN`) |
+
+ROC-AUC and average precision only use the order of the anomaly scores, so they do not depend on a threshold. F1
+uses the binary predictions, so it also measures how well the model chose its threshold.
+
+To write your own base or continual metric, see [Adding a metric or a callback](guides/custom_metric_callback.md).
+
+### Continual metrics
+pyCLAD supports the following continual metrics, computed from the matrix $R$:
 
 - **Continual Average** (CA): It assesses models' performance on all concepts after learning every new concept, instead of models' performance on just a single concept. 
 It is general, since it operates on the matrix $R$ and it can support any target metric of choice, such as F1-Score and ROC-AUC[^1]. It is defined as: 
@@ -19,9 +34,11 @@ It is general, since it operates on the matrix $R$ and it can support any target
 $\text{CA} = \frac{\sum_{i \ge j}^N R_{{i,j}}}{\frac{N(N+1)}{2}}$
 [^1]: Note: ROC-AUC is sometimes preferred over threshold-dependent metrics such as Precision, Recall, and F--Score, since it allows us to evaluate the model's performance more comprehensively. ROC--AUC may be swapped with other metrics of choice without impacting the validity of the protocol. 
 
-- **Backward Transfer** (BWT): Measures the impact of learning new concepts on the performance of all previously learned concepts[^2]. It is computed as:
+- **Backward Transfer** (BWT): Measures the impact of learning new concepts on the performance of all previously learned concepts[^2]. pyCLAD averages the change in performance on each earlier concept $j$ from one training step to the next, over all $\frac{N(N-1)}{2}$ pairs of a later step $i$ and an earlier concept $j$:
 
-$\text{BWT} = \frac{\sum_{i=2}^N\sum_{j=1}^{i-1} R_{i, j} - R_{j,j}}{\frac{N(N-1)}{2}}$
+$\text{BWT} = \frac{\sum_{j=1}^{N-1}\sum_{i=j+1}^{N} \left( R_{i,j} - R_{i-1,j} \right)}{\frac{N(N-1)}{2}} = \frac{\sum_{j=1}^{N-1} \left( R_{N,j} - R_{j,j} \right)}{\frac{N(N-1)}{2}}$
+
+It is `NaN` for a single-concept scenario.
 
 [^2]: Negative backward transfer suggests that the model is prone to forgetting. A strongly negative value is also sometimes regarded as catastrophic forgetting. On the other hand, positive backward transfer suggests that learning new concepts benefits models' performance on previously learned concepts.  
 
@@ -41,10 +58,7 @@ The concept just learned is not included, since it has had no chance to be forgo
 
 $\text{FM} = \frac{1}{N-1}\sum_{j=1}^{N-1} \Big( \max_{i \in [j,\, N-1]} R_{i,j} - R_{N,j} \Big)$
 
-Besides reporting one value instead of one per step, it searches for the best performance only from the step at which the concept was learned ($i \ge j$), so a score the model had on a concept *before* training on it never counts as something to forget. The two agree at the last step unless a concept scored higher before it was learned than after. On a square matrix it equals `ScheduleAwareForgettingMeasure` below, to which it delegates.
-
-
-
+Besides reporting one value instead of one per step, it searches for the best performance only from the step at which the concept was learned ($i \ge j$), so a score the model had on a concept *before* training on it never counts as something to forget. The two agree at the last step unless a concept scored higher before it was learned than after. On a square matrix it equals `ScheduleAwareForgettingMeasure` below.
 
 ### Undefined values
 
@@ -66,11 +80,7 @@ The metric callbacks decide whether a run continues when this happens, through t
   itself is complete, so the per-concept results of a long run are not lost.
 
 ```python
-callback = ConceptMetricCallback(
-    base_metric=RocAuc(),
-    summarized_metrics=[ContinualAverage()],
-    on_undefined="propagate",
-)
+--8<-- "docs/snippets/metrics/undefined_values.py:propagate"
 ```
 
 The grouped callbacks (`GroupedConceptMetricCallback` and its pixel-level variant) report an average per group
@@ -81,12 +91,13 @@ only a group with no defined concept is `NaN`.
 
 ### Rectangular matrices and step schedules
 
-When training steps group several concepts (see [Step Schedule](datasets.md)), the rows of $R$ are
+When training steps group several concepts (see [Step Schedule](datasets.md#step-schedule-grouping)), the rows of $R$ are
 training steps and the columns are evaluated concepts, so $R$ becomes rectangular ($T \times N$
 with $T < N$) and the two axes no longer share names.
 
-The three metrics above walk the diagonal or the triangles of $R$, which is only meaningful when
-each training step corresponds to exactly one evaluated concept. Handed a rectangular matrix they
+The metrics above (Continual Average, Backward and Forward Transfer, and both Forgetting Measures) walk the
+diagonal or the triangles of $R$, which is only meaningful when each training step corresponds to exactly one
+evaluated concept. Handed a rectangular matrix they
 raise `ValueError` instead of returning a number computed over cells that do not mean what the
 formula assumes.
 
@@ -120,24 +131,9 @@ lost). On a square matrix with one concept per step this reads the diagonal:
 
 $\text{nta}_k = R_{s_k, k}$
 
-Wiring them up is one argument, because the grouped dataset carries the mapping:
+They are reported by `ScheduleAwareConceptMetricCallback`. Pass it the grouped dataset as `first_seen_step`, since
+the dataset carries the mapping:
 
 ```python
-callback = ConceptMetricCallback(
-    base_metric=RocAuc(),
-    summarized_metrics=[FinalStepAverage()],
-    schedule_aware_metrics=[
-        ScheduleAwareForgettingMeasure(),
-        ScheduleAwareForwardTransfer(),
-        ScheduleAwareNewTaskAcquisition(),
-    ],
-    first_seen_step=scheduled_dataset.first_seen_step(),
-)
+--8<-- "docs/snippets/datasets/step_schedule.py:metrics"
 ```
-
-The evaluation protocol slightly differs based on the scenario. Specifically:
-
-- **Concept-aware** and **concept-incremental**: batches $T_i$ (training) and $E_i$ (evaluation) correspond to the single $i-$th concept.
-
-- **Concept-agnostic**: a batch does not necessarily correspond to a single concept since the setting assumes that no explicit concept boundaries are provided to the lifelong algorithm.
-As a result, the evaluation may require considering multiple batches as belonging to the same concept or a single batch including data for more than one concept.

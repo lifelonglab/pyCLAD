@@ -1,81 +1,52 @@
-# Overview
+# Output
 
-**InfoProvider** is an abstract class that provides convenient information log for different classes (Dataset, Model, Strategy, etc.).
+pyCLAD saves everything that describes a run (the seed, the dataset, the model, the strategy and the results of the
+callbacks) in one JSON file. The file should be enough to tell two runs apart, and the numbers you report should come
+from it.
 
-Classes must implement the abstract method **info** to output important information that should be saved in results (e.g. names) as a Python dictionary.
-For example, this mechanisms ensures that strategies uses the key "strategy" and provides a strategy name in the output. An example of JSON output is the following:
+### InfoProvider
 
-    {
-        "strategy": {
-            # info:
-            "name": "Cumulative",
+`InfoProvider` (`pyclad.output.output_writer`) is implemented by everything that can be saved: datasets, models,
+strategies, callbacks and the seed. Its one method, `info()`, returns a dictionary with one top-level key:
 
-            # additional info from specific strategies 
-            "model": "IsolationForest",
-            "replay_size": 50
-        }
-    }
+| Provider | Key | Content |
+|---|---|---|
+| `SeedInfo` (returned by `set_seed`) | `seed` | the seed |
+| `Dataset` | `dataset` | `name` and `additional_info()`, for example the number of concepts |
+| `Model` | `model` | `name` and `additional_info()`, the model's hyperparameters |
+| `Strategy` | `strategy` | `name` and `additional_info()`, for example buffer sizes and the runner's settings |
+| `ConceptMetricCallback` | `concept_metric_callback_<base metric>` | metrics, the metric matrix and the concept orders |
+| `TimeEvaluationCallback` | `time_evaluation_callback` | training and evaluation time per concept |
 
+Datasets, models and strategies implement `name()` and override `additional_info()` instead of `info()`; their
+base classes build the dictionary. When you write one, return from `additional_info()` every setting that shapes the
+results: hyperparameters, buffer sizes, backbone names and seeds.
 
-Moreover, optional information, such as hyperparameters defining a specific configuration of models, strategies, etc can be provided through the **additional_info()** method.
+### JsonOutputWriter
 
-This information can be passed to a **JsonOutputWriter** as a list of **InfoProvider** objects to save information about a pyCLAD execution as a JSON output file.
-    
+`JsonOutputWriter(path).write(providers)` merges the `info()` of all providers into one JSON object and writes it.
 
-## Code Example: Dataset 
-    
-    class ConceptsDataset(Dataset):
-        ...
-    
-        def name(self) -> str:
-            return self._name
-    
-        def additional_info(self):
-            return {"train_concepts_no": len(self._train_concepts), "test_concepts_no": len(self._test_concepts)}
+- Undefined values (`NaN`) and infinities are written as `null`, since bare `NaN` is not valid JSON.
+- NumPy scalars are converted to Python numbers.
+- Providers are merged by their top-level key. Two providers with the same key (for example two
+  `ConceptMetricCallback`s with the same base metric) overwrite each other, so give each a different base metric.
+- A value that JSON cannot represent, such as a NumPy array or an arbitrary object, is written as the string
+  `"<not serializable>"` rather than raising an error. Convert such values to lists or strings in `info()`.
 
+Any object can be saved by implementing `InfoProvider`:
 
-## Code Example: Model
+```python
+--8<-- "docs/snippets/output/output.py:provider"
+```
 
-The *Model* class implements *InfoProvider* to log useful information about specific models. 
+See [Your first experiment](getting_started.md#6-save-the-results) for the output of a complete run, and how to read
+it back and plot the metric matrix.
 
-All models have a **name** and can provide additional information (e.g. number of estimators in **IsolationForest**) through the **additional_info()** method:
-    
-    class IsolationForestAdapter(Model):
-        ...
+### PredictionResults
 
-        def name(self) -> str:
-            return "IsolationForest"
-    
-        def additional_info(self):
-            return {"n_estimators": self.n_estimators, "contamination": self.contamination}
+`PredictionResults` (`pyclad.output.prediction_results`) is what models and strategies return from `predict`:
 
+- `y_pred`: one label per sample, `0` for normal and `1` for an anomaly;
+- `anomaly_scores`: one score per sample, where a higher score means a more anomalous sample.
 
-
-## Code Example: Strategy
-
-The **Strategy** class implements *InfoProvider* to log useful information about specific strategies. 
-
-All strategies have a **name** which is included in the **info** method:
-
-    class Strategy(InfoProvider):
-        """Base class for all continual learning strategies."""
-    
-        @abc.abstractmethod
-        def name(self) -> str: ...
-    
-        def additional_info(self) -> Dict:
-            return {}
-    
-        def info(self) -> Dict[str, Any]:
-            return {"strategy": {"name": self.name(), **self.additional_info()}}
-
-Strategies can provide additional information (e.g. replay buffer size) through the **additional_info()** method: 
-    
-    class ReplayOnlyStrategy(ConceptIncrementalStrategy, ConceptAwareStrategy):
-        ...
-    
-        def name(self) -> str:
-            return "ReplayOnly"
-    
-        def additional_info(self) -> Dict:
-            return {"replay_size": len(self._buffer.data())}
+The scenario passes both arrays, with the true labels, to the callbacks' `after_evaluation`.

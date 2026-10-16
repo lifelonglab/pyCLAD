@@ -1,22 +1,27 @@
-# Vision models — quick start
+# Vision
 
-Continual **visual anomaly detection** models for pyCLAD. Each model trains on *normal* images only and produces per-pixel anomaly maps.
-
-Every model ships with a ready-to-run example under `examples/models/vision/`.
+This page describes the image anomaly detection models and strategies in `pyclad.vision`, and how each one relates
+to its paper. To install the extras, get the data and run a first model, see
+[Image anomaly detection](guides/vision.md).
 
 ## Models
 
 | Model | What it is | Example script |
-|---|---|--|
-| **PaSTe** | Student–teacher distillation | `paste_torch_example.py` |
+|---|---|---|
+| **PatchCore** | Memory bank of pretrained patch features, nearest-neighbour scoring | `patchcore_torch_example.py` |
 | **FastFlow** | Normalizing flow on features | `fastflow_torch_example.py` |
+| **RD4AD** | Reverse distillation from a pretrained encoder | `rd4ad_torch_example.py` |
+| **PaSTe** | Student–teacher distillation | `paste_torch_example.py` |
 | **UCAD** | Continual key-prompt-knowledge memory over a frozen ViT | `ucad_torch_example.py` |
 | **Continual-MEGA baseline** | CLIP with MoE adapters and learned prompts, supervised | `continual_mega_example.py` |
 
-### UCAD
+All examples are in `examples/models/vision/`. Image models plug into the usual strategies (for example
+`ReplayEnhancedStrategy`); UCAD and ReplayCAD below are continual strategies of their own.
+
+## UCAD
 
 Liu et al., *Unsupervised Continual Anomaly Detection with Contrastively-learned Prompt*,
-AAAI 2024 ([reference code](https://github.com/shirowalker/UCAD)). Unlike the other two
+AAAI 2024 ([reference code](https://github.com/shirowalker/UCAD)). Unlike the other
 models, UCAD is itself the continual mechanism: each concept appends one entry to a memory
 that is never reset — a **key** coreset of frozen-ViT patch features, a **prompt** of learned
 attention prefixes, and a **knowledge** coreset scored against by nearest neighbour. At
@@ -30,7 +35,7 @@ paper's CPM-only ablation) and needs no extra data. For the full method, point
 `structure_mask_root` at the authors' precomputed SAM maps, laid out as
 `<root>/<category>/train/good/*.png`.
 
-#### Data leakage
+### Data leakage
 
 **In this port: none.** `fit()` accepts only the training array, the decision threshold comes
 from a quantile of training scores, and routing reads only the learned keys.
@@ -38,19 +43,26 @@ from a quantile of training scores, and routing reads only the learned keys.
 not change when the evaluated batch is regrouped or reordered, `predict()` must not mutate
 learned state, and the strategy must ignore the concept id it is handed.
 
-These numbers are *not* comparable to the paper's Tables 1–4 and
-are expected to be lower, because the reference evaluation is not leak-free. In `run_ucad.py`, every
-epoch is evaluated on the test set and the prompt and knowledge bank are kept from the epoch
-with the best test AUROC (lines 262–264, with an early break at AUROC = 1); the reported score
-is a running ensemble accumulated across epochs (line 128 vs 149); scores are min-max
-normalised over the whole test set (lines 190–211); the continual evaluation loop is commented
-out entirely (lines 410–509), so the published per-task numbers are measured right after each
-task is trained and cannot show forgetting; and the reported "FM" is the gap between two memory
-budgets, not forgetting in the sense of Chaudhry et al. There is no validation split
-(`train_val_split=1`), so honest epoch selection is impossible in that codebase — this port
-therefore trains a fixed 25 epochs and keeps the last one, with no selection criterion at all.
+Results from this port are not comparable to the paper's Tables 1–4 and are expected to be lower.
+The reference code selects the epoch and post-processes scores using the test set, and reports
+per-task scores right after each task is trained, so its numbers cannot show forgetting. pyCLAD's
+protocol allows neither. The reference has no validation split to select epochs on honestly, so
+this port trains a fixed 25 epochs and keeps the last one.
 
-#### Divergences from the reference
+??? note "Details: the reference evaluation, line by line"
+    In the reference code's `run_ucad.py`:
+
+    - every epoch is evaluated on the test set, and the prompt and knowledge bank are kept from the
+      epoch with the best test AUROC (lines 262–264, with an early break at AUROC = 1);
+    - the reported score is a running ensemble accumulated across epochs (line 128 vs 149);
+    - scores are min-max normalised over the whole test set (lines 190–211);
+    - the continual evaluation loop is commented out (lines 410–509), so each task is evaluated
+      only right after it is trained;
+    - the reported "FM" compares two memory budgets; it is not forgetting in the sense of
+      Chaudhry et al.;
+    - there is no validation split (`train_val_split=1`).
+
+### Divergences from the reference
 
 `UCADConfig`'s defaults follow the [reference code](https://github.com/shirowalker/UCAD) rather
 than the paper prose wherever the two disagree. Every place this port departs from either is
@@ -70,156 +82,6 @@ reproduces `cv2.resize`'s bilinear-then-round behaviour (`mask_interpolation="bi
 routing distances are squared to match the reference's faiss index; and the prompt is
 initialised `uniform(-1, 1)` as in EPrompt.
 
-## Setup — extra libraries required
-
-The vision models are not part of the default pyCLAD install. Install them with the `vision` extra:
-
-```bash
-pip install "pyclad[vision]"
-```
-
-UCAD and ReplayCAD need a few more packages, which their own extras add on top of `vision`:
-`pip install "pyclad[ucad]"` and `pip install "pyclad[replaycad]"`. From a clone of the repository, use
-`pip install -e ".[vision]"` and so on.
-
-| Package | Extra | Used for |
-|---|---|---|
-| `torch` | `vision` | networks, tensors, training |
-| `pytorch-lightning` | `vision` | training loop (`pl.Trainer`, `LightningModule`) |
-| `torchvision` | `vision` | pretrained backbones (ResNet / MobileNet / EfficientNet) + feature extraction |
-| `pillow` | `vision` | image loading |
-| `open_clip_torch` | `vision` | the Continual-MEGA baseline's CLIP backbone |
-| `timm` | `ucad` | UCAD's ViT backbone |
-| `segment-anything` | `ucad`, `replaycad` | SAM masks: UCAD's `structure_mode="sam"` and ReplayCAD's SAM mask backend |
-
-## Datasets
-
-The example scripts read data from `examples/resources/vision/<dataset>/`. Datasets are *not* included in the repository, so after cloning you must download and place them yourself.
-
-**1. Put the dataset here** (folder name is up to you. It just has to match the `root=` in the script):
-
-```
-examples/resources/vision/
-├── BTech_Dataset_transformed/   # benchmark="btech"
-├── mvtec_ad/                    # benchmark="mvtec"
-├── MPDD/                        # benchmark="mpdd"
-├── VisA/                        # benchmark="visa"
-└── DAGM_KaggleUpload/           # benchmark="dagm"
-```
-
-**2. Expected layout inside a dataset** — one folder per category, each split into `train` / `test` / `ground_truth`:
-
-```
-<dataset>/
-└── <category>/                  
-    ├── train/<normal>/*.png     # normal images for training
-    ├── test/<normal>/*.png      # normal test images
-    ├── test/<defect>/*.png      # anomalous test images
-    └── ground_truth/<defect>/*_mask.png   # pixel masks for the anomalies
-```
-
-The `benchmark=` name tells the reader which naming convention to expect (e.g. BTech uses `ok`/`ko`, MVTec uses `good`), so you only need to drop the dataset in with its original structure.
-
-**3. Where to get the data** (public industrial anomaly-detection datasets):
-
-| Benchmark | Source |
-|---|---|
-| BTech (BTAD) | https://www.kaggle.com/datasets/thtuan/btad-beantech-anomaly-detection/ |
-| MVTec AD | https://www.mvtec.com/company/research/datasets/mvtec-ad |
-| VisA | https://github.com/amazon-science/spot-diff |
-| MPDD | https://github.com/stepanje/MPDD |
-| DAGM 2007 | https://www.kaggle.com/datasets/mhskjelvareid/dagm-2007-competition-dataset-optical-inspection |
-
-### Loading a dataset in code
-
-The example scripts build their dataset with a single call to `read_vision_dataset` — this is where you point pyCLAD at your data and choose the image size:
-
-```python
-import pathlib
-from pyclad.vision.data.readers.vision_reader import read_vision_dataset
-
-dataset = read_vision_dataset(
-    root=pathlib.Path("../../resources/vision/BTech_Dataset_transformed"),  # dataset folder
-    benchmark="btech",         # naming convention: btech | mvtec | mpdd | visa | dagm
-    resize_to=(256, 256),      # all images resized to this H×W (use 224 for PaSTe)
-    data_mode="numpy",         # "numpy" = load into memory, "paths" = load lazily
-    color_mode="rgb",          # "rgb" or "grayscale"
-    # max_train_samples_per_category=150,   # uncomment → fewer images per category
-    # max_test_samples_per_category=150,
-)
-```
-
-## Run a model
-
-The examples use **relative paths** to the dataset, so run them from their own folder:
-
-```bash
-cd examples/models/vision
-
-python paste_torch_example.py
-python fastflow_torch_example.py
-```
-
-Each run:
-
-1. loads the dataset as a continual stream of concepts (categories),
-2. trains the model on each category in turn (replay strategy),
-3. evaluates image- and pixel-level metrics (ROC-AUC, F1, AUPRO, IoU, Dice, …),
-4. writes results to **`output.json`** in the current folder.
-
-## Available metrics
-
-The examples evaluate every concept with both **image-level** and **pixel-level** metrics. You attach each one as a callback:
-image-level via `ConceptMetricCallback`, pixel-level via `VisionPixelConceptMetricCallback` (needs ground-truth masks).
-
-### Image-level
-
-Computed on the per-image anomaly score. Import from `pyclad.metrics.base`:
-
-| Metric | Class | Import | Measures |
-|---|---|---|---|
-| ROC-AUC | `RocAuc` | `pyclad.metrics.base.roc_auc` | ranking of normal vs anomalous images |
-| F1-Score | `F1Score` | `pyclad.metrics.base.f1_score` | precision/recall balance at the decision threshold |
-| Average Precision | `AveragePrecision` | `pyclad.metrics.base.average_precision` | area under the precision–recall curve |
-
-### Pixel-level (vision-specific)
-
-Computed on the per-pixel anomaly map vs the ground-truth mask. Import from `pyclad.vision.metrics`:
-
-| Metric | Class | Import | Measures |
-|---|---|---|---|
-| Pixel ROC-AUC | `PixelRocAuc` | `pyclad.vision.metrics.pixel_roc_auc` | pixel-wise ranking of anomaly scores *(threshold-free)* |
-| Pixel AP | `PixelAveragePrecision` | `pyclad.vision.metrics.pixel_average_precision` | pixel-wise precision–recall area *(threshold-free)* |
-| Pixel AUPRO | `PixelAUPRO` | `pyclad.vision.metrics.pixel_aupro` | per-region overlap vs FPR *(threshold-free)* |
-| Pixel F1 | `PixelF1Score` | `pyclad.vision.metrics.pixel_f1_score` | F1 of the binarized anomaly map vs mask |
-| Pixel IoU | `PixelIoU` | `pyclad.vision.metrics.pixel_iou` | intersection-over-union of predicted vs true defect region |
-| Pixel Dice | `PixelDiceScore` | `pyclad.vision.metrics.pixel_dice_score` | Dice overlap of predicted vs true defect region |
-
-### Continual summaries
-
-On top of any base metric you can wrap continual summaries (from `pyclad.metrics.continual`) that aggregate results across the concept sequence: `ContinualAverage`, `BackwardTransfer`, `ForwardTransfer`.
-
-```python
-summarized_metrics = [ContinualAverage(), BackwardTransfer(), ForwardTransfer()]
-
-callbacks = [
-    # image-level
-    ConceptMetricCallback(base_metric=RocAuc(), summarized_metrics=summarized_metrics),
-    ConceptMetricCallback(base_metric=F1Score(), summarized_metrics=summarized_metrics),
-    ConceptMetricCallback(base_metric=AveragePrecision(), summarized_metrics=summarized_metrics),
-    # pixel-level (need masks)
-    VisionPixelConceptMetricCallback(base_metric=PixelRocAuc(), summarized_metrics=summarized_metrics),
-    VisionPixelConceptMetricCallback(base_metric=PixelAUPRO(), summarized_metrics=summarized_metrics),
-    # ... PixelAveragePrecision, PixelF1Score, PixelIoU, PixelDiceScore
-]
-```
-
-A metric can be undefined for a category: pixel-level metrics, for example, cannot be computed when a category's
-test masks hold no anomalous pixel. By default a metric callback stops the run when that happens. The vision
-example scripts pass `on_undefined="propagate"` to every metric callback instead, so a long run always finishes:
-the category is logged and listed under `undefined_concepts` in the output, and the continual metrics that read
-it are `NaN`. See [Undefined values](metrics.md#undefined-values).
-
 ## PatchCore
 
 PatchCore is a memory-bank detector: a frozen, pretrained backbone extracts mid-level patch
@@ -228,9 +90,7 @@ small memory bank, and each test patch is scored by nearest-neighbour distance t
 gradient training happens — `fit()` only extracts features and builds the memory bank.
 
 The image-level score is the maximum over **raw** patch distances; the segmentation map is those
-same distances bilinearly upsampled to `input_size` and Gaussian-smoothed with `smoothing_sigma`.
-Because the image score is taken before smoothing, it is generally **larger** than the maximum of
-the returned map — see divergence 6 below if you're comparing against ADer's published numbers.
+same distances upsampled and smoothed (divergence 6 below).
 
 ### Config (`PatchCoreConfig`)
 
@@ -255,16 +115,8 @@ Defaults match the reference implementation behind ReplayCAD's PatchCore benchma
 | `n_neighbors` | `1` | Neighbours averaged for the nearest-neighbour patch distance |
 | `smoothing_sigma` | `4.0` | Gaussian smoothing sigma applied to the segmentation map only |
 
-### Running the example
-
-```bash
-cd examples/models/vision
-python patchcore_torch_example.py
-```
-
-Like the other examples, this reads a dataset via `read_vision_dataset` (see
-[Datasets](#datasets) above), wraps the model in a replay strategy, attaches the same image- and
-pixel-level metric callbacks, and writes results to `output.json`.
+`patchcore_torch_example.py` runs it like the other image examples; see "Run a model" in
+[Image anomaly detection](guides/vision.md#run-a-model).
 
 ## ReplayCAD
 
@@ -274,10 +126,8 @@ earlier concepts, it compresses each one into a small, frozen-diffusion-model co
 learned semantic embedding plus a mask-projection MLP) that can regenerate representative images
 on demand, and replays those alongside new data when refitting the detector.
 
-Line references to the authors' code in this package's docstrings — `personalized.py`,
-`embedding_manager.py`, `ddim.py`, `ddpm2.py` — point at
-[HULEI7/ReplayCAD](https://github.com/HULEI7/ReplayCAD) at commit `acc6195` (2026-08-16), where
-the vendored textual-inversion tree lives under `textual_inversion-main/`.
+The port follows the authors' code at [HULEI7/ReplayCAD](https://github.com/HULEI7/ReplayCAD),
+commit `acc6195`.
 
 `ReplayCADStrategy(model, memory)` is detector-agnostic — `model` is any pyCLAD vision model (e.g.
 PatchCore above, RD4AD, FastFlow, PaSTe). It needs the concept id on every call, so it runs under
@@ -365,7 +215,7 @@ pip install -e ".[replaycad]"
 ```
 
 Installs `diffusers`, `transformers`, `accelerate`, `safetensors` and `segment-anything` on top of
-the vision stack described in Setup above. They're imported lazily, so importing `pyclad` without
+the vision stack described in "Setup" in [Image anomaly detection](guides/vision.md#setup). They're imported lazily, so importing `pyclad` without
 the extra keeps working; a missing import raises a message naming the extra.
 
 ### Running the example
@@ -375,8 +225,7 @@ cd examples/strategies
 python replaycad_example.py
 ```
 
-Same pattern as the PatchCore example above — `read_vision_dataset`, the same metric callbacks,
-`output.json` — plus a `ReplayCADConfig`/`ReplayCADMemory` built with `mask_backend="precomputed"`
+Same pattern as the other image examples, plus a `ReplayCADConfig`/`ReplayCADMemory` built with `mask_backend="precomputed"`
 against the authors' `SAM.zip` extracted to `./SAM/data` (pass `mask_backend="sam"` with a
 `sam_checkpoint` instead if you don't have it) and `device="cuda"` (use `"cpu"` or `"mps"` if you
 don't have one; compression is slow either way, so shrink `compression_steps` for a smoke test).
@@ -386,9 +235,10 @@ don't have one; compression is slow either way, so shrink `compression_steps` fo
 Neither model here is a bit-for-bit port. PatchCore matches the reference implementation behind
 ReplayCAD's benchmark row (ADer's `model/patchcore.py`) constant-for-constant; ReplayCAD follows
 the authors' released hyperparameters. Where either departs from its source, it is listed below.
-Check this list before reporting a run here as a reproduction of the paper. The entries are
-numbered so that docstrings and the sections above can point at one of them ("divergence 6
-below"); keep the numbering stable, or fix the callouts with it.
+Check this list before reporting a run here as a reproduction of the paper.
+
+<!-- Docstrings and the sections above refer to these entries by number ("divergence 6 below"); renumbering them
+     means updating those references. -->
 
 1. **Detector.** `ReplayCADStrategy` refits any pyCLAD vision model — PatchCore above, RD4AD,
    FastFlow, PaSTe — while the authors train InvAD. Replay quality is therefore measured through a
@@ -425,21 +275,21 @@ below"); keep the numbering stable, or fix the callouts with it.
    connected component 100 attempts to find a non-overlapping position. When one exhausts them, the
    release records no position for it and then pastes through `zip(objects, positions)`, which
    shifts every later component onto another component's position and drops the last one; this port
-   drops only the component that failed. Not reachable by any released class configuration.
+   drops only the component that failed. No per-class preset uses this transform; it applies only if you set
+   `mask_augmentation="random_reset"` yourself.
 
 8. **Connected components** are found with `scipy.ndimage.label` (4-connectivity) instead of the
    release's `cv2.findContours(RETR_EXTERNAL)` (8-connectivity, filled contours), in the transform
    mirroring `visa_candle`. Equivalent for the hole-free, non-diagonally-touching components the
    affected VisA masks actually have.
 
-9. **Inconsistencies in the released scripts are recorded, not resolved.** Three of them:
+9. **Where the released scripts disagree with themselves, this port picks one value.** Three cases:
    generation checkpoints past their training config's `max_steps`, an `--init_word` phrase
    truncated to its first word by a single-value argparse option, and two dead, mutually
    contradictory `macaroni2` branches. The module docstring of
    `pyclad.vision.strategies.replaycad.per_class` says which value this port takes, and why.
----
 
-# Continual-MEGA
+## Continual-MEGA
 
 A continual anomaly-detection benchmark spanning seven datasets. Unlike the readers above it defines a
 whole protocol — which classes form the base task, how the rest are split into tasks, which datasets are
@@ -462,7 +312,7 @@ examples/resources/vision/continual_mega/
 **2. Where to get it**: ContinualAD and the `meta_files/` directory come from the benchmark
 [dataset page](https://huggingface.co/datasets/Continual-Mega/Continual-MEGA-Benchmark) and
 [reference repository](https://github.com/Continual-Mega/Continual-MEGA-Baseline); MVTec-AD, VisA, MPDD
-and BTAD are listed under [Datasets](#datasets) above; Real-IAD and VIADUCT come from their own sources.
+and BTAD are listed under "Datasets" in [Image anomaly detection](guides/vision.md#datasets); Real-IAD and VIADUCT come from their own sources.
 
 **3. Pick a scenario:**
 
@@ -473,22 +323,12 @@ and BTAD are listed under [Datasets](#datasets) above; Real-IAD and VIADUCT come
 | 3 | 58 (also no ContinualAD) | 30, split into 6 / 3 / 1 tasks | MVTec-AD, VisA |
 
 ```python
-from pyclad.vision.data.benchmarks.continual_mega import ContinualMegaBenchmarkReader
-
-reader = ContinualMegaBenchmarkReader(
-    data_root="../../resources/vision/continual_mega",
-    meta_dir="../../resources/vision/continual_mega/meta_files",
-    scenario=2,                # 1 | 2 | 3
-    task_size=30,              # classes per task: 5 | 10 | 30
-    zero_shot=True,            # also evaluate on the held-out datasets
-    train_samples="all",       # "all" = benchmark protocol, "normal" = one-class models only
-)
-dataset = reader.read_dataset()
+--8<-- "docs/snippets/vision/continual_mega.py:reader"
 ```
 
 Training concepts are the task groups (`base`, `task_1`, …) while test concepts are individual classes.
 
-## Grouped metrics
+### Grouped metrics
 
 One training concept covers many test concepts here, so the benchmark reports a score per task group
 rather than per class. The grouped callbacks average each group's classes into a single cell before the
@@ -496,38 +336,25 @@ summarized metrics see the matrix; averaging over all classes instead would weig
 more and give different numbers:
 
 ```python
-groups = dataset.group_by_concept()   # class -> task group
-summarized_metrics = [FinalStepAverage(), FinalStepForgettingMeasure()]
-
-callbacks = [
-    GroupedConceptMetricCallback(RocAuc(), groups, summarized_metrics),
-    GroupedVisionPixelConceptMetricCallback(PixelAveragePrecision(), groups, summarized_metrics),
-]
+--8<-- "docs/snippets/vision/continual_mega.py:grouped"
 ```
 
 Held-out zero-shot groups are reported separately under `held_out_groups` and excluded from both metrics.
 
 For a per-class view, add the plain `ConceptMetricCallback` alongside them: its matrix has one column per
 class and one row per task group, which is the rectangular shape the
-[schedule-aware metrics](metrics.md) describe. `dataset.first_seen_step()` supplies the mapping they need
+[schedule-aware metrics](metrics.md#rectangular-matrices-and-step-schedules) describe. `dataset.first_seen_step()` supplies the mapping they need
 and answers what the grouped metrics cannot — whether a class was learned at all, or was already that
 good before training:
 
 ```python
-from pyclad.callbacks.evaluation.concept_metric_evaluation import ScheduleAwareConceptMetricCallback
-
-callback = ScheduleAwareConceptMetricCallback(
-    base_metric=RocAuc(),
-    summarized_metrics=[FinalStepAverage()],
-    schedule_aware_metrics=[ScheduleAwareForwardTransfer(), ScheduleAwareNewTaskAcquisition()],
-    first_seen_step=dataset.first_seen_step(),
-)
+--8<-- "docs/snippets/vision/continual_mega.py:schedule_aware"
 ```
 
 `first_seen_step()` requires `zero_shot=False`: held-out classes never enter training, so no training step
 describes them.
 
-## Supervised models
+### Supervised models
 
 `train_samples="all"` gives 10 normal and 10 anomalous images per class with pixel masks, so the model
 trains on supervision rather than on normal data alone. Vision models of this kind implement
