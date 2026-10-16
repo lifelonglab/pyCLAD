@@ -5,20 +5,55 @@ theme:
   features:
     - navigation.expand
     - content.code.copy
+# With --strict these make broken links and #anchors fail the build.
+validation:
+  links:
+    anchors: warn
 nav:
-  - Introduction: index.md
-  - Getting started: 'getting_started.md'
-  - Examples: 'examples.md'
-  - Components:
-    - Callbacks: 'callbacks.md'
-    - InfoProvider: 'infoprovider.md'
-    - Datasets: 'datasets.md'
-    - Metrics: 'metrics.md'
-    - Models: 'models.md'
-    - Scenarios: 'scenarios.md'
-    - Strategies: 'strategies.md'
-    - Vision: 'vision.md'
-  - How to contribute?: 'contribution.md'
+  - Home: index.md
+  - Learn:
+    - Installation: learn/installation.md
+    - Your first experiment: getting_started.md
+    - Core concepts: learn/concepts.md
+  - Guides:
+    - Choosing a scenario and strategy: guides/choosing.md
+    - Using built-in datasets and step schedules: guides/datasets.md
+    - Running a reproducible comparison: guides/experiments.md
+    - Implementing your own model: guides/custom_model.md
+    - Implementing your own strategy: guides/custom_strategy.md
+    - Adding a dataset: guides/custom_dataset.md
+    - Adding a metric or callback: guides/custom_metric_callback.md
+    - Image anomaly detection: guides/vision.md
+    - Examples: examples.md
+  - Reference:
+    - Scenarios: scenarios.md
+    - Strategies: strategies.md
+    - Models: models.md
+    - Datasets: datasets.md
+    - Metrics: metrics.md
+    - Callbacks: callbacks.md
+    - Output: infoprovider.md
+    - Vision: vision.md
+    - API reference:
+      - reference/api/index.md
+      - Scenarios: reference/api/scenarios.md
+      - Strategies: reference/api/strategies.md
+      - Models: reference/api/models.md
+      - Data: reference/api/data.md
+      - Metrics: reference/api/metrics.md
+      - Callbacks: reference/api/callbacks.md
+      - Output: reference/api/output.md
+      - Seed: reference/api/seed.md
+      - Analysis: reference/api/analysis.md
+      - Vision:
+        - reference/api/vision.md
+        - Data: reference/api/vision_data.md
+        - Models: reference/api/vision_models.md
+        - Metrics: reference/api/vision_metrics.md
+        - Callbacks: reference/api/vision_callbacks.md
+        - Strategies: reference/api/vision_strategies.md
+  - Contributing: contribution.md
+  - Changelog: changelog.md
 plugins:
   - search
   - mkdocstrings:
@@ -29,6 +64,8 @@ plugins:
           options:
             docstring_style: sphinx
             show_submodules: true
+            # Without this, classes that have no docstring yet would be missing from the API reference.
+            show_if_no_docstring: true
 markdown_extensions:
   - footnotes
   - pymdownx.arithmatex:
@@ -36,9 +73,19 @@ markdown_extensions:
   - markdown_include.include:
       base_path: .
   - admonition: {}
+  - pymdownx.details
   - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  # Code in the pages comes from docs/snippets/, which tests/docs/test_snippets.py runs.
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span

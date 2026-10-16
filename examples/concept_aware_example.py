@@ -11,6 +11,7 @@ from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.pyod_adapters import IsolationForestAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.replay.buffers.adaptive_balanced import (
     AdaptiveBalancedReplayBuffer,
 )
@@ -26,6 +27,7 @@ if __name__ == "__main__":
     This example showcase how to run a concept aware scenario using the NSL-KDD dataset stored in `resources` directory.
     This file is generated using the code from this repository <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
     """
+    seed_info = set_seed(42)
     dataset = read_dataset_from_npy(
         RESOURCES / "nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy", dataset_name="NSL-KDD-R"
     )
@@ -43,4 +45,4 @@ if __name__ == "__main__":
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

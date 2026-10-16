@@ -1,70 +1,39 @@
-### What is pyCLAD?
+# pyCLAD
 
-pyCLAD is a unified framework for continual anomaly detection. Its main goal is to foster successful scientific
-development in continual anomaly detection by providing robust implementations of common functionalities for continual
-anomaly detection off-the-shelf,  minimizing the risk of error-prone tasks and fostering replicability. pyCLAD also
-facilitates the design and implementation of experimental pipelines, providing a streamlined,
-unified, and fully reproducible execution workflow.
+## What is pyCLAD?
 
-It also provides a simple and convenient infrastructure for designing new strategies, models, and evaluation procedures,
-enabling researchers to avoid repetitive tasks and allowing them to focus on creative and scientific aspects, reducing
-the friction related to low-level implementation aspects.
+pyCLAD is a unified framework for continual anomaly detection. It provides tested implementations of the parts every
+experiment needs (scenarios, strategies, models, benchmarks and metrics), so that researchers can focus on their own
+method instead of re-implementing, and possibly getting wrong, the evaluation around it. Every run is saved with
+everything that shaped its result, which makes it repeatable and comparable.
 
-The core coding infrastructure is influenced by PyTorch, a very popular framework for deep learning as well as SkLearn,
-the leading machine learning and data analysis library in Python.
+Adding a model, strategy, dataset or metric means subclassing one class. The interfaces follow scikit-learn
+(`fit` / `predict`) and work with PyOD detectors and PyTorch networks.
 
-### What is continual anomaly detection?
+## What is continual anomaly detection?
 
-**Continual Learning** puts emphasis on models that answering the need for machine learning models that continuously
-adapt to new challenges in dynamic environments while retaining past knowledge.
+**Anomaly detection** finds deviations from the normal behaviour of a process, for example in cyber-physical
+systems, health monitoring or network traffic. **Continual learning** studies models that keep adapting to new
+conditions while retaining what they learned before. Continual anomaly detection combines the two. Compared with
+other ways of keeping a detector up to date:
 
-**Anomaly Detection** is the process of detecting deviations from the normal behavior of a process, and has a very wide
-range of applications including monitoring cyber-physical systems, human conditions, as well as network traffic.
+- **Offline**: the model is trained once and never updated. It cannot adapt when normal behaviour changes.
+- **Online**: the model is updated as new data arrives, assuming the most recent data is the most relevant. It
+  adapts, but forgets earlier conditions.
+- **Continual**: the model *adapts* to new conditions and *retains* knowledge of earlier ones, which matters when
+  conditions recur.
 
-**Continual anomaly detection** lies at the intersection of these two fields. Its strategies focus on specific goals
-which can be compared to other types of anomaly detection approaches. One possible categorization is the following:
+To learn more, we recommend [this open-access paper](https://ieeexplore.ieee.org/abstract/document/10473036/).
 
-- **Offline**: Models are trained once on background data and do not require updates (examples: post-incident analysis,
-  breast cancer detection)  and on updating the model as new data is observed, assuming only the most recent information
-  is relevant. This approach is static in nature and does not provide adaptation.
+## Where do I start?
 
-- **Online**: Models are updated as new data is observed, assuming that the most recent information is the most
-  relevant. This approach is popular in real-world dynamic applications where adaptation is necessary, but makes models
-  prone to forgetting past knowledge.
+1. [Install pyCLAD](learn/installation.md), with the extras you need.
+2. Run [your first experiment](getting_started.md): a complete script, explained step by step.
+3. Read the [core concepts](learn/concepts.md): what a concept, scenario, strategy and model are, and how pyCLAD
+   evaluates them.
+4. Browse the [examples](examples.md), then the reference pages for the components you use.
 
-- **Continual**: Models are updated to simultaneously consider *adaptation* to new conditions and *knowledge retention*
-  of previously observed (and potentially recurring) conditions.
-  This behavior attempts to overcome limitations of both offline and online anomaly detection in complex scenarios.
-
-If you want to learn more about continual anomaly detection, we
-recommend [this open-access paper](https://ieeexplore.ieee.org/abstract/document/10473036/).
-
-### How do I install pyCLAD?
-
-pyCLAD is available as a [Python package on PyPI](https://pypi.org/project/pyclad/). Therefore, it can be installed
-using `pip`:
-
-```
-pip install pyclad
-```
-
-#### Optional dependencies
-
-The default installation covers the scenarios, metrics, callbacks, datasets, the baseline and replay strategies, and
-the pyOD-based models. Heavier dependencies are kept out of it and installed through extras:
-
-| Extra | Install with | Adds |
-|---|---|---|
-| `torch` | `pip install "pyclad[torch]"` | PyTorch models (autoencoders, CARLA) and the strategies that train them (EWC, LwF, DER++, A-GEM) |
-| `vision` | `pip install "pyclad[vision]"` | image anomaly detection models, datasets and pixel-level metrics (includes `torch`) |
-| `ucad` | `pip install "pyclad[ucad]"` | the UCAD model and strategy (includes `vision`) |
-| `replaycad` | `pip install "pyclad[replaycad]"` | the ReplayCAD strategy (includes `vision`) |
-| `all` | `pip install "pyclad[all]"` | everything above |
-
-pyCLAD supports the use of any model from pyOD library, some of which may require installation of additional packages (
-see [pyOD docs](https://pyod.readthedocs.io/en/latest/)).
-
-### Citing pyCLAD
+## Citing pyCLAD
 
 A paper describing pyCLAD is published in SoftwareX Journal - [click here](https://www.sciencedirect.com/science/article/pii/S2352711024003649). If you use pyCLAD in your research, please cite:
 
@@ -81,5 +50,4 @@ A paper describing pyCLAD is published in SoftwareX Journal - [click here](https
   author = {Kamil Faber and Bartlomiej Sniezynski and Nathalie Japkowicz and Roberto Corizzo},
   keywords = {Continual anomaly detection, Lifelong anomaly detection, Continual learning, Anomaly detection, Software},
 }
-
-
+```

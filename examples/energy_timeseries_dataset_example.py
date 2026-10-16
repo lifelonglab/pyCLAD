@@ -2,7 +2,6 @@ import logging
 import pathlib
 
 from pyclad.callbacks.evaluation.concept_metric_evaluation import ConceptMetricCallback
-from pyclad.callbacks.evaluation.memory_usage import MemoryUsageCallback
 from pyclad.callbacks.evaluation.time_evaluation import TimeEvaluationCallback
 from pyclad.data.datasets.energy_plants_dataset import EnergyPlantsDataset
 from pyclad.data.timeseries import convert_dataset_to_overlapping_windows
@@ -14,6 +13,7 @@ from pyclad.models.adapters.pyod_adapters import LocalOutlierFactorAdapter
 from pyclad.models.adapters.temporal_adapter import FlattenTimeSeriesAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
@@ -23,6 +23,7 @@ if __name__ == "__main__":
     This example showcase how to run a concept aware scenario using the Energy dataset adopted to continual anomaly
     detection using the method proposed here <https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios>
     """
+    seed_info = set_seed(42)
     dataset = EnergyPlantsDataset(dataset_type="random_anomalies")
     dataset = convert_dataset_to_overlapping_windows(window_size=10, dataset=dataset)
 
@@ -34,10 +35,9 @@ if __name__ == "__main__":
             summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
         ),
         TimeEvaluationCallback(),
-        MemoryUsageCallback(),
     ]
     scenario = ConceptAwareScenario(dataset, strategy=strategy, callbacks=callbacks)
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output-energy.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])

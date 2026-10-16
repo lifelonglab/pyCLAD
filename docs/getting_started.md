@@ -1,274 +1,148 @@
-# Getting Started
+# Your first experiment
 
-In this page, we describe the core concepts of pyCLAD and provide a quick example with line by line explanation to help
-you get started.
+This page walks through one complete pyCLAD experiment, step by step. It trains an Isolation Forest on three concepts,
+one after another, and measures how much the model forgets. The [full script](#full-script) is at the end of the page;
+it runs in a few seconds and only needs `pip install pyclad`.
 
-## Overview
+If a term is new to you, [Core concepts](learn/concepts.md) explains it in more detail.
 
-pyCLAD is built upon a few core concepts:
+## The building blocks
 
-- **Scenario**: a continual scenario defines the data stream so that it reflects different real-life conditions and what
-  are
-  the challenges faced by continual strategy.
-- **Strategy**: a strategy is a way to manage model updates. Continual strategy is responsible for how, when, and with
-  which
-  data models should be updated. Its aim is to introduce knowledge retention while keeping the ability to adapt.
-- **Model**: a model is a machine learning model used for anomaly detection. Models are often leveraged by continual
-  strategies that add additional layer of managing model's updates.
-- **Dataset**: a dataset is a collection of data used for training and evaluation of the model.
-- **Metrics**: a metric is a way to evaluate the performance of the model.
-- **Callbacks**: a callback is a function that is called at specific points during the scenario. Callbacks are
-  useful for monitoring the process, calculating metrics, and more.
+An experiment combines five things:
 
-If you want to learn more about each of these components, please refer to the specific pages in the documentation.
+- **Dataset**: a sequence of *concepts*. A concept is one distribution, activity or task, with training data and
+  labelled test data.
+- **Model**: an anomaly detector, for example an Isolation Forest.
+- **Strategy**: decides how the model is updated as new concepts arrive, so that it adapts to them without forgetting
+  the old ones.
+- **Scenario**: the loop that feeds concepts to the strategy, and decides what the strategy is told about them.
+- **Callbacks**: hooks that the scenario calls along the way, for example to compute metrics or measure time.
 
-## How to run your first experiment?
+## 1. Make the run repeatable
 
-To get started, we describe a typical pyCLAD execution step-by-step.
-In the example below, we run an experiment on randomly generated data in a *Concept-agnostic scenario*, using a
-*Cumulative strategy* and a *One-Class SVM model*.
+Call `set_seed` once, before anything else. It seeds Python's `random`, NumPy and PyTorch (when installed), and
+returns an object that saves the seed with the results:
 
-### Preparing a dataset
-
-pyCLAD leverages the idea of concepts to simulate continual learning scenarios. A concept is a subset of data that
-represents a specific distribution/activity/task.
-See more in [Datasets](datasets.md).
-Every dataset is represented as a sequence of concepts, where each concept is represented by a *name*, *data*, and (
-optionally) *labels*.
-In this example, we use randomly generated data to demonstrate the workflow and manual concept creation. However, we
-also provide examples with real-world datasets (see more
-info [here](getting_started.md#leveraging-real-world-datasets)).
-
-Let's start our example with creating a few concepts with randomly generated data:
-
-``` py
-concept1_train = Concept("concept1", data=np.random.rand(100, 10))
-concept1_test = Concept("concept1", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
-
-concept2_train = Concept("concept2", data=np.random.rand(100, 10))
-concept2_test = Concept("concept2", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
-
-concept3_train = Concept("concept3", data=np.random.rand(100, 10))
-concept3_test = Concept("concept3", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:seed"
 ```
 
-Having created the concepts, we can build a dataset based on them:
+## 2. Prepare a dataset
 
-``` py
-dataset = ConceptsDataset(
-    name="GeneratedDataset",
-    train_concepts=[concept1_train, concept2_train, concept3_train],
-    test_concepts=[concept1_test, concept2_test, concept3_test],
-)
+Each concept has a *name*, *data* and, for test concepts, *labels*: `0` for a normal sample and `1` for an anomaly.
+Here we generate three concepts, centred at 0, 10 and 20. Training data is normal only; each test concept also holds 10
+anomalies:
+
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:concepts"
 ```
 
-You can leverage any of your preferred datasets by dividing it into concepts. We provide an example of how to extract
-concepts from a dataset in the [Datasets](datasets.md) section.
+A `ConceptsDataset` groups the concepts. The order of `train_concepts` is the order in which the strategy learns
+them:
 
-### Defining a strategy
-
-A continual learning strategy manages model updates to ensure knowledge retention while adapting to new data.
-pyCLAD provides a few baseline strategies, such as *Cumulative*, *MSTE*, and *Naive*, as well as very commonly adopted
-*Replay* (see more info about strategies in [Strategies](strategies.md)).
-
-As strategies manage model updates, they require a model as an input. In this example, we use an *One Class SVM*
-model (see more info about models in [Models](models.md)).
-
-Let's start with defining a model:
-
-``` py
-model = OneClassSVMAdapter()
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:dataset"
 ```
 
-Then, we can create a strategy:
+To use your own data, split it into concepts in the same way. pyCLAD also ships ready-to-use benchmarks, which are
+downloaded on first use; see [Datasets](datasets.md).
 
-``` py
-strategy = CumulativeStrategy(model)
+## 3. Choose a model and a strategy
+
+A strategy wraps a model and decides how it is updated. `NaiveStrategy` simply retrains the model on each new concept,
+with no protection against forgetting, which makes it the usual lower bound in a comparison:
+
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:strategy"
 ```
 
-### Defining callbacks
+[Strategies](strategies.md) lists the other strategies, such as replay and regularization methods, and
+[Models](models.md) lists the models.
 
-Callbacks allow to effectively log useful information in pyCLAD during key checkpoints (*before* and *after*) of the
-experimental workflow (see more in [Callbacks](callbacks.md)).
-In this example, we leverage the callbacks that monitor model performance (*ConceptMetricCallback*) and
-execution time (*TimeEvaluationCallback*).
+## 4. Define what to measure
 
-Let's start with defining time evaluation callback:
+After each concept is learned, the scenario evaluates the strategy on **every** test concept: the ones already learned,
+the current one and the future ones. `ConceptMetricCallback` collects these results in a matrix $R$, where $R_{i,j}$
+is the score on concept $j$ after learning concept $i$, and summarizes it with continual metrics:
 
-``` py
-time_callback = TimeEvaluationCallback()
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:callbacks"
 ```
 
-Then, let's define a callback that logs model performance:
+- `base_metric` scores one evaluated concept. ROC-AUC uses the anomaly scores, so it does not depend on a
+  threshold.
+- `summarized_metrics` turn the whole matrix into one number each. For example, `BackwardTransfer` measures how
+  learning new concepts changed the results on earlier ones.
+- `stepwise_metrics` report one value after each learned concept, such as `ForgettingMeasure`.
 
-``` py
-metric_callback = ConceptMetricCallback(
-    base_metric=RocAuc(),
-    summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
-)
+`TimeEvaluationCallback` measures the training and evaluation time. See [Metrics](metrics.md) and
+[Callbacks](callbacks.md) for the others.
+
+## 5. Run the scenario
+
+The scenario decides what the strategy is told about the stream. In a *concept-incremental* scenario, each
+`learn()` call is one whole concept, but the strategy is not told which concept it is. See [Scenarios](scenarios.md)
+for the other scenarios.
+
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:scenario"
 ```
 
-*ConceptMetricCallback* takes as an input:
+## 6. Save the results
 
-- *base_metric*: a non-continual base metric that is used to evaluate the performance of single concept, for example
-  ROC-AUC.
-- *summarized_metrics*: a list of continual learning metrics that summarize the whole scenario as a single value,
-  calculated with *base_metric* as a base.
-- *stepwise_metrics* (optional): a list of continual learning metrics that report one value after each learned
-  concept, such as `ForgettingMeasure`.
+`JsonOutputWriter` saves everything that describes the run: the seed, the model's and strategy's parameters, the
+dataset, and the results collected by the callbacks.
 
-See more in [Metrics](metrics.md).
-
-### Running a scenario
-
-Finally, having defined the dataset, strategy, and callbacks, we can run a scenario.
-A continual learning **scenario** defines data assumptions that have implications on how *strategies* and *models*
-behave.
-In this example, we run a *Concept-agnostic scenario* (see more in [Scenarios](scenarios.md)).
-To do this, we start with creating a scenario passing the dataset, strategy, and callbacks as arguments. Then, we use
-the `run` method to execute the scenario.
-
-``` py
-scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy,
-                                   callbacks=[metric_callback, time_callback])
-scenario.run()
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:output"
 ```
 
-### Saving results
-
-Last but not least, we need to save the results of the experiment gathered by the callbacks, along with parameters of
-dataset, strategy, and model.
-We can use the *JsonOutputWriter* to save the results in JSON format.
-
-``` py
-output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-output_writer.write([model, dataset, strategy, metric_callback, time_callback])
-```
-
-An example of output in JSON format (*output.json*) is partially shown below. We can see info about the dataset,
-strategy, model, and metrics calculated by the callbacks.
+Part of the resulting `output.json`:
 
 ```json
 {
-  "model": {
-    "name": "OneClassSVM",
-    "kernel": "rbf",
-    ...
-  },
-  "dataset": {
-    "name": "GeneratedDataset",
-    "train_concepts_no": 3,
-    "test_concepts_no": 3
-  },
-  "strategy": {
-    "name": "Cumulative",
-    "model": "OneClassSVM",
-    "buffer_size": 300
-  },
-  "concept_metric_callback_ROC-AUC": {
-    "base_metric_name": "ROC-AUC",
-    "metrics": {
-      "ContinualAverage": 0.5016447508645475,
-      "BackwardTransfer": -0.006135787648392695,
-      "ForwardTransfer": 0.5108682749081299
+    "seed": 42,
+    "model": {"name": "IsolationForest", "n_estimators": 100, "random_state": 42, ...},
+    "dataset": {"name": "GeneratedDataset", "train_concepts_no": 3, "test_concepts_no": 3},
+    "strategy": {"name": "Naive"},
+    "concept_metric_callback_ROC-AUC": {
+        "base_metric_name": "ROC-AUC",
+        "metrics": {"ContinualAverage": 0.67, "BackwardTransfer": -0.47, "ForwardTransfer": 0.5},
+        "stepwise_metrics": {"ForgettingMeasure": [0.0, 0.6, 0.7]},
+        "concepts_order": ["concept1", "concept2", "concept3"],
+        "metric_matrix": {
+            "concept1": {"concept1": 1.0, "concept2": 0.5, "concept3": 0.5},
+            "concept2": {"concept1": 0.4, "concept2": 1.0, "concept3": 0.5},
+            "concept3": {"concept1": 0.5, "concept2": 0.1, "concept3": 1.0}
+        },
+        ...
     },
-    ...
-  },
-  "time_evaluation_callback": {
-    "time_by_concept": {
-      "concept1": {
-        "train_time": 0.013182401657104492,
-        "eval_time": 0.00678563117980957
-      },
-      ...
-    },
-    "train_time_total": 0.021419048309326172,
-    "eval_time_total": 0.02041482925415039
-  }
+    "time_evaluation_callback": {...}
 }
 ```
 
-### Making a run repeatable
+## 7. Read the results
 
-Strategies and models draw random numbers from Python's `random` module, from NumPy and from PyTorch. Call
-`set_seed` once at the start of a script to seed all three:
+The matrix shows what happened. Each concept is detected perfectly right after it is learned (the diagonal is 1.0),
+but once the model moves on to the next concept, the score on the earlier one drops to chance level or below. This is
+*catastrophic forgetting*, and it is what continual strategies try to prevent. The negative `BackwardTransfer` and the
+growing `ForgettingMeasure` summarize the same thing.
 
-``` py
-from pyclad.seed import set_seed
+Always take numbers from the JSON file, and plot the matrix to see it at a glance:
 
-seed = set_seed(42)
+```python
+--8<-- "docs/snippets/getting_started/first_experiment.py:results"
 ```
 
-Components that take their own `seed` or `rng` argument keep using it; the ones given none follow this seed.
-`set_seed` returns an object you can pass to the output writer, so the seed is saved with the results:
+## Next steps
 
-``` py
-output_writer.write([seed, model, dataset, strategy, metric_callback, time_callback])
-```
+- Replace `NaiveStrategy` with `CumulativeStrategy` or a replay strategy and compare the results. A fair comparison
+  uses the same dataset, concept order, scenario and metrics, and several seeds.
+- Learn the [core concepts](learn/concepts.md) behind scenarios, strategies and metrics.
+- Try a real benchmark from [Datasets](datasets.md), or one of the [examples](examples.md).
 
-## Full code example
-
-The complete script, including the imports, is shown below. You can see this and more code examples in the
-[repository](https://github.com/lifelonglab/pyCLAD/tree/main/examples).
+## Full script
 
 ```python linenums="1"
-import pathlib
-
-import numpy as np
-
-from pyclad.callbacks import ConceptMetricCallback, TimeEvaluationCallback
-from pyclad.data import Concept, ConceptsDataset
-from pyclad.metrics import BackwardTransfer, ContinualAverage, ForwardTransfer, RocAuc
-from pyclad.models.adapters.pyod_adapters import OneClassSVMAdapter
-from pyclad.output.json_writer import JsonOutputWriter
-from pyclad.scenarios import ConceptAgnosticScenario
-from pyclad.strategies.baselines.cumulative import CumulativeStrategy
-
-# Prepare random data for 3 concepts
-concept1_train = Concept("concept1", data=np.random.rand(100, 10))
-concept1_test = Concept("concept1", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
-
-concept2_train = Concept("concept2", data=np.random.rand(100, 10))
-concept2_test = Concept("concept2", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
-
-concept3_train = Concept("concept3", data=np.random.rand(100, 10))
-concept3_test = Concept("concept3", data=np.random.rand(100, 10), labels=np.random.randint(0, 2, 100))
-
-# Build a dataset based on the previously created concepts
-dataset = ConceptsDataset(
-    name="GeneratedDataset",
-    train_concepts=[concept1_train, concept2_train, concept3_train],
-    test_concepts=[concept1_test, concept2_test, concept3_test],
-)
-# Define model, strategy, and callbacks
-model = OneClassSVMAdapter()
-strategy = CumulativeStrategy(model)
-
-time_callback = TimeEvaluationCallback()
-metric_callback = ConceptMetricCallback(
-    base_metric=RocAuc(),
-    summarized_metrics=[ContinualAverage(), BackwardTransfer(), ForwardTransfer()],
-)
-
-# Execute the concept agnostic scenario
-scenario = ConceptAgnosticScenario(dataset=dataset, strategy=strategy, callbacks=[metric_callback, time_callback])
-scenario.run()
-
-# Save the results
-output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-output_writer.write([model, dataset, strategy, metric_callback, time_callback])
+--8<-- "docs/snippets/getting_started/first_experiment.py"
 ```
-
-## Leveraging real-world datasets
-
-In the example above, we used randomly generated data to demonstrate the workflow. However, in [Examples](examples.md),
-we also showcase examples with real-world, such as
-datasets ([UNSW](https://github.com/lifelonglab/pyCLAD/blob/main/examples/unsw_dataset_example.py)
-and [Energy](https://github.com/lifelonglab/pyCLAD/blob/main/examples/energy_dataset_example.py)).
-pyCLAD provides a few datasets that can be used out-of-the-box, such as *UNSW-NB15*, *NSL-KDD*, *Wind Energy*, and
-*Energy Plants*. They are available as classes (for example `UnswDataset`) and automatically downloaded from hugging
-face. See more info in [Datasets](datasets.md).
-
-Moreover, pyCLAD provides out-of-the-box loader (`read_dataset_from_npy`) for continual learning scenarios extracted
-leveraging the algorithm described [in this paper](https://ieeexplore.ieee.org/abstract/document/10473036) (
-see [code](https://github.com/lifelonglab/lifelong-anomaly-detection-scenarios)). 

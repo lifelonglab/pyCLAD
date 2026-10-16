@@ -1,68 +1,48 @@
 # Scenarios
 
-### Overview 
+### Overview
 
-A continual learning **scenario** defines data assumptions that have implications on how *strategies* and *models* behave. 
+A **scenario** feeds the train concepts of a dataset to a strategy and evaluates it after each one. Scenarios
+differ in what they reveal about the stream [1]:
 
-To differentiate continual anomaly detection scenarios, we define **concept** as a self-consistent behavior of the normal class, alongside the specific anomalies occurring with it.
-A concept can correspond to a new distribution, change of a performed activity, or a new state of the environment, depending on the specific analytical context [1].
+- **Concept-aware**: concept boundaries and concept identities are known, at training and at prediction time.
+- **Concept-incremental**: boundaries are known (each training step is one concept), identities are not.
+- **Concept-agnostic**: neither is known; data arrives in batches and changes are unannounced.
 
-*Example*: In monitoring human conditions to detect harmful states, the entire normal class can be thought of as a set of concepts: *resting*, *jogging*, and *eating*, each with distinct characteristics.
+They are adapted from the scenarios of continual learning for image classification. What a concept is, and why a
+strategy may only infer what the scenario hides, is explained in [Core concepts](learn/concepts.md#scenarios);
+[Choosing a scenario and a strategy](guides/choosing.md) helps match a scenario to an application.
 
-Scenarios differ based on the availability of:
+### Scenarios and strategy contracts
 
-- **Concept identifier**: A consistent behavior of the normal class describing one specific activity
-- **Concept boundary**: Explicit information on whether the currently analyzed concept (a specific activity) has changed.
+Each scenario drives one strategy contract, defined in `pyclad.strategies.strategy`. A strategy can only run in the
+scenarios whose contract it implements:
 
-Scenarios natively supported in pyCLAD are: 
+| Scenario | Strategy contract | What the scenario calls |
+|---|---|---|
+| `ConceptAwareScenario` | `ConceptAwareStrategy` | `learn(data, concept_id)` once per concept; `predict(data, concept_id)` |
+| `ConceptIncrementalScenario` | `ConceptIncrementalStrategy` | `learn(data)` once per concept; `predict(data)` |
+| `ConceptAgnosticScenario` | `ConceptAgnosticStrategy` | `learn(data)` on consecutive batches of 256 samples (`run(batch_size=...)`); `predict(data)` |
+| `SupervisedConceptIncrementalScenario` | `SupervisedStrategy` | `learn(concept)` once per concept, so labels and masks reach the model; `predict(data)` |
 
-- **Concept-aware**: Known concept identifier and concept boundaries.
-This scenario implies that the model is aware of the currently processed activity and its lifespan (at both training and inference time).
+In every scenario, after each training step the strategy is evaluated on all test concepts, and `predict` returns a
+`PredictionResults` (`y_pred` and `anomaly_scores`). The callbacks receive the evaluated concept, its labels and both
+arrays. A scenario always calls `after_scenario` on its callbacks, even when the run fails, so callbacks that hold
+resources (the energy and memory trackers) release them.
 
-- **Concept-incremental**: Unknown concept identifier but known concept boundaries.
-This scenario only provides an indication that a change of activity has occurred without any identifying information about the specific activities.
-
-- **Concept-agnostic**: Unknown concept identifier and concept boundaries.
-This scenario is more challenging for models/strategies than the previous ones, as it does not provide any supporting information about the current activity being performed and its lifespan.
-
-New scenarios can be designed to account for the limitations of previously existing ones. One example is the explicit consideration of the temporal dimension in online learning scenarios.
-
-These scenarios stem from the popular  scenarios adopted in continual learning for image classification, and are adapted to the anomaly detection context.
-
-For example, a concept-aware scenario may fit the case of monitoring network traffic from multiple cloud virtual machines, 
-where the anomaly detection method is aware of the source machine from which the currently processed data is coming from (known concept identifier and boundaries). 
-
-A concept-incremental scenario can fit the case of an industrial monitoring environment, where changes in production profiles are known (concept boundary), but there is no information about the specific production profiles (no concept identifier).
-
-A concept-agnostic scenario can be adopted for fully unsupervised monitoring of human conditions over multiple heterogeneous activities, where information about the specific activity being performed as well as and the start and end time of each are completely unknown.   
-
-
-Each scenario speaks one strategy contract. **SupervisedConceptIncrementalScenario** is the concept-incremental scenario for strategies whose models train on labels: it is identical to `ConceptIncrementalScenario` except that it hands the whole concept to `learn`, so that labels and masks reach the model.
+The strategies that implement each contract are listed in [Strategies](strategies.md).
 
 ### Code example
-    def concept_aware_scenario(data_loader: ConceptsDataset, strategy: ConceptAwareStrategy, callbacks: List[Callback]):
-        callback_composite = CallbackComposite(callbacks)
 
-        callback_composite.before_scenario()
-    
-        for train_concept in data_loader.train_concepts():
-            logger.info(f"Starting training on concept {train_concept.name}")
-            callback_composite.before_training()
-            strategy.learn(data=train_concept.data, concept_id=train_concept.name)
-            callback_composite.after_training(learned_concept=train_concept)
-    
-            for test_concept in data_loader.test_concepts():
-                logger.info(f"Starting evaluation of concept {train_concept.name}")
-                callback_composite.before_evaluation()
-                anomaly_scores, y_predicted = strategy.predict(data=test_concept.data, concept_id=test_concept.name)
-                callback_composite.after_evaluation(
-                    evaluated_concept=test_concept,
-                    y_true=test_concept.labels,
-                    y_pred=y_predicted,
-                    anomaly_scores=anomaly_scores,
-                )
-    
-        callback_composite.after_scenario()
+The same strategy run in the three scenarios:
+
+```python
+--8<-- "docs/snippets/scenarios/three_scenarios.py:scenarios"
+```
+
+Scenarios do not check the strategy's type at run time. Pass only a strategy that implements the scenario's
+contract: a strategy that accepts extra keyword arguments could otherwise silently ignore information it was not
+designed to use.
 
 ### References
 

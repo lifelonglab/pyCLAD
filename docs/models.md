@@ -1,110 +1,121 @@
 # Models
 
-### Overview 
+### Overview
 
-A model can be added to the library by implementing a model adapter class, subclass of <code>Model</code>, overriding three abstract methods: <code>name</code>, <code>fit</code>, and <code>predict</code>.
+A model is an anomaly detector. Strategies decide which data a model is trained on; the model does the detection.
+Every model implements the `Model` contract (`pyclad.models.model`):
 
-A Model class also inherits the abstract method <code>info</code> from <code>InfoProvider</code>, which allows for logging useful information pertaining to the model's configuration as a dictionary.
+- `fit(data)` trains the model on an array whose first axis runs over samples.
+- `predict(data)` returns a `PredictionResults` with two arrays, one entry per sample:
+    - `anomaly_scores`: **a higher score means a more anomalous sample**. The scale is up to the model; ranking
+      metrics such as ROC-AUC only use the order.
+    - `y_pred`: **`0` for a normal sample, `1` for an anomaly**.
+- `name()` and, optionally, `additional_info()` describe the model in the output JSON. Return every hyperparameter
+  that shapes the result.
 
-Models that train on labelled data implement <code>SupervisedModel</code> instead, whose <code>fit</code> takes <code>data</code> and <code>labels</code>. It is a sibling of <code>Model</code> rather than a subclass: the two <code>fit</code> signatures are different contracts, so a supervised model cannot be used where an unsupervised one is expected.
+`fit` only ever sees training data. `predict` must not change what the model has learned.
 
-Although pyCLAD is not restricted to specific models, one-class learning models are the most common in practice.
-Models can be built, for instance, based on SkLearn, PyOD, or PyTorch base classes.  
-In this case, the <code>fit</code> and <code>predict</code> methods can be wrappers of the <code>fit</code> and <code>predict</code> methods in the respective base model classes.
+Models that train on labels implement `SupervisedModel` instead, whose `fit` takes `data` and `labels`. It is a
+separate contract, not a subclass of `Model`, and is used with `SupervisedStrategy` and
+`SupervisedConceptIncrementalScenario`.
 
+### PyOD models
 
-### PyTorch example
-Here is an example of how to implement an Autoencoder model using PyTorch modules:
+pyCLAD ships adapters for several [PyOD](https://pyod.readthedocs.io/) detectors: `IsolationForestAdapter` [1],
+`LocalOutlierFactorAdapter` [2], `OneClassSVMAdapter`, `COPODAdapter` and `ECODAdapter`, all in
+`pyclad.models.adapters.pyod_adapters`. Keyword arguments go to the PyOD detector, and `additional_info()` reports all
+of its parameters. Any other PyOD detector can be wrapped with `PyODAdapter`:
 
-    class Autoencoder(Model):
-        def __init__(
-            self, encoder: nn.Module, decoder: nn.Module, lr: float = 1e-2, threshold: float = 0.5, epochs: int = 20
-        ):
-            self.module = AutoencoderModule(encoder, decoder, lr)
-            self.threshold = threshold
-            self.epochs = epochs
-    
-        def fit(self, data: np.ndarray):
-            dataset = TensorDataset(torch.Tensor(data))
-            dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
-            trainer = pl.Trainer(max_epochs=self.epochs)
-            trainer.fit(self.module, dataloader)
-    
-        def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-            x_hat = self.module(torch.Tensor(data)).detach()
-            rec_error = ((data - x_hat.numpy()) ** 2).mean(axis=1)
-    
-            binary_predictions = (rec_error > self.threshold).astype(int)
-            return binary_predictions, rec_error
-    
-        def name(self) -> str:
-            return "Autoencoder"
-    
-        def additional_info(self):
-            return {
-                "threshold": self.threshold,
-                "encoder": str(self.module.encoder),
-                "decoder": str(self.module.decoder),
-                "lr": self.module.lr,
-                "epochs": self.epochs,
-            }
+```python
+--8<-- "docs/snippets/models/pyod_models.py:pyod"
+```
 
-In the current version, we provide three pre-implemented Autoencoder architectures: <code>Autoencoder</code>, <code>TemporalAutoencoder</code>, and <code>VariationalTemporalAutoencoder</code>.
-Each can support different <code>encoder</code> and <code>decoder</code> layers implemented as PyTorch modules.
+```python
+--8<-- "docs/snippets/models/pyod_models.py:predict"
+```
 
-We provide <code>GRUEncoder</code>, <code>LSTMEncoder</code>, <code>TCNEncoder</code>, and their decoder counterparts.
-Based on these, custom architectures can be built:
+PyOD already follows pyCLAD's conventions (higher score = more anomalous, `1` = anomaly), so the adapter passes its
+results through unchanged.
 
-    encoder = LSTMEncoder(_encoder_layers, seq_len=config.seq_len)
-    decoder = LSTMDecoder(_decoder_layers, seq_len=config.seq_len)
-    autoencoder = TemporalAutoencoder(encoder=encoder, decoder=decoder, epochs=5, seq_len=config.seq_len)
+### Writing your own model
 
-Additional examples can be found in [examples/models](https://github.com/lifelonglab/pyCLAD/tree/main/examples).
+Subclass `Model` and convert to pyCLAD's conventions in `predict`. [Implementing your own model](guides/custom_model.md)
+walks through wrapping scikit-learn's Isolation Forest, which uses the opposite conventions, and writing a
+`TorchBackbone`, with a checklist.
 
+### PyTorch models
 
-### PyOD example
-Here is an example of how to use our <code>PyODAdapter</code> to implement existing PyOD models:
+PyTorch models (`pip install "pyclad[torch]"`) are split in two parts:
 
-    class PyODAdapter(Model):
-        def __init__(self, model: BaseDetector, model_name: str):
-            self._model = model
-            self._model_name = model_name
-    
-        def fit(self, data: np.ndarray):
-            self._model.fit(data)
-    
-        def predict(self, data: np.ndarray) -> (np.ndarray, np.ndarray):
-            return self._model.predict(data), self._model.decision_function(data)
-    
-        def name(self) -> str:
-            return self._model_name
-    
-        def additional_info(self):
-            return self._model.get_params()
-    
-Here is an adapter implementation for Isolation Forest, a popular one-class tree-based ensemble for anomaly detection.
-The implementation is based on the general <code>PyODAdapter</code> class: 
+- A **backbone** (`TorchBackbone`) holds the network, its loss and its optimizer. It implements `get_module()`,
+  `get_optimizer()`, `compute_loss(x)`, `forward(x)` and `name()`. It also needs `predict(data)` returning
+  `PredictionResults`: the base class does not declare it, but `TorchModelAdapter` and the strategies call it.
+  Strategies that change the training itself, such as EWC, LwF, DER++ and A-GEM, work directly with a backbone.
+- A **runner** (`TorchRunner`) owns the training loop: epochs, an optional validation split and early stopping.
+  `StandardRunner(max_epochs, validation_fraction=0.0, early_stopping=None, seed=None)` is the standard one. The
+  validation set is always split off the training data of the current concept, never taken from test data.
 
-    class IsolationForestAdapter(PyODAdapter):
-        def __init__(self, **kwargs):
-            super().__init__(model_name="IsolationForest", model=IForest(**kwargs))
+`TorchModelAdapter(backbone, runner, batch_size)` combines the two into a `Model`, so a PyTorch model also works with
+the strategies that take any model (Naive, Cumulative, replay, VLAD):
 
+```python
+--8<-- "docs/snippets/models/torch_models.py:autoencoder"
+```
 
-Isolation Forest [1] uses a group of tree-based models and calculates an isolation score for every data instance. 
-The average distance from the tree's root to the leaf (data instance), i.e., the number of partitions required to reach the instance, is used to compute the anomaly score.
+`EarlyStopping(patience, min_delta, restore_best_weights)` stops training when the validation loss has not improved
+for `patience` epochs and, by default, restores the best weights. The runner resets it at the start of each concept,
+so each concept is judged on its own.
 
-Considering that more noticeable variations in values correspond to shorter paths in the tree, this information is used to detect anomalies from normal instances. 
+#### Autoencoders
 
-In custom scenarios, the <code>fit</code> method can entail any arbitrarily complex model training approach, whereas <code>predict</code> could implement a post-processing logic (e.g. from continuous raw scores to binary class outcome, or class label conversion), as done in the example.
+Autoencoders score a sample by its reconstruction error:
 
-Using a similar approach, additional PyOD models can be easily supported. For instance, Local Outlier Factor (LOF) [2]:
+- `Autoencoder(encoder, decoder, lr, threshold)` takes any encoder and decoder `nn.Module`.
+- `VariationalAutoencoder(encoder, decoder, hidden_dim, latent_dim, lr, threshold, kl_weight)` adds the mean and
+  log-variance heads between the encoder (which outputs `hidden_dim` features) and the decoder (which takes
+  `latent_dim` features). It scores with the latent mean, so scores do not vary between calls.
 
-    class LocalOutlierFactorAdapter(PyODAdapter):
-        def __init__(self, **kwargs):
-            super().__init__(model_name="LOF", model=LOF(novelty=True, **kwargs))
+```python
+--8<-- "docs/snippets/models/torch_models.py:vae"
+```
+
+!!! warning "Fixed threshold"
+    The autoencoders turn reconstruction errors into `y_pred` with a fixed `threshold` (0.5 by default), which is not
+    calibrated to the data. Threshold-based metrics such as F1 are therefore not meaningful for them unless you set a
+    threshold derived from training data. Ranking metrics (ROC-AUC, average precision) are unaffected.
+
+For time series, `TemporalAutoencoder` and `VariationalTemporalAutoencoder` reconstruct windows of shape
+`(n_windows, seq_len, n_features)` with GRU, LSTM or TCN encoders and decoders (`GRUEncoder`, `LSTMEncoder`,
+`TCNEncoder` and their decoders in `pyclad.models.autoencoder.standard`, and their variational counterparts in
+`pyclad.models.autoencoder.variational`). They are trained with
+PyTorch Lightning for a fixed number of `epochs`. See the `*_tae_torch_example.py` scripts in
+[examples/models](https://github.com/lifelonglab/pyCLAD/tree/main/examples/models).
+
+#### CARLA
+
+`Carla(backbone, ...)` (`pyclad.models.contrastive.carla`) is a self-supervised contrastive model for time-series
+anomaly detection [3]. It takes a feature extractor such as `ResNet1D` and trains in two stages, a triplet-loss pretext
+stage with injected anomalies and a self-supervised classification stage. See
+[carla_energy_example.py](https://github.com/lifelonglab/pyCLAD/blob/main/examples/models/carla_energy_example.py).
+
+### Time series with tabular models
+
+`convert_dataset_to_overlapping_windows` (in `pyclad.data`) turns every concept of a dataset into overlapping windows.
+`FlattenTimeSeriesAdapter` then lets any model that expects 2D input score them:
+
+```python
+--8<-- "docs/snippets/models/time_series.py:windows"
+```
+
+### Image models
+
+Image anomaly detection models (PatchCore, FastFlow, RD4AD, PaSTe, UCAD and others) are described in
+[Vision](vision.md).
 
 ### References
- 
-[1] Liu, F. T., Ting, K. M., & Zhou, Z. H. (2008, December). Isolation forest. In *2008 Eighth IEEE International Conference on Data Mining* (pp. 413-422). IEEE.
 
-[2] Breunig, M. M., Kriegel, H. P., Ng, R. T., & Sander, J. (2000, May). LOF: identifying density-based local outliers. In *Proceedings of the 2000 ACM SIGMOD international conference on Management of data* (pp. 93-104).
+[1] Liu, F. T., Ting, K. M., & Zhou, Z. H. (2008). Isolation forest. In *2008 Eighth IEEE International Conference on Data Mining* (pp. 413-422). IEEE.
+
+[2] Breunig, M. M., Kriegel, H. P., Ng, R. T., & Sander, J. (2000). LOF: identifying density-based local outliers. In *Proceedings of the 2000 ACM SIGMOD International Conference on Management of Data* (pp. 93-104).
+
+[3] Darban, Z. Z., Webb, G. I., Pan, S., Aggarwal, C. C., & Salehi, M. CARLA: Self-supervised contrastive representation learning for time series anomaly detection. [arXiv:2308.09296](https://arxiv.org/abs/2308.09296).

@@ -17,6 +17,7 @@ from pyclad.metrics.continual.forward_transfer import ForwardTransfer
 from pyclad.models.adapters.pyod_adapters import IsolationForestAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_incremental import ConceptIncrementalScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.cumulative import CumulativeStrategy
 
 sns.set_theme(style="darkgrid")
@@ -37,9 +38,10 @@ def _generate_normal_dist(mean, cov):
 
 if __name__ == "__main__":
     """
-    This example show how to create a simple dataset with 4 concepts and carry out a concept aware scenario with
+    This example shows how to create a simple dataset with 4 concepts and carry out a concept incremental scenario with
     CumulativeStrategy and IsolationForest model.
     """
+    seed_info = set_seed(42)
     concept1_train_data, concept1_test_data, concept1_test_labels = _generate_normal_dist((2, 2), [[1, 0], [0, 1]])
     concept2_train_data, concept2_test_data, concept2_test_labels = _generate_normal_dist((50, 50), [[1, 0], [0, 1]])
     concept3_train_data, concept3_test_data, concept3_test_labels = _generate_normal_dist((5, 5), [[1, 0], [0, 1]])
@@ -82,7 +84,7 @@ if __name__ == "__main__":
 
     # Save the results
     output_writer = JsonOutputWriter(pathlib.Path("output.json"))
-    output_writer.write([model, dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, dataset, strategy, *callbacks])
 
     # Plot all concepts for simple visualization of the scenario
     sns.scatterplot(x=concept1_train.data[:, 0], y=concept1_train.data[:, 1], label="concept1")

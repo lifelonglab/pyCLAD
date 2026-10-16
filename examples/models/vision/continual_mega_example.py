@@ -14,6 +14,7 @@ from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.supervised_concept_incremental import (
     SupervisedConceptIncrementalScenario,
 )
+from pyclad.seed import set_seed
 from pyclad.vision.callbacks.grouped_vision_pixel_concept_metric_callback import (
     GroupedVisionPixelConceptMetricCallback,
 )
@@ -32,6 +33,7 @@ RESOURCES = pathlib.Path(__file__).resolve().parents[2] / "resources"
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
+    seed_info = set_seed(42)
     reader = ContinualMegaBenchmarkReader(
         data_root=RESOURCES / "vision/continual_mega",
         meta_dir=RESOURCES / "vision/continual_mega/meta_files",
@@ -64,4 +66,4 @@ if __name__ == "__main__":
 
     SupervisedConceptIncrementalScenario(dataset=dataset, strategy=strategy, callbacks=callbacks).run()
 
-    JsonOutputWriter(pathlib.Path("output.json")).write([model, dataset, strategy, *callbacks])
+    JsonOutputWriter(pathlib.Path("output.json")).write([seed_info, model, dataset, strategy, *callbacks])

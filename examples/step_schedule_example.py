@@ -20,6 +20,7 @@ from pyclad.metrics.continual.schedule_aware_new_task_acquisition import (
 from pyclad.models.adapters.pyod_adapters import IsolationForestAdapter
 from pyclad.output.json_writer import JsonOutputWriter
 from pyclad.scenarios.concept_aware import ConceptAwareScenario
+from pyclad.seed import set_seed
 from pyclad.strategies.baselines.naive import NaiveStrategy
 
 RESOURCES = pathlib.Path(__file__).resolve().parent / "resources"
@@ -36,6 +37,7 @@ if __name__ == "__main__":
     Ordering matters: concepts must already be in their final order before grouping, because
     grouping merges *consecutive* concepts.
     """
+    seed_info = set_seed(42)
     dataset = read_dataset_from_npy(
         RESOURCES / "nsl-kdd_random_anomalies_5_concepts_1000_per_cluster.npy", dataset_name="NSL-KDD-R"
     )
@@ -67,4 +69,4 @@ if __name__ == "__main__":
     scenario.run()
 
     output_writer = JsonOutputWriter(pathlib.Path("output_step_schedule.json"))
-    output_writer.write([model, scheduled_dataset, strategy, *callbacks])
+    output_writer.write([seed_info, model, scheduled_dataset, strategy, *callbacks])
