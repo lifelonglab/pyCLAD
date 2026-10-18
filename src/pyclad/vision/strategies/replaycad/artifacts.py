@@ -51,8 +51,8 @@ _HASHED_FIELDS = (
 def concept_slug(concept_id: str) -> str:
     """Filesystem-safe directory name for a concept.
 
-    Multidataset concepts arrive as ``<alias>__<category>`` (see
-    ``pyclad/vision/data/multi_dataset.py``), and category names can contain spaces or slashes.
+    Concepts of the ``inclad-md`` config arrive as ``<source>__<category>`` (see
+    ``pyclad/vision/data/benchmarks/hf_benchmark.py``), and category names can contain spaces or slashes.
     """
     slug = re.sub(r"[\\/]+", "_", concept_id.strip())
     slug = re.sub(r"\s+", "-", slug)

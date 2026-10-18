@@ -38,8 +38,8 @@ def test_vision_concept_without_masks_skips_alignment_check():
     assert concept.masks is None
 
 
-def test_build_concepts_dataset_keeps_data_labels_masks_aligned_when_anomaly_mask_missing(tmp_path: Path):
-    """Samples skipped from masks must also be dropped from data and labels."""
+def test_build_concepts_dataset_rejects_an_anomaly_without_a_mask_when_others_have_one(tmp_path: Path):
+    """Dropping the anomaly would silently shrink the test set of image-level metrics too."""
     _write_rgb_image(tmp_path / "train_normal.png")
     _write_rgb_image(tmp_path / "test_normal.png")
     _write_rgb_image(tmp_path / "test_anomaly_with_mask.png")
@@ -75,12 +75,8 @@ def test_build_concepts_dataset_keeps_data_labels_masks_aligned_when_anomaly_mas
         ),
     ]
 
-    dataset = build_concepts_dataset_from_samples(samples=samples, dataset_name="missing-mask")
-
-    test_concept = dataset.test_concepts()[0]
-    assert isinstance(test_concept, VisionConcept)
-    assert test_concept.data.shape[0] == test_concept.labels.shape[0] == test_concept.masks.shape[0]
-    assert test_concept.data.shape[0] == 2
+    with pytest.raises(FileNotFoundError, match="test_anomaly_no_mask"):
+        build_concepts_dataset_from_samples(samples=samples, dataset_name="missing-mask")
 
 
 def test_build_concepts_dataset_returns_plain_concept_when_no_masks(tmp_path: Path):

@@ -37,7 +37,7 @@ def load_ground_truth_mask(
 def load_ground_truth_masks_for_samples(
     samples: Sequence[VisionSample],
     resize_to: Optional[tuple[int, int]] = None,
-    skip_missing_anomaly_masks: bool = True,
+    skip_missing_anomaly_masks: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     kept_samples: list[VisionSample] = []
     kept_indices: list[int] = []
@@ -46,7 +46,11 @@ def load_ground_truth_masks_for_samples(
         if sample.image_label == 1 and sample.mask_path is None:
             if skip_missing_anomaly_masks:
                 continue
-            raise FileNotFoundError(f"Missing anomaly mask for sample: {sample.image_path}")
+            raise FileNotFoundError(
+                f"Anomalous image {sample.image_path} of category {sample.category!r} has no ground-truth mask. "
+                "Masks are being loaded for this category, so every anomalous test image in it needs one: give "
+                'every anomaly a mask, or none. See "Your own dataset" in docs/vision.md.'
+            )
 
         kept_samples.append(sample)
         kept_indices.append(index)

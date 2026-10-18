@@ -24,8 +24,8 @@ from pyclad.strategies.baselines.naive import NaiveStrategy
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
     ScheduleAwareVisionPixelConceptMetricCallback,
 )
-from pyclad.vision.data.multi_dataset import (
-    load_inclad_md,
+from pyclad.vision.data.benchmarks.hf_benchmark import (
+    load_inclad_bench,
     split_multi_dataset_concept_name,
 )
 from pyclad.vision.metrics.pixel_aupro import PixelAUPRO
@@ -51,18 +51,17 @@ if __name__ == "__main__":
     """
     This example combines the two features: a multidataset stream and step scheduling.
 
-    InCLAD-MD contributes 27 categories from five source datasets. The schedule "3x9" merges
-    them into nine training steps of three categories each, while evaluation stays per
-    category -- so the metric matrix is 9 x 27 instead of 27 x 27.
+    The `inclad-md` config of the InCLAD benchmark contributes 27 categories from five source
+    datasets. The schedule "3x9" merges them into nine training steps of three categories each,
+    while evaluation stays per category -- so the metric matrix is 9 x 27 instead of 27 x 27.
 
     Because consecutive concepts are merged, a training step can straddle a source-dataset
-    boundary: with "3x9" and the easy_to_hard ordering, step 1 holds the last BTech category
-    together with the first two MPDD ones. Schedules that align with the block sizes
-    (3 for BTech, 6 for the rest) keep steps within a single source.
+    boundary; the script prints the sources that make up every step.
 
     Other schedules over 27 categories: "26-1", "9x3", "21-1x6", "15-6-6".
     """
-    dataset = load_inclad_md(
+    dataset = load_inclad_bench(
+        "inclad-md",
         roots=ROOTS,
         ordering=ORDERING,
         resize_to=(256, 256),

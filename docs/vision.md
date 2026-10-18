@@ -2,21 +2,68 @@
 
 Continual **visual anomaly detection** models for pyCLAD. Each model trains on *normal* images only and produces per-pixel anomaly maps.
 
-Every model ships with a ready-to-run example under `examples/models/vision/`.
-
 ## Models
 
-| Model | What it is | Example script |
-|---|---|--|
-| **PaSTe** | Student–teacher distillation | `paste_torch_example.py` |
-| **FastFlow** | Normalizing flow on features | `fastflow_torch_example.py` |
-| **UCAD** | Continual key-prompt-knowledge memory over a frozen ViT | `ucad_torch_example.py` |
-| **Continual-MEGA baseline** | CLIP with MoE adapters and learned prompts, supervised | `continual_mega_example.py` |
+| Model | What it is | Paper | Example script |
+|---|---|---|---|
+| **PatchCore** ([details](#patchcore)) | Memory bank of patch features, nearest-neighbour scoring; no gradient training | Roth et al., CVPR 2022 [[1]](#references) | `patchcore_torch_example.py` |
+| **RD4AD** ([details](#rd4ad)) | Reverse distillation: a student decoder reconstructs a frozen teacher's features | Deng & Li, CVPR 2022 [[2]](#references) | `rd4ad_torch_example.py` |
+| **FastFlow** ([details](#fastflow)) | 2D normalizing flow on frozen backbone features | Yu et al., 2021 [[3]](#references) | `fastflow_torch_example.py` |
+| **PaSTe** ([details](#paste)) | Student–teacher feature matching with partially shared layers, for edge devices | Barusco et al., CVPRW 2025 [[4]](#references) | `paste_torch_example.py` |
+| **UCAD** ([details](#ucad)) | Continual key-prompt-knowledge memory over a frozen ViT | Liu et al., AAAI 2024 [[5]](#references) | `ucad_torch_example.py` |
+| **Continual-MEGA baseline** ([details](#supervised-models)) | CLIP with MoE adapters and learned prompts, supervised | Lee et al., 2025 [[6]](#references) | `continual_mega_example.py` |
+
+PatchCore, RD4AD, FastFlow and PaSTe are single-task detectors: the continual behaviour comes from the
+strategy they are wrapped in (Naive, Replay, Cumulative, [ReplayCAD](#replaycad), …). UCAD carries its own
+continual memory and comes with `UCADStrategy`.
+
+### RD4AD
+
+A frozen, pretrained encoder (the teacher) extracts multi-scale features; a one-class bottleneck compresses
+them and a trainable decoder (the student) reconstructs them in reverse order. The anomaly map is one minus
+the cosine similarity of teacher and student features, upsampled to `input_size` and summed over the scales.
+
+| Field (`RD4ADConfig`) | Default | Meaning |
+|---|---|---|
+| `backbone_name` | `"wide_resnet50_2"` | Encoder: `resnet18`, `resnet34`, `resnet50` or `wide_resnet50_2` |
+| `pretrained_encoder` / `freeze_encoder` | `True` / `True` | ImageNet weights; the encoder is never trained |
+| `epochs`, `batch_size`, `learning_rate` | `200`, `16`, `5e-3` | Adam with `adam_beta1=0.5`, `adam_beta2=0.999` |
+| `score_smoothing_sigma` | `4.0` | Gaussian blur of the anomaly map before scoring, as in the reference code; calibrated for the default `input_size=(256, 256)` |
+
+### FastFlow
+
+A frozen, pretrained backbone extracts features, and a stack of 2D normalizing-flow blocks maps them to a
+standard normal distribution. The anomaly map is the negated likelihood of every feature location,
+upsampled to `input_size` and averaged over the scales.
+
+| Field (`FastFlowConfig`) | Default | Meaning |
+|---|---|---|
+| `backbone_name` | `"wide_resnet50_2"` | Feature extractor; `backbone_return_nodes` overrides the layers it reads |
+| `pretrained_backbone` / `freeze_backbone` | `True` / `True` | The backbone is never trained, only the flow |
+| `flow_steps` | `8` | Flow blocks per feature scale |
+| `conv3x3_only`, `hidden_ratio`, `affine_clamping` | `False`, `1.0`, `2.0` | Shape of the subnetworks inside each flow block |
+| `epochs`, `batch_size` | `200`, `8` | Adam with `adam_beta1=0.9`, `adam_beta2=0.999` |
+
+### PaSTe
+
+A variant of student–teacher feature pyramid matching (STFPM) built for edge devices. The pretrained teacher
+is frozen; the student does not start from the image but from the teacher's feature at
+`student_bootstrap_layer`, so the two share their early layers and the student has fewer layers to train.
+The anomaly map is the squared distance between the normalised teacher and student features at each of
+`ad_layers`, upsampled to `input_size` and multiplied across the layers.
+
+| Field (`PaSTeConfig`) | Default | Meaning |
+|---|---|---|
+| `backbone_name` | `"mobilenet_v2"` | ResNet, MobileNetV2 and EfficientNet families are supported |
+| `ad_layers` | `None` | Layers compared between teacher and student; `None` picks the backbone's default (`(3, 6, 13)` for MobileNetV2) |
+| `student_bootstrap_layer` | `0` | Teacher layer the student starts from; `None` gives plain STFPM, with the student starting from the image |
+| `pretrained_teacher` / `freeze_teacher` / `pretrained_student` | `True` / `True` / `False` | |
+| `learning_rate`, `momentum`, `weight_decay` | `0.4`, `0.9`, `1e-4` | SGD |
 
 ### UCAD
 
 Liu et al., *Unsupervised Continual Anomaly Detection with Contrastively-learned Prompt*,
-AAAI 2024 ([reference code](https://github.com/shirowalker/UCAD)). Unlike the other two
+AAAI 2024 ([reference code](https://github.com/shirowalker/UCAD)). Unlike the other
 models, UCAD is itself the continual mechanism: each concept appends one entry to a memory
 that is never reset — a **key** coreset of frozen-ViT patch features, a **prompt** of learned
 attention prefixes, and a **knowledge** coreset scored against by nearest neighbour. At
@@ -33,7 +80,7 @@ paper's CPM-only ablation) and needs no extra data. For the full method, point
 #### Data leakage
 
 **In this port: none.** `fit()` accepts only the training array, the decision threshold comes
-from a quantile of training scores, and routing reads only the learned keys.
+from a quantile of training scores, and routing reads only the learnped keys.
 `tests/vision/models/test_ucad_no_leakage.py` pins that as executable assertions — scores must
 not change when the evaluated batch is regrouped or reordered, `predict()` must not mutate
 learned state, and the strategy must ignore the concept id it is handed.
@@ -148,6 +195,105 @@ dataset = read_vision_dataset(
     # max_test_samples_per_category=150,
 )
 ```
+
+### Your own dataset
+
+Without `benchmark=`, `read_vision_dataset` reads your own folder tree in one of five layouts. Pass the
+layout explicitly: when it is omitted, it is guessed from the folder names.
+
+```python
+from pyclad.vision.data.readers.vision_reader import read_vision_dataset
+
+dataset = read_vision_dataset(
+    root="data/my_parts",
+    layout="category/split/label",
+    categories=["screw", "nut", "bolt"],   # also fixes the continual order
+    resize_to=(256, 256),
+)
+```
+
+| `layout=` | Folder tree under `root` | Labels | Masks |
+|---|---|---|---|
+| `"category/split/label"` (MVTec-style) | `<category>/<train or test>/<label>/` | from the label folder | `<category>/ground_truth/<label>/` |
+| `"split/category/label"` | `<train or test>/<category>/<label>/` | from the label folder | `test/<category>/ground_truth/<label>/` |
+| `"split/label"` | `<train or test>/<label>/` | from the label folder; one category named `single_category_name` | not read |
+| `"category/split"` | `<category>/<train or test>/` | train normal, **every test image anomalous** | not read |
+| `"split/category"` | `<train or test>/<category>/` | train normal, **every test image anomalous** | not read |
+
+- Label folders named `good`, `ok` or `normal` (in any case) hold normal images; `normal_labels=` changes the
+  set. Every other folder under `test` holds anomalies and its name becomes the defect type. Under `train`
+  only the normal folders are read; the others are skipped.
+- The mask of `test/<label>/img.png` is `ground_truth/<label>/img_mask.png`, or `img.png` without the suffix,
+  in any supported image format. `mask_suffix=` and `ground_truth_dir=` change these names and
+  `ground_truth_dir=None` turns masks off. `train_split_dir=` and `test_split_dir=` rename the split folders.
+- Once any anomalous test image of a category has a mask, every one of them needs a mask: a missing one
+  stops loading with a `FileNotFoundError` naming the image. Give every anomaly a mask, or none.
+- Without `categories=`, concepts come in the alphabetical order of the category folders. The order of
+  concepts is part of the experiment, so set it explicitly.
+
+Two things change the reported numbers:
+
+- In the `category/split` and `split/category` layouts the test set holds no normal images, so image-level
+  ROC-AUC and average precision are undefined (`NaN`). Evaluate with a layout that has label folders.
+- `max_test_samples_per_category` keeps the first test images in folder order, with label folders sorted by
+  name, so a small cap can leave a category without normal test images.
+
+### InCLAD benchmark
+
+The InCLAD benchmark is hosted on [Hugging Face](https://huggingface.co/datasets/lifelonglab/inclad-benchmark).
+The Hub holds only the sample lists (image paths, labels, masks) and the category order of every ordering;
+the images come from the local dataset folders described above. It has six configs, all loaded the same way:
+
+| Config | Stream | Orderings |
+|---|---|---|
+| `btech`, `dagm`, `mpdd`, `mvtec`, `visa` | the categories of one dataset | `easy_to_hard`, `hard_to_easy`, `random` |
+| `inclad-md` | 27 categories from all five datasets, named `<source>__<category>` | `easy_to_hard`, `hard_to_easy` |
+
+```python
+from pyclad.vision.data.benchmarks.hf_benchmark import load_inclad_bench
+
+roots = {
+    "btech": "examples/resources/vision/BTech_Dataset_transformed",
+    "dagm": "examples/resources/vision/DAGM_KaggleUpload",
+    "mpdd": "examples/resources/vision/MPDD",
+    "mvtec": "examples/resources/vision/mvtec_ad",
+    "visa": "examples/resources/vision/VisA",
+}
+
+mvtec = load_inclad_bench("mvtec", roots=roots, ordering="easy_to_hard", resize_to=(256, 256))
+inclad_md = load_inclad_bench("inclad-md", roots=roots, ordering="easy_to_hard", resize_to=(256, 256))
+```
+
+Every manifest row names its source dataset and a path relative to that dataset's folder, so each image is
+read from `roots[source]`. A config needs roots only for the sources it uses: one for `mvtec`, all five for
+`inclad-md`. The first call downloads the manifest into the Hugging Face cache (`cache_dir=` moves it).
+
+The result is an ordinary `ConceptsDataset` in the published order, so a step schedule applies to every
+config in the same way, for example `apply_step_schedule(mvtec, "1x15")` or
+`apply_step_schedule(inclad_md, "3x9")` (see [Step Schedule (Grouping)](datasets.md#step-schedule-grouping)). For
+per-source reporting, `split_multi_dataset_concept_name("mvtec__bottle")` returns `("mvtec", "bottle")`.
+Runnable versions: `examples/multi_dataset_example.py` and `examples/step_schedule_multi_dataset_example.py`.
+
+### Step schedules
+
+By default every category is one training step. CDAD-style benchmarks merge consecutive categories into
+larger steps while evaluation stays per category, for example `"3x5"` on MVTec AD's 15 categories trains in
+five steps of three and evaluates all 15, so the metric matrix is 5 x 15:
+
+```python
+from pyclad.data.grouping import apply_step_schedule
+
+scheduled = apply_step_schedule(dataset, schedule="3x5")   # also "14-1", "10-5", "10-1x5"
+first_seen_step = scheduled.first_seen_step()              # category -> step that first trains it
+```
+
+Grouping merges *consecutive* concepts, so choose the ordering first and group second. A rectangular
+matrix needs the schedule-aware callbacks: `ScheduleAwareConceptMetricCallback` for image-level metrics and
+`ScheduleAwareVisionPixelConceptMetricCallback` for pixel-level ones, both given `first_seen_step`. The
+notation and the rules are in [Step Schedule (Grouping)](datasets.md#step-schedule-grouping), the metrics in
+[Rectangular matrices and step schedules](metrics.md#rectangular-matrices-and-step-schedules). Runnable versions:
+`examples/step_schedule_vision_example.py` (MVTec AD, `"3x5"`) and
+`examples/step_schedule_multi_dataset_example.py` (`inclad-md`, `"3x9"`).
 
 ## Run a model
 
@@ -269,7 +415,7 @@ pixel-level metric callbacks, and writes results to `output.json`.
 ## ReplayCAD
 
 ReplayCAD (Hu et al., *ReplayCAD: Generative Diffusion Replay for Continual Anomaly Detection*,
-IJCAI 2025, arXiv:2505.06603) is a generative-replay strategy: instead of storing real images from
+IJCAI 2025, arXiv:2505.06603, [[7]](#references)) is a generative-replay strategy: instead of storing real images from
 earlier concepts, it compresses each one into a small, frozen-diffusion-model conditioning (a
 learned semantic embedding plus a mask-projection MLP) that can regenerate representative images
 on demand, and replays those alongside new data when refitting the detector.
@@ -544,3 +690,29 @@ strategy = NaiveSupervisedStrategy(model)
 `ContinualMegaBaseline` (`continual_mega_example.py`) is the benchmark's own model: CLIP with adapters
 and learned prompts. Set `train_samples="normal"` instead to run one-class models such as PaSTe or
 FastFlow on the same streams with the usual strategy and scenario.
+
+## References
+
+[1] Roth, K., Pemula, L., Zepeda, J., Schölkopf, B., Brox, T., & Gehler, P. (2022). Towards Total Recall in
+Industrial Anomaly Detection. In *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern
+Recognition (CVPR)* (pp. 14318-14328).
+
+[2] Deng, H., & Li, X. (2022). Anomaly Detection via Reverse Distillation from One-Class Embedding. In
+*Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)* (pp. 9737-9746).
+
+[3] Yu, J., Zheng, Y., et al. (2021). FastFlow: Unsupervised Anomaly Detection and Localization via 2D
+Normalizing Flows. *arXiv preprint arXiv:2111.07677*.
+
+[4] Barusco, M., Borsatti, F., Dalle Pezze, D., Paissan, F., Farella, E., & Susto, G. A. (2025). PaSTe:
+Improving the Efficiency of Visual Anomaly Detection at the Edge. In *Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition (CVPR) Workshops* (pp. 4026-4035).
+
+[5] Liu, J., Wu, K., et al. (2024). Unsupervised Continual Anomaly Detection with Contrastively-Learned
+Prompt. In *Proceedings of the AAAI Conference on Artificial Intelligence*, 38(4), 3639-3647.
+
+[6] Lee, G., Oh, Y., Jang, G., Lee, S., Song, J., Cha, S., & Yoo, Y. (2025). Continual-MEGA: A Large-scale
+Benchmark for Generalizable Continual Anomaly Detection. *arXiv preprint arXiv:2506.00956*.
+
+[7] Hu, L., Gan, Z., Deng, L., Liang, J., Liang, L., Huang, S., & Chen, T. (2025). ReplayCAD: Generative
+Diffusion Replay for Continual Anomaly Detection. In *Proceedings of the Thirty-Fourth International Joint
+Conference on Artificial Intelligence (IJCAI)* (pp. 2946-2954).
