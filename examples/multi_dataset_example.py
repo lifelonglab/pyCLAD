@@ -14,9 +14,8 @@ from pyclad.strategies.baselines.naive import NaiveStrategy
 from pyclad.vision.callbacks.vision_pixel_concept_metric_callback import (
     VisionPixelConceptMetricCallback,
 )
-from pyclad.vision.data.multi_dataset import (
-    INCLAD_MD_SPEC,
-    load_inclad_md,
+from pyclad.vision.data.benchmarks.hf_benchmark import (
+    load_inclad_bench,
     split_multi_dataset_concept_name,
 )
 from pyclad.vision.metrics.pixel_aupro import PixelAUPRO
@@ -39,28 +38,23 @@ ORDERING = "easy_to_hard"
 
 if __name__ == "__main__":
     """
-    This example runs InCLAD-MD, the published multidataset benchmark: a single continual
+    This example runs the `inclad-md` config of the InCLAD benchmark: a single continual
     stream of 27 categories drawn from five source datasets at once -- BTech, MPDD, DAGM,
-    VisA and MVTec AD.
+    VisA and MVTec AD. The sample lists and the category order come from Hugging Face; the
+    images are read from the local folders in ROOTS, each source from its own folder.
 
-    Unlike a single-source dataset there is no shared root: every source resolves its own
-    images. Concepts are named `<source>__<category>`, so categories that share a name across
-    datasets stay distinct.
-
-    To define your own stream instead, build a MultiDatasetSpec out of DatasetBlocks and pass
-    it to read_multi_dataset(); a spec round-trips through JSON, so a stream is reproducible
-    from a file. See the docstrings in pyclad/vision/data/multi_dataset.py.
+    Concepts are named `<source>__<category>`, so categories that share a name across
+    datasets stay distinct. See "InCLAD benchmark" in docs/vision.md.
     """
-    print("InCLAD-MD concepts:", len(INCLAD_MD_SPEC.category_order()))
-    print("Stream:", INCLAD_MD_SPEC.category_order())
-
-    dataset = load_inclad_md(
+    dataset = load_inclad_bench(
+        "inclad-md",
         roots=ROOTS,
         ordering=ORDERING,
         resize_to=(256, 256),
         max_train_samples_per_category=100,
     )
 
+    print("Stream:", [concept.name for concept in dataset.train_concepts()])
     per_source: dict[str, int] = {}
     for concept in dataset.train_concepts():
         source, _ = split_multi_dataset_concept_name(concept.name)

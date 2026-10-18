@@ -149,6 +149,42 @@ dataset = read_vision_dataset(
 )
 ```
 
+### InCLAD benchmark
+
+The InCLAD benchmark is hosted on [Hugging Face](https://huggingface.co/datasets/lifelonglab/inclad-benchmark).
+The Hub holds only the sample lists (image paths, labels, masks) and the category order of every ordering;
+the images come from the local dataset folders described above. It has six configs, all loaded the same way:
+
+| Config | Stream | Orderings |
+|---|---|---|
+| `btech`, `dagm`, `mpdd`, `mvtec`, `visa` | the categories of one dataset | `easy_to_hard`, `hard_to_easy`, `random` |
+| `inclad-md` | 27 categories from all five datasets, named `<source>__<category>` | `easy_to_hard`, `hard_to_easy` |
+
+```python
+from pyclad.vision.data.benchmarks.hf_benchmark import load_inclad_bench
+
+roots = {
+    "btech": "examples/resources/vision/BTech_Dataset_transformed",
+    "dagm": "examples/resources/vision/DAGM_KaggleUpload",
+    "mpdd": "examples/resources/vision/MPDD",
+    "mvtec": "examples/resources/vision/mvtec_ad",
+    "visa": "examples/resources/vision/VisA",
+}
+
+mvtec = load_inclad_bench("mvtec", roots=roots, ordering="easy_to_hard", resize_to=(256, 256))
+inclad_md = load_inclad_bench("inclad-md", roots=roots, ordering="easy_to_hard", resize_to=(256, 256))
+```
+
+Every manifest row names its source dataset and a path relative to that dataset's folder, so each image is
+read from `roots[source]`. A config needs roots only for the sources it uses: one for `mvtec`, all five for
+`inclad-md`. The first call downloads the manifest into the Hugging Face cache (`cache_dir=` moves it).
+
+The result is an ordinary `ConceptsDataset` in the published order, so a step schedule applies to every
+config in the same way, for example `apply_step_schedule(mvtec, "1x15")` or
+`apply_step_schedule(inclad_md, "3x9")` (see "Step Schedule (Grouping)" in `docs/datasets.md`). For
+per-source reporting, `split_multi_dataset_concept_name("mvtec__bottle")` returns `("mvtec", "bottle")`.
+Runnable versions: `examples/multi_dataset_example.py` and `examples/step_schedule_multi_dataset_example.py`.
+
 ## Run a model
 
 The examples use **relative paths** to the dataset, so run them from their own folder:
